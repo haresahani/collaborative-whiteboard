@@ -1,0 +1,1 @@
+# React app (Vite or Next) — TypeScrip
