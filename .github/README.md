@@ -1,1 +1,0 @@
-# CI / CD pipelines (lint, test, build, deploy)
