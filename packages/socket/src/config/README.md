@@ -1,0 +1,1 @@
+# socket configs (namespaces, middleware setup)

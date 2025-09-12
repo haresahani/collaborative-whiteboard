@@ -1,0 +1,1 @@
+# room lifecycle (create/join/leave, room state mgmt)
