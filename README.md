@@ -2,19 +2,9 @@
 
 A real-time, multi-user whiteboard built with a **MERN-style stack** and **Socket.IO (or WebSocket)**. This project is designed for low-latency drawing, deterministic conflict resolution, and horizontal scaling. The goal is to present a production-quality structure that highlights key engineering tradeoffs and careful design thinking for technical interviews.
 
-## 🚀 Elevator Pitch
+## 🚀 Elevator
 
 This is a real-time, multi-user whiteboard application. It supports drawing, shapes, sticky notes, chat, undo/redo, live cursors, and recoverable board state using an append-only **op-log** with periodic **snapshots**. The architecture is built with testability, observability, and horizontal scaling as primary considerations.
-
-## ⭐ Why this Stands Out in an Interview
-
-This project demonstrates a deep understanding of several critical engineering concepts:
-
-- **Distributed Systems Thinking:** Showcases knowledge of concepts like op-logs, snapshots, and the tradeoffs between different **CRDT** (Conflict-free Replicated Data Type) and **OT** (Operational Transformation) models.
-- **Real-Time Engineering:** Implements core real-time functionalities using **WebSockets**, including event ordering, throttling, and robust reconnection strategies.
-- **Scaling & Reliability:** Utilizes **Redis pub/sub** for cross-instance communication, and employs state partitioning, snapshotting, and dedicated worker processes to ensure reliability and scalability.
-- **DevOps Maturity:** Includes a well-defined infrastructure setup using **Docker**, **k8s/Helm**, and a **CI/CD pipeline**, demonstrating an understanding of production deployment.
-- **Code Quality & Structure:** The project is structured as a monorepo, with a focus on typed interfaces (**TypeScript**), shared code, and automated testing.
 
 ## 📁 Repo Layout (High-Level)
 
@@ -194,17 +184,6 @@ pnpm --filter "packages/client..." dev
 - **Partitioning:** Consider routing boards to specific socket pools using **consistent hashing** to colocate hot boards and optimize performance.
 - **Snapshotting:** A crucial part of the scaling strategy is to periodically snapshot large boards and compact the older op-logs to maintain performance and reduce state size.
 
-## 🗣️ Interview Demo Script (2–5 minutes)
-
-Use this script to guide your demo and highlight key features:
-
-1. Open two browser windows and join the same board.
-2. Demonstrate real-time drawing and show **live cursors**.
-3. Create a sticky note and concurrently edit the text from both windows, explaining how the CRDT resolves conflicts.
-4. Simulate a disconnection, continue drawing, then reconnect and show how the **op-log replay** restores the state.
-5. Briefly show the admin dashboard (connected users, ops/sec) or load test results.
-6. Summarize the architectural tradeoffs and explain how you would scale to 100k users.
-
 ## 🛣 Roadmap / Suggested Milestones
 
 - **Week 1:** Minimal single-user canvas with persistence.
@@ -219,6 +198,7 @@ Use this script to guide your demo and highlight key features:
 - Each PR must include a clear description and a testing plan.
 - Add unit and integration tests for all new logic.
 - Use `CHANGELOG.md` for major changes and release notes.
+- See full setup and troubleshooting guide in [CONTRIBUTING.md](.github/CONTRIBUTING.md)
 
 ## 📎 Useful Docs to Keep in `docs/`
 
