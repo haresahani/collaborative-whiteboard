@@ -274,16 +274,5 @@ S3_REGION=us-east-1
 - Why choose CRDT over OT or Last-Writer-Wins?
 - How do you secure and scale async export workers?
 
----
-
-## 📝 Resume Snippets
-**Short**:
-> Built a real-time collaborative whiteboard (MERN + Socket.IO) with oplog persistence, snapshotting, and async exports.
-
-**Detailed**:
-> Designed and implemented a production-ready collaborative whiteboard using React, Node.js, and Socket.IO. Leveraged MongoDB oplog with periodic snapshots for persistence, Redis for WebSocket scaling, and BullMQ for async export pipelines to S3. Integrated OpenTelemetry for observability and Kubernetes for deployment.
-
----
-
 ## 📜 License
 MIT — Fork, learn, and contribute freely.
