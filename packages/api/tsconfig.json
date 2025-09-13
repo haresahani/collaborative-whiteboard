@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",       
+    "rootDir": "src",       // main source folder
+    "composite": true       // required for project references if needed
+  },
+  "include": ["src", "tests"],
+  "references": []
+}

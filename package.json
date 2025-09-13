@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "name": "collaborative-whiteboard",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --parallel --filter ./apps/* dev",
+    "build": "pnpm --filter ./apps/* build",
+    "lint": "eslint . --ext .ts,.tsx"
+  }
+}
