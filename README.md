@@ -324,22 +324,8 @@ See [docs/runbook.md](/docs/runbook.md) for detailed incident response procedure
 - [protocol.md](/docs/protocol.md): Event schemas and versioning.
 - [crdt-design.md](/docs/crdt-design.md): CRDT model and conflict scenarios.
 - [runbook.md](/docs/runbook.md): Incident response and recovery guide.
-- [RESUME_SNIPPET.md](/docs/RESUME_SNIPPET.md): Resume lines and interview talking points.
+- [RESUME_SNIPPET.md](/docs/INTERVIEW_NOTES.md): Resume lines and interview talking points.
 - [BENCHMARKS.md](/docs/BENCHMARKS.md): Performance results and scripts.
-
----
-
-## 💼 Interview Notes (Short)
-- **Elevator Pitch**: Built a production-ready collaborative whiteboard (MERN + Socket.IO, CRDTs) with oplog persistence, snapshotting, and async export pipelines, optimized for <200ms latency and scalability.
-- **Key Topics**: Oplog compaction, CRDT vs. OT, event ordering (`opId` + `serverSeq`), WebSocket scaling (Redis pub/sub), async workers, observability, multi-region deployment.
-- **Practice Qs**: 
-  - How do you scale WebSockets for thousands of users?
-  - How do you ensure deterministic state across clients?
-  - How do you optimize oplog storage and compaction?
-  - Why CRDT over OT or Last-Writer-Wins?
-  - How do you secure and scale async export workers?
-
-See [RESUME_SNIPPET.md](/docs/RESUME_SNIPPET.md) for detailed FAANG-style Q&A.
 
 ---
 
