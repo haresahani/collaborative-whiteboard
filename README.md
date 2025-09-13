@@ -117,13 +117,20 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
 ### `oplog` Collection (Append-Only)
 ```json
 {
-  "boardId": "board_abc",
+  "boardId": ObjectId("..."),
   "seq": 4568,
   "opId": "user_123:162", // clientId:localCounter
-  "type": "stroke.add",
-  "payload": { "points": [[x1, y1], [x2, y2]], "color": "#000", "width": 2 },
-  "createdAt": "2025-09-12T10:00:01Z"
+  "event": {
+    "type": "stroke.add",
+    "payload": {
+      "points": [[0,0],[100,100]],
+      "color": "#000",
+      "width": 2
+    }
+  },
+  "createdAt": ISODate("2025-09-12T10:00:01Z")
 }
+
 ```
 
 ---
@@ -335,6 +342,4 @@ MIT © Hare Sahani
 ---
 
 ## 📬 Contact
-Created by **Hare Sahani** — [email@example.com](mailto:harecareer@gmail.com) | [LinkedIn](https://www.linkedin.com/in/hare-sahani-18239b240/) | [GitHub](https://github.com/haresahani) | [LeetCode](https://leetcode.com/u/haresahani/)
-
-*This README is a living document—update badges, benchmarks, and demo links as you test and deploy.*
+Created by **Hare Sahani** — [harecareer@gmail.com](mailto:harecareer@gmail.com) | [LinkedIn](https://www.linkedin.com/in/hare-sahani-18239b240/) | [GitHub](https://github.com/haresahani) | [LeetCode](https://leetcode.com/u/haresahani/)
