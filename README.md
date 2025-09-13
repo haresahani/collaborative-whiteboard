@@ -10,7 +10,7 @@ A **real-time, multi-user collaborative whiteboard** engineered for low-latency 
 - **What**: Collaborative whiteboard with real-time, low-latency (<200ms) drawing, shapes, sticky notes, presence, undo/redo, and async exports for 100+ users.  
 - **Why**: Demonstrates FAANG-level engineering: WebSocket scaling with Redis pub/sub, CRDT-based conflict resolution, observability, and production-grade infrastructure.  
 - **Stack**: React (TypeScript), Node.js/Express, Socket.IO, MongoDB (oplog + snapshots), Redis (pub/sub), Docker, Kubernetes.  
-**Resume 1-Liner**: Built a production-ready collaborative whiteboard (MERN + Socket.IO) with oplog persistence, snapshotting every 1,000 ops, and async export pipelines, optimized for <200ms latency and scalability.
+- **Resume 1-Liner**: Built a production-ready collaborative whiteboard (MERN + Socket.IO) with oplog persistence, snapshotting every 1,000 ops, and async export pipelines, optimized for <200ms latency and scalability.
 
 ---
 
