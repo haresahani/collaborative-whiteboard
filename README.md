@@ -97,10 +97,9 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
   "_id": "board_abc",
   "name": "Team Brainstorm",
   "ownerId": "user_123",
-  "privacy": "team",
+  "privacy": "team",                // "public" | "private" | "team"
   "createdAt": "2025-09-12T10:00:00Z",
-  "lastSnapshotId": "snap_001",
-  "snapshotMeta": { "snapshotId": "snap_001", "opIndex": 4567 }
+  "lastSnapshotId": "snap_001"
 }
 ```
 
@@ -110,7 +109,12 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
   "_id": "snap_001",
   "boardId": "board_abc",
   "createdAt": "2025-09-12T10:00:00Z",
-  "snapshotJson": { /* serialized board state: strokes, shapes, notes */ }
+  "opIndex": 4567,                  // The oplog position this snapshot covers
+  "snapshotJson": {
+    "strokes": [ /* array of stroke objects */ ],
+    "shapes": [ /* array of shape objects */ ],
+    "notes":  [ /* array of sticky notes */ ]
+  }
 }
 ```
 
@@ -130,7 +134,6 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
   },
   "createdAt": ISODate("2025-09-12T10:00:01Z")
 }
-
 ```
 
 ---
