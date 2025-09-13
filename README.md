@@ -1,4 +1,4 @@
-# Collab Whiteboard 🎨 — Production-Ready & FAANG/MANG-Grade
+# Collaborative Whiteboard
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue)
 
