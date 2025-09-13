@@ -2,12 +2,15 @@
   "private": true,
   "name": "collaborative-whiteboard",
   "workspaces": [
-    "apps/*",
     "packages/*"
   ],
   "scripts": {
     "dev": "pnpm --parallel --filter ./apps/* dev",
     "build": "pnpm --filter ./apps/* build",
-    "lint": "eslint . --ext .ts,.tsx"
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "pnpm exec tsc --noEmit -b packages/*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
   }
 }

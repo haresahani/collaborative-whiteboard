@@ -1,6 +1,12 @@
 {
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
     "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "composite": true,
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["packages/shared/src/*"],

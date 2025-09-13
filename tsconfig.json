@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/client" },
+    { "path": "./packages/api" },
+    { "path": "./packages/socket" },
+    { "path": "./packages/worker" },
+    { "path": "./packages/shared" },
+    { "path": "./packages/infra-utils" }
+  ]
+}
