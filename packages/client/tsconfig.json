@@ -2,10 +2,20 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "composite": true,
+    "jsx": "react-jsx",          // ✅ enable React 17+ JSX transform
+    "esModuleInterop": true,     // helps with default imports
+    "moduleResolution": "node",  // required for resolving node_modules
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,      // helps with React tooling
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"], // Add if not inherited or if tsconfig.base.json uses a different path
+      "@shared/*": ["../../packages/shared/src/*"],
+    }
   },
-  "include": ["src"],
-  "references": [
-    { "path": "../shared" }
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": []
 }
