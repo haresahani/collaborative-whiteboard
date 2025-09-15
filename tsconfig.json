@@ -1,11 +1,24 @@
 {
-  "files": [],
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@collab/*": ["packages/*/src"]
+    },
+    "skipLibCheck": true
+  },
+  "include": [
+    "packages/**/*"
+  ],
   "references": [
-    { "path": "./packages/client" },
-    { "path": "./packages/api" },
-    { "path": "./packages/socket" },
-    { "path": "./packages/worker" },
-    { "path": "./packages/shared" },
-    { "path": "./packages/infra-utils" }
+    { "path": "packages/client" },
+    { "path": "packages/api" },
+    { "path": "packages/socket" },
+    { "path": "packages/worker" },
+    { "path": "packages/shared" },
+    { "path": "packages/infra-utils" }
   ]
 }
