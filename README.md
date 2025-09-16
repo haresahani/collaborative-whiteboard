@@ -8,7 +8,7 @@ A **real-time, multi-user collaborative whiteboard** engineered for low-latency 
 
 ---
 
-## 🚀 TL;DR (Recruiters & Quick Skim)
+## TL;DR (Recruiters & Quick Skim)
 - **What**: Collaborative whiteboard with real-time, low-latency (<200ms) drawing (pen, line, rectangle, circle), shapes, sticky notes, presence, undo/redo, and async exports (PNG/PDF/JSON) for 100+ users.  
 - **Why**: Demonstrates FAANG-level engineering: WebSocket scaling with Redis pub/sub, CRDT-based conflict resolution, observability, and production-grade infrastructure.  
 - **Stack**: React (TypeScript), Node.js/Express, Socket.IO, MongoDB (oplog + snapshots), Redis (pub/sub), Docker, Kubernetes, Prometheus/Grafana.  
@@ -16,7 +16,7 @@ A **real-time, multi-user collaborative whiteboard** engineered for low-latency 
 
 ---
 
-## 🎯 Features
+## Features
 ### MVP
 - Real-time multi-user drawing (pen, line, rectangle, circle) with Socket.IO/WebSockets, achieving <200ms op-to-propagation.
 - Persistent board state via MongoDB oplog + snapshots (every 1,000 ops or 5 minutes).
@@ -38,7 +38,7 @@ A **real-time, multi-user collaborative whiteboard** engineered for low-latency 
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 ```
 Browser Clients (React) <--> Load Balancer (HTTPS/WebSocket)
 │
@@ -53,7 +53,7 @@ See [docs/architecture.md](/docs/architecture.md) for detailed diagrams and flow
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 This project uses a **monorepo** pattern for type safety and simplified refactors, reflecting production practices at scale.
 
 ```
@@ -78,7 +78,7 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
 
 ---
 
-## 🛠️ Tech Stack & Rationale
+## Tech Stack & Rationale
 - **TypeScript**: End-to-end type safety for robust code.
 - **React (Vite/Next.js)**: Performant UI with optimized canvas rendering.
 - **Node.js + Express**: REST API for metadata and auth.
@@ -90,7 +90,7 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
 
 ---
 
-## 📊 Data Models
+## Data Models
 ### `boards` Collection
 ```json
 {
@@ -138,7 +138,7 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
 
 ---
 
-## 📡 Real-Time Protocol
+## Real-Time Protocol
 ### Sample Events
 - **Client → Server**:
   - `join`: `{ type: "join", boardId: "abc", userId: "user_123" }`
@@ -156,7 +156,7 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
 
 ---
 
-## 🔄 Conflict Resolution
+## Conflict Resolution
 - **Approach**: Operational CRDT for strokes, shapes, and text (RGA or Yjs/Automerge for sticky notes).
 - **Why CRDT**: Immutable operations (e.g., `stroke.add`, `stroke.delete`) simplify state convergence without data loss.
 - **Tradeoffs**:
@@ -167,7 +167,7 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 ### Prerequisites
 - Node.js >= 18 (or latest LTS)
 - pnpm (recommended) or npm/yarn with workspace support
@@ -230,7 +230,7 @@ pnpm --filter tests e2e
 
 ---
 
-## 📈 Benchmarks & Performance Targets
+## Benchmarks & Performance Targets
 > *Note*: Run `scripts/bench/` (k6 or Artillery) to measure performance and update these targets.
 
 - **Latency**: <200ms operation-to-propagation for boards with ≤50 concurrent users.
@@ -242,7 +242,7 @@ See `docs/BENCHMARKS.md` for detailed results and benchmarking scripts.
 
 ---
 
-## 🧪 Testing & Quality
+## Testing & Quality
 - **Unit Tests**: Jest for server logic, CRDT operations, and shared utilities.
 - **E2E Tests**: Playwright for multi-user sync and state convergence verification.
 - **Property-Based Tests**: Fast-check for CRDT correctness, ensuring commutative and idempotent operations.
@@ -252,7 +252,7 @@ See `docs/BENCHMARKS.md` for detailed results and benchmarking scripts.
 
 ---
 
-## 📊 Observability
+## Observability
 - **Metrics**: Prometheus for `ops_processed_total`, `ops_latency_ms`, `active_connections`, `snapshot_duration_ms`, `reconnect_rate`.
 - **Tracing**: OpenTelemetry for request, socket, and export job tracing (Jaeger compatible).
 - **Logging**: Structured JSON logs with correlation IDs (Winston).
@@ -261,7 +261,7 @@ See `docs/BENCHMARKS.md` for detailed results and benchmarking scripts.
 
 ---
 
-## 🛡️ Security
+## Security
 - **Authentication**: JWT with 15-minute expiry and refresh tokens; OAuth 2.0 for SSO.
 - **Authorization**: Board-level ACLs (owner, editor, viewer).
 - **Rate Limiting**: 100 ops/min/user for Socket.IO messages via Redis to prevent DoS.
@@ -271,7 +271,7 @@ See `docs/BENCHMARKS.md` for detailed results and benchmarking scripts.
 
 ---
 
-## ☁️ Deployment & Scaling
+## Deployment & Scaling
 - **Docker**: Multi-stage `Dockerfile` for backend, socket, and frontend; `NODE_ENV=production`.
 - **Kubernetes**: Helm charts in `infra/k8s/` for deployments, services, and autoscaling; CDN for static assets.
 - **Socket.IO Scaling**: Redis adapter for pub/sub; session affinity for sticky sessions.
@@ -299,7 +299,7 @@ jobs:
 
 ---
 
-## 🛠️ Troubleshooting & Runbook
+## Troubleshooting & Runbook
 - **Clients Fail to Connect**: Check WSS ingress, TLS certs, and load balancer sticky-session settings.
 - **High Reconnect Rates**: Monitor `reconnect_rate` metric; inspect network issues or instance overload.
 - **Snapshot Job Failure**: Verify worker logs, S3 credentials, and Redis queue health.
@@ -310,7 +310,7 @@ See [docs/runbook.md](/docs/runbook.md) for detailed incident response procedure
 
 ---
 
-## 🛣️ Roadmap & Limitations
+## Roadmap & Limitations
 - **Roadmap**:
   - Per-board sharding for extreme scale.
   - Offline-first mobile experience with local event queue sync.
@@ -321,7 +321,7 @@ See [docs/runbook.md](/docs/runbook.md) for detailed incident response procedure
 
 ---
 
-## 👥 Contribution Guidelines
+## Contribution Guidelines
 - Branch: `feat/<short-desc>` or `fix/<short-desc>` from `main`.
 - PRs: Include clear description, testing plan, and tests; run `pnpm lint && pnpm test`.
 - Commits: Use descriptive messages; update `CHANGELOG.md` for releases.
@@ -329,7 +329,7 @@ See [docs/runbook.md](/docs/runbook.md) for detailed incident response procedure
 
 ---
 
-## 📚 Key Docs
+## Key Docs
 - [architecture.md](/docs/architecture.md): System diagrams and flow.
 - [protocol.md](/docs/protocol.md): Event schemas and versioning.
 - [crdt-design.md](/docs/crdt-design.md): CRDT model and conflict scenarios.
@@ -339,10 +339,10 @@ See [docs/runbook.md](/docs/runbook.md) for detailed incident response procedure
 
 ---
 
-## 📜 License
+## License
 MIT © Hare Sahani
 
 ---
 
-## 📬 Contact
+## Contact
 Created by **Hare Sahani** — [harecareer@gmail.com](mailto:harecareer@gmail.com) | [LinkedIn](https://www.linkedin.com/in/hare-sahani-18239b240/) | [GitHub](https://github.com/haresahani) | [LeetCode](https://leetcode.com/u/haresahani/)
