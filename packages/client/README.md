@@ -4,7 +4,7 @@ A production-ready, FAANG-level collaborative whiteboard application built with 
 
 ![Whiteboard Preview](https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=1200&h=600&fit=crop&auto=format)
 
-## ✨ Features
+## Features
 
 ### Core Functionality
 - **Real-time Collaboration** - Multiple users can draw and interact simultaneously
