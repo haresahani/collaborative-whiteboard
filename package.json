@@ -1,16 +1,23 @@
 {
   "private": true,
   "name": "collaborative-whiteboard",
+  "type": "module",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "dev": "pnpm --parallel --filter ./apps/* dev",
-    "build": "pnpm --filter ./apps/* build",
-    "lint": "eslint . --ext .ts,.tsx",
+    "dev": "pnpm --parallel --filter ./packages/* dev",
+    "build": "pnpm --parallel --filter ./packages/* build",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "typecheck": "pnpm exec tsc --noEmit -b packages/*"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.43.0",
+    "@typescript-eslint/parser": "^8.43.0",
+    "eslint": "^9.35.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^13.0.0",
+    "prettier": "^3.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   },

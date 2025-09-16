@@ -1,18 +1,18 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Node",
     "strict": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
       "@collab/*": ["packages/*/src"]
-    },
-    "skipLibCheck": true
+    }
   },
-  "include": [
-    "packages/**/*"
-  ],
+  "files": [], // 👈 explicitly empty (no direct files in root)
   "references": [
     { "path": "packages/client" },
     { "path": "packages/api" },
