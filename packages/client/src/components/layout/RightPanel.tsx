@@ -18,9 +18,9 @@ interface RightPanelProps {
 
 // Mock chat messages for demo
 const mockMessages = [
-  { id: '1', user: 'Alice', message: 'Great work on the wireframes!', timestamp: Date.now() - 120000 },
-  { id: '2', user: 'Bob', message: 'Should we add more details to the user flow?', timestamp: Date.now() - 60000 },
-  { id: '3', user: 'Carol', message: 'I like the color scheme we chose', timestamp: Date.now() - 30000 },
+  { id: '1', user: 'Hare', message: 'Great work on the wireframes!', timestamp: Date.now() - 120000 },
+  { id: '2', user: 'Harekrishna', message: 'Should we add more details to the user flow?', timestamp: Date.now() - 60000 },
+  { id: '3', user: 'Rohini', message: 'I like the color scheme we chose', timestamp: Date.now() - 30000 },
 ];
 
 export function RightPanel({ isOpen, onClose }: RightPanelProps) {
