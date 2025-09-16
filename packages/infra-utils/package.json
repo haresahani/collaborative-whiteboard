@@ -1,21 +1,19 @@
 {
   "name": "infra-utils",
   "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
   "scripts": {
-  "dev": "echo 'infra-utils has no dev server, only scripts'",
-
-  "migrate": "ts-node scripts/migrate-db.ts",
-  "seed": "ts-node scripts/seed-db.ts",
-  "reset": "pnpm run migrate && pnpm run seed",
-
-  "lint": "eslint 'src/**/*.ts' --max-warnings=0",
-  "typecheck": "tsc --noEmit",
-
-  "test": "vitest run",
-  "test:watch": "vitest",
-
-  "build": "tsc -p tsconfig.build.json",
-  "clean": "rimraf dist"
-}
-
+    "build": "tsc -b",
+    "lint": "eslint . --ext .ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "eslint": "^9.32.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "prettier": "^3.0.0"
+  }
 }
