@@ -1,4 +1,4 @@
-# 🎨 Collaborative Whiteboard
+# Collaborative Whiteboard
 
 A production-ready, FAANG-level collaborative whiteboard application built with React, TypeScript, and modern web technologies. Features real-time collaboration, professional UI/UX, and scalable architecture.
 
@@ -6,34 +6,34 @@ A production-ready, FAANG-level collaborative whiteboard application built with 
 
 ## ✨ Features
 
-### 🎯 Core Functionality
+### Core Functionality
 - **Real-time Collaboration** - Multiple users can draw and interact simultaneously
 - **Drawing Tools** - Pen, line, rectangle, circle, text, sticky notes, and eraser
 - **Selection & Manipulation** - Select, move, resize, and rotate elements
 - **Undo/Redo** - Full history management with keyboard shortcuts
 - **Zoom & Pan** - Smooth viewport navigation and scaling
 
-### 🎨 Professional UI/UX
+### Professional UI/UX
 - **Modern Design** - Clean, minimalistic interface inspired by Figma and Miro
 - **Responsive Layout** - Works seamlessly on desktop, tablet, and mobile
 - **Dark/Light Mode** - Automatic theme switching with user preference
 - **Smooth Animations** - Framer Motion powered transitions and interactions
 - **Keyboard Shortcuts** - Complete shortcut support for power users
 
-### 👥 Collaboration Features
+### Collaboration Features
 - **Presence Indicators** - See other users' cursors and selections in real-time
 - **User Management** - Online user list with avatars and status
 - **Live Chat** - Built-in messaging for team communication
 - **Board Sharing** - Easy link sharing for collaboration
 
-### 🔧 Technical Excellence
+### Technical Excellence
 - **TypeScript** - Fully typed for reliability and developer experience
 - **Modular Architecture** - Clean separation of concerns and reusable components
 - **State Management** - Context-based state with optimistic updates
 - **WebSocket Ready** - Built-in integration points for real-time features
 - **Authentication** - JWT-ready auth system with Google OAuth support
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 18+ and npm
@@ -60,7 +60,7 @@ A production-ready, FAANG-level collaborative whiteboard application built with 
 4. **Open in browser**
    Navigate to `http://localhost:8080`
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Frontend Core
 - **React 18** - Modern React with hooks and concurrent features
@@ -83,7 +83,7 @@ A production-ready, FAANG-level collaborative whiteboard application built with 
 - **Socket.IO Client** - WebSocket communication
 - **Presence System** - Live user indicators and cursors
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
@@ -99,7 +99,7 @@ src/
 └── lib/                # Utility functions and helpers
 ```
 
-## 🎨 Design System
+## Design System
 
 The application uses a comprehensive design system with:
 
@@ -109,7 +109,7 @@ The application uses a comprehensive design system with:
 - **Shadows** - Subtle elevation with CSS custom properties
 - **Animations** - Smooth transitions and micro-interactions
 
-## ⌨️ Keyboard Shortcuts
+## Keyboard Shortcuts
 
 ### Tools
 - `V` - Select tool
@@ -136,7 +136,7 @@ The application uses a comprehensive design system with:
 - `Ctrl/Cmd + -` - Zoom out
 - `Ctrl/Cmd + 0` - Reset zoom
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 Create a `.env.local` file for environment-specific configuration:
@@ -159,7 +159,7 @@ Modify `src/index.css` to customize the design system:
 }
 ```
 
-## 🔌 WebSocket Integration
+## WebSocket Integration
 
 The application is designed to work with a WebSocket server for real-time features:
 
@@ -178,7 +178,7 @@ interface WhiteboardEvent {
 - `src/contexts/WhiteboardContext.tsx` - State synchronization
 - `src/components/canvas/PresenceCursors.tsx` - Live cursor rendering
 
-## 📱 Mobile Support
+## Mobile Support
 
 The application is fully responsive and includes:
 
@@ -187,7 +187,7 @@ The application is fully responsive and includes:
 - **Gesture Controls** - Pinch to zoom, pan to navigate
 - **Adaptive UI** - Different layouts for different screen sizes
 
-## 🔒 Authentication System
+## Authentication System
 
 Built-in authentication with multiple options:
 
@@ -196,7 +196,7 @@ Built-in authentication with multiple options:
 - **Guest Access** - No registration required
 - **JWT Ready** - Token-based authentication support
 
-## 🚀 Deployment
+## Deployment
 
 ### Build for Production
 ```bash
@@ -215,7 +215,7 @@ npm run build
 # Upload dist/ folder to Netlify
 ```
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Run type checking
@@ -228,7 +228,7 @@ npm run lint
 npm run build
 ```
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -236,7 +236,7 @@ npm run build
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [shadcn/ui](https://ui.shadcn.com/) for the excellent component library
 - [Lucide](https://lucide.dev/) for beautiful icons
