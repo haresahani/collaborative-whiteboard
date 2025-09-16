@@ -1,11 +1,19 @@
 {
-  "name": "@collaborative-whiteboard/shared",
+  "name": "shared",
   "version": "1.0.0",
+  "private": true,
+  "type": "module",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "license": "MIT",
-  "dependencies": {
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^3.3.1"
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "eslint . --ext .ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "eslint": "^9.32.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "prettier": "^3.0.0"
   }
 }
