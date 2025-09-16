@@ -11,21 +11,23 @@ import { useMockWebSocket } from '@/hooks/useWebSocket';
 import { useKeyboardShortcuts, createWhiteboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { User } from '@/types/whiteboard';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileToolTray } from '@/components/layout/MobileToolTray';
 
 // Mock users for demo
 const mockUsers: Record<string, User> = {
   'user-1': {
     id: 'user-1',
-    name: 'Alice Chen',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
+    name: 'Hare-Sahani',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hare-Sahani',
     color: 'hsl(var(--presence-1))',
     cursor: { x: 150, y: 200 },
     isOnline: true,
   },
   'user-2': {
     id: 'user-2',
-    name: 'Bob Wilson',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
+    name: 'Harekrishna',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Harekrishna',
     color: 'hsl(var(--presence-2))',
     cursor: { x: 300, y: 150 },
     isOnline: true,
@@ -37,6 +39,8 @@ function WhiteboardContent() {
   const [isAuthOpen, setIsAuthOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [isLeftToolbarCollapsed, setIsLeftToolbarCollapsed] = useState(false);
+  const isMobile = useIsMobile();
+  const [isMobileToolsOpen, setIsMobileToolsOpen] = useState(false);
 
   const { state, dispatch, setTool, undo, redo, setViewport } = useWhiteboard();
   const { toast } = useToast();
@@ -132,7 +136,7 @@ function WhiteboardContent() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-[100dvh] flex flex-col bg-background">
       {/* Top Navigation */}
       <TopNavigation
         boardName={boardName}
@@ -140,7 +144,10 @@ function WhiteboardContent() {
         onShare={handleShare}
         onExport={handleExport}
         onSettings={handleSettings}
-        onToggleSidebar={() => setIsLeftToolbarCollapsed(!isLeftToolbarCollapsed)}
+        onToggleSidebar={() => {
+          if (isMobile) setIsMobileToolsOpen(true);
+          else setIsLeftToolbarCollapsed(!isLeftToolbarCollapsed);
+        }}
       />
 
       {/* Main Content */}
@@ -193,6 +200,9 @@ function WhiteboardContent() {
           </span>
         </motion.button>
       </div>
+
+      {/* Mobile Tools Drawer */}
+      <MobileToolTray open={isMobileToolsOpen} onOpenChange={setIsMobileToolsOpen} />
     </div>
   );
 }
