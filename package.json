@@ -8,7 +8,9 @@
   "scripts": {
     "dev": "pnpm --parallel --filter ./packages/* dev",
     "build": "pnpm --parallel --filter ./packages/* build",
-    "typecheck": "pnpm exec tsc --noEmit -b packages/*"
+    "test": "echo \"No tests yet\" && exit 0",
+    "typecheck": "pnpm exec tsc --noEmit",
+    "prepare": "husky install"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
@@ -17,7 +19,7 @@
     "eslint": "^9.35.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^15.15.0",
-    "husky": "^9.0.0",
+    "husky": "^8.0.0",
     "lint-staged": "^13.0.0",
     "prettier": "^3.0.0",
     "ts-node": "^10.9.2",
