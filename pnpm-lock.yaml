@@ -15,6 +15,9 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.35.0
+        version: 9.35.0
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.43.0
         version: 8.43.0(@typescript-eslint/parser@8.43.0(eslint@9.35.0(jiti@1.21.7))(typescript@5.9.2))(eslint@9.35.0(jiti@1.21.7))(typescript@5.9.2)
@@ -24,6 +27,12 @@ importers:
       eslint:
         specifier: ^9.35.0
         version: 9.35.0(jiti@1.21.7)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.35.0(jiti@1.21.7))
+      globals:
+        specifier: ^15.15.0
+        version: 15.15.0
       husky:
         specifier: ^9.0.0
         version: 9.1.7
@@ -39,6 +48,9 @@ importers:
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
+      typescript-eslint:
+        specifier: ^8.43.0
+        version: 8.43.0(eslint@9.35.0(jiti@1.21.7))(typescript@5.9.2)
 
   packages/api:
     dependencies:
