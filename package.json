@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "pnpm --parallel --filter ./packages/* dev",
     "build": "pnpm --parallel --filter ./packages/* build",
+    "test": "echo \"No tests yet\" && exit 0",
     "typecheck": "pnpm exec tsc --noEmit",
     "prepare": "husky install"
   },
