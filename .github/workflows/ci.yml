@@ -28,12 +28,16 @@ jobs:
           node-version: 22
           cache: 'pnpm'
 
-      # 3️⃣ Setup PNPM
+      # 3️⃣ Setup PNPM (primary)
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 10
           run_install: false
+
+      # 3.1️⃣ Ensure pnpm is available (fallback)
+      - name: Ensure pnpm is available (fallback)
+        run: npm install -g pnpm
 
       # 4️⃣ Cache PNPM store (optional, speeds up installs)
       - name: Cache PNPM store
