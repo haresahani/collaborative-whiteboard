@@ -1,43 +1,52 @@
 collab-whiteboard-ui-master/
-│── .gitignore
-│── README.md
-│── bun.lockb
-│── components.json
-│── eslint.config.js
-│── index.html
-│── package-lock.json
-│── package.json
-│── postcss.config.js
-│── tailwind.config.ts
-│── tsconfig.app.json
-│── tsconfig.json
-│── tsconfig.node.json
-│── vite.config.ts
+│── .gitignore              # Git ignore rules
+│── README.md               # Project documentation
+│── bun.lockb               # Bun lockfile for dependencies
+│── components.json         # ShadCN UI component registry
+│── eslint.config.js        # ESLint configuration
+│── index.html              # App HTML entry point
+│── package-lock.json       # NPM lockfile
+│── package.json            # Project metadata & dependencies
+│── postcss.config.js       # PostCSS configuration
+│── tailwind.config.ts      # TailwindCSS configuration
+│── tsconfig.app.json       # TS config for application code
+│── tsconfig.json           # Root TypeScript configuration
+│── tsconfig.node.json      # TS config for Node build tools
+│── vite.config.ts          # Vite bundler configuration
 │
 ├── public/
-│   ├── favicon.ico
-│   ├── placeholder.svg
-│   └── robots.txt
+│   ├── favicon.ico         # Browser tab icon
+│   ├── placeholder.svg     # Placeholder image
+│   └── robots.txt          # SEO crawler rules
 │
 ├── src/
-│   │── App.css
-│   │── App.tsx
-│   │── index.css
-│   │── main.tsx
-│   │── vite-env.d.ts
+│   │── App.css             # App-level styles
+│   │── App.tsx             # Main App component
+│   │── index.css           # Global CSS (Tailwind base)
+│   │── main.tsx            # React entry point with Vite
+│   │── vite-env.d.ts       # Vite TypeScript env types
+│   │
+│   ├── api/                
+│   │   ├── auth.ts         # Auth API (login, signup, logout, refresh)
+│   │   ├── whiteboard.ts   # Whiteboard APIs (fetch, save, list)
+│   │   └── ws.ts           # WebSocket connection manager
+│   │
+│   ├── assets/             
+│   │   └── logo.svg        # App logo
 │   │
 │   ├── components/
 │   │   ├── auth/
-│   │   │   └── AuthDialog.tsx
+│   │   │   └── AuthDialog.tsx          # Auth modal dialog
 │   │   ├── canvas/
-│   │   │   ├── PresenceCursors.tsx
-│   │   │   └── WhiteboardCanvas.tsx
+│   │   │   ├── PresenceCursors.tsx     # Show live user cursors
+│   │   │   ├── WhiteboardCanvas.tsx    # Main drawing canvas
+│   │   │   └── Toolbar.tsx             # Canvas toolbar
 │   │   ├── layout/
-│   │   │   ├── BottomToolbar.tsx
-│   │   │   ├── LeftToolbar.tsx
-│   │   │   ├── RightPanel.tsx
-│   │   │   └── TopNavigation.tsx
-│   │   └── ui/
+│   │   │   ├── BottomToolbar.tsx       # Toolbar at bottom
+│   │   │   ├── LeftToolbar.tsx         # Sidebar tools
+│   │   │   ├── RightPanel.tsx          # Properties/Inspector panel
+│   │   │   └── TopNavigation.tsx       # Top navigation bar
+│   │   └── ui/                         # Generic ShadCN UI components
 │   │       ├── accordion.tsx
 │   │       ├── alert-dialog.tsx
 │   │       ├── alert.tsx
@@ -91,21 +100,31 @@ collab-whiteboard-ui-master/
 │   │       └── use-toast.ts
 │   │
 │   ├── contexts/
-│   │   └── WhiteboardContext.tsx
+│   │   ├── AuthContext.tsx         # Provides authentication state
+│   │   └── WhiteboardContext.tsx   # Provides whiteboard state
 │   │
 │   ├── hooks/
-│   │   ├── use-mobile.tsx
-│   │   ├── use-toast.ts
-│   │   ├── useKeyboardShortcuts.ts
-│   │   └── useWebSocket.ts
+│   │   ├── use-mobile.tsx          # Detect mobile device
+│   │   ├── use-toast.ts            # Toast notifications
+│   │   ├── useKeyboardShortcuts.ts # Keyboard shortcuts handler
+│   │   ├── useWebSocket.ts         # WebSocket hook for real-time sync
+│   │   └── useAuth.ts              # Authentication hook
 │   │
 │   ├── lib/
-│   │   └── utils.ts
+│   │   ├── utils.ts                # Helper utilities
+│   │   └── crdt.ts                 # CRDT (conflict-free replicated data type)
+│   │
+│   ├── store/
+│   │   └── whiteboardStore.ts      # Zustand/Redux store for whiteboard
 │   │
 │   ├── pages/
-│   │   ├── Index.tsx
-│   │   ├── NotFound.tsx
-│   │   └── Whiteboard.tsx
+│   │   ├── Index.tsx               # Landing page
+│   │   ├── NotFound.tsx            # 404 fallback page
+│   │   └── Whiteboard.tsx          # Whiteboard page
 │   │
-│   └── types/
-│       └── whiteboard.ts
+│   ├── types/
+│   │   ├── whiteboard.ts           # Whiteboard-related types
+│   │   └── auth.ts                 # Auth-related types
+│   │
+│   └── config/
+│       └── constants.ts            # Config constants (API URL, envs)
