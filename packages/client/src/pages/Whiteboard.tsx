@@ -18,16 +18,16 @@ import { MobileToolTray } from '@/components/layout/MobileToolTray';
 const mockUsers: Record<string, User> = {
   'user-1': {
     id: 'user-1',
-    name: 'Hare-Sahani',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hare-Sahani',
+    name: 'Alice Chen',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
     color: 'hsl(var(--presence-1))',
     cursor: { x: 150, y: 200 },
     isOnline: true,
   },
   'user-2': {
     id: 'user-2',
-    name: 'Harekrishna',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Harekrishna',
+    name: 'Bob Wilson',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
     color: 'hsl(var(--presence-2))',
     cursor: { x: 300, y: 150 },
     isOnline: true,
@@ -166,10 +166,10 @@ function WhiteboardContent() {
 
         {/* Canvas Area */}
         <div className="flex-1 relative">
-          <WhiteboardCanvas
-            onCursorMove={sendCursor}
-            className="w-full h-full"
-          />
+        <WhiteboardCanvas
+          onCursorMove={(point) => sendCursor(point)}
+          className="w-full h-full"
+        />
         </div>
 
         {/* Right Panel */}
@@ -209,7 +209,7 @@ function WhiteboardContent() {
 
 export default function Whiteboard() {
   return (
-    <WhiteboardProvider>
+    <WhiteboardProvider boardId="demo-board">
       <WhiteboardContent />
     </WhiteboardProvider>
   );
