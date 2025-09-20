@@ -149,10 +149,11 @@ const WhiteboardContext = createContext<WhiteboardContextType | undefined>(undef
 
 // Provider
 interface WhiteboardProviderProps {
+  boardId: string;
   children: ReactNode;
 }
 
-export function WhiteboardProvider({ children }: WhiteboardProviderProps) {
+export function WhiteboardProvider({ boardId, children }: WhiteboardProviderProps) {
   const [state, dispatch] = useReducer(whiteboardReducer, initialState);
 
   // Helper functions
