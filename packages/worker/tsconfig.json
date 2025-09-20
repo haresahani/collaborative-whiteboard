@@ -5,7 +5,7 @@
     "rootDir": "src",
     "composite": true
   },
-  "include": ["src"],
+  "include": ["src/**/*"],
   "references": [
     { "path": "../shared" },
     { "path": "../infra-utils" }
