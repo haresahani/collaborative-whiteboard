@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from "@/hooks/useAuth";
+import { LoginPayload, SignupPayload } from "@/api/auth";
 
 interface AuthDialogProps {
   isOpen: boolean;
@@ -15,14 +17,10 @@ interface AuthDialogProps {
 }
 
 export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps) {
+  const { loginUser, signupUser } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({ email: "", password: "", name: "" });
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    name: '',
-  });
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,28 +28,28 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock successful authentication
-      const mockUser = {
-        id: `user-${Date.now()}`,
-        name: formData.name || formData.email.split('@')[0],
-        email: formData.email,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.email}`,
-      };
-
-      onAuthenticated(mockUser);
-      toast({
-        title: isLogin ? 'Welcome back!' : 'Account created!',
-        description: `Successfully ${isLogin ? 'signed in' : 'signed up'} to the whiteboard.`,
-      });
+      if (isLogin) {
+        const payload: LoginPayload = {
+          email: formData.email,
+          password: formData.password,
+        };
+        await loginUser(payload);
+        toast({ title: "Welcome back!", description: "You are signed in." });
+      } else {
+        const payload: SignupPayload = {
+          username: formData.name,
+          email: formData.email,
+          password: formData.password,
+        };
+        await signupUser(payload);
+        toast({ title: "Account created!", description: "You are signed up." });
+      }
       onClose();
-    } catch (error) {
+    } catch (err: any) {
       toast({
-        title: 'Authentication failed',
-        description: 'Please check your credentials and try again.',
-        variant: 'destructive',
+        title: "Authentication failed",
+        description: err.message || "Please check your credentials.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -182,7 +180,7 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
               <div className="relative">
                 <Input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={isLoading ? 'text' : 'password'}
                   placeholder="Enter your password"
                   className="pr-10"
                   value={formData.password}
@@ -194,9 +192,9 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
                   variant="ghost"
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setIsLoading(!isLoading)}
                 >
-                  {showPassword ? (
+                  {isLoading ? (
                     <EyeOff className="w-4 h-4 text-muted-foreground" />
                   ) : (
                     <Eye className="w-4 h-4 text-muted-foreground" />

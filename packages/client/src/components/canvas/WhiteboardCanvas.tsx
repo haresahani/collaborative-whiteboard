@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 interface WhiteboardCanvasProps {
   className?: string;
-  onCursorMove?: (x: number, y: number) => void;
+  onCursorMove?: (point: Point) => void;
 }
 
 export function WhiteboardCanvas({ className, onCursorMove }: WhiteboardCanvasProps) {
@@ -48,7 +48,7 @@ export function WhiteboardCanvas({ className, onCursorMove }: WhiteboardCanvasPr
     const point = screenToCanvas(e.clientX, e.clientY);
     
     // Send cursor position for collaboration
-    onCursorMove?.(point.x, point.y);
+    onCursorMove?.(point);
 
     if (!isDrawing || !startPoint) return;
 
