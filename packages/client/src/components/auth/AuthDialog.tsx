@@ -26,11 +26,12 @@ interface AuthDialogProps {
     email: string;
     avatar: string;
   }) => void;
+  initialView?: "login" | "signup";
 }
 
-export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps) {
+export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "login" }: AuthDialogProps) {
   const { signIn, signUp } = useAuth(); // ✅ fixed
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(initialView === "login");
   const [formData, setFormData] = useState({ email: "", password: "", name: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // ✅ separate from isLoading
