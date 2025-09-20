@@ -1,26 +1,39 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Eye, EyeOff, Chrome } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+// packages/client/src/components/auth/AuthDialog.tsx
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mail, Eye, EyeOff, Chrome } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { LoginPayload, SignupPayload } from "@/api/auth";
+import type { LoginPayload, SignupPayload } from "@/types/auth";
 
 interface AuthDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onAuthenticated: (user: { id: string; name: string; email: string; avatar: string }) => void;
+  onAuthenticated: (user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string;
+  }) => void;
 }
 
 export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps) {
-  const { loginUser, signupUser } = useAuth();
+  const { signIn, signUp } = useAuth(); // ✅ fixed
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: "", password: "", name: "" });
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // ✅ separate from isLoading
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,16 +46,34 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
           email: formData.email,
           password: formData.password,
         };
-        await loginUser(payload);
+        const { user, error } = await signIn(payload);
+        if (error) throw new Error(error.message);
         toast({ title: "Welcome back!", description: "You are signed in." });
+        if (user) {
+          onAuthenticated({
+            id: user.id,
+            name: user.username,
+            email: user.email,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`,
+          });
+        }
       } else {
         const payload: SignupPayload = {
           username: formData.name,
           email: formData.email,
           password: formData.password,
         };
-        await signupUser(payload);
+        const { user, error } = await signUp(payload);
+        if (error) throw new Error(error.message);
         toast({ title: "Account created!", description: "You are signed up." });
+        if (user) {
+          onAuthenticated({
+            id: user.id,
+            name: user.username,
+            email: user.email,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`,
+          });
+        }
       }
       onClose();
     } catch (err: any) {
@@ -58,29 +89,25 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
 
   const handleGoogleAuth = async () => {
     setIsLoading(true);
-    
     try {
-      // Simulate Google OAuth
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       const mockUser = {
         id: `google-user-${Date.now()}`,
-        name: 'John Doe',
-        email: 'john.doe@gmail.com',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=john',
+        name: "John Doe",
+        email: "john.doe@gmail.com",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=john",
       };
-
       onAuthenticated(mockUser);
       toast({
-        title: 'Welcome!',
-        description: 'Successfully signed in with Google.',
+        title: "Welcome!",
+        description: "Successfully signed in with Google.",
       });
       onClose();
-    } catch (error) {
+    } catch {
       toast({
-        title: 'Google sign-in failed',
-        description: 'Please try again.',
-        variant: 'destructive',
+        title: "Google sign-in failed",
+        description: "Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -91,14 +118,13 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
     const guestUser = {
       id: `guest-${Date.now()}`,
       name: `Guest ${Math.floor(Math.random() * 1000)}`,
-      email: '',
+      email: "",
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=guest${Date.now()}`,
     };
-
     onAuthenticated(guestUser);
     toast({
-      title: 'Joined as guest',
-      description: 'You can collaborate on the whiteboard without signing up.',
+      title: "Joined as guest",
+      description: "You can collaborate on the whiteboard without signing up.",
     });
     onClose();
   };
@@ -108,10 +134,12 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center">
-            {isLogin ? 'Sign in to Whiteboard' : 'Create your account'}
+            {isLogin ? "Sign in to Whiteboard" : "Create your account"}
           </DialogTitle>
           <DialogDescription className="text-center text-muted-foreground">
-            {isLogin ? 'Welcome back! Sign in to continue collaborating.' : 'Join the whiteboard to start collaborating with others.'}
+            {isLogin
+              ? "Welcome back! Sign in to continue collaborating."
+              : "Join the whiteboard to start collaborating with others."}
           </DialogDescription>
         </DialogHeader>
 
@@ -142,7 +170,7 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
               {!isLogin && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
+                  animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-2"
                 >
@@ -152,7 +180,9 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
                     type="text"
                     placeholder="Enter your full name"
                     value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, name: e.target.value }))
+                    }
                     required={!isLogin}
                   />
                 </motion.div>
@@ -169,7 +199,9 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
                   placeholder="Enter your email"
                   className="pl-10"
                   value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, email: e.target.value }))
+                  }
                   required
                 />
               </div>
@@ -180,11 +212,13 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
               <div className="relative">
                 <Input
                   id="password"
-                  type={isLoading ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   className="pr-10"
                   value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, password: e.target.value }))
+                  }
                   required
                 />
                 <Button
@@ -192,9 +226,9 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
                   variant="ghost"
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setIsLoading(!isLoading)}
+                  onClick={() => setShowPassword((prev) => !prev)}
                 >
-                  {isLoading ? (
+                  {showPassword ? (
                     <EyeOff className="w-4 h-4 text-muted-foreground" />
                   ) : (
                     <Eye className="w-4 h-4 text-muted-foreground" />
@@ -206,8 +240,10 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
             <Button type="submit" disabled={isLoading} className="w-full h-11">
               {isLoading ? (
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : isLogin ? (
+                "Sign In"
               ) : (
-                isLogin ? 'Sign In' : 'Create Account'
+                "Create Account"
               )}
             </Button>
           </form>
@@ -230,7 +266,7 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
           <div className="text-center text-sm">
             {isLogin ? (
               <>
-                Don't have an account?{' '}
+                Don't have an account?{" "}
                 <button
                   type="button"
                   onClick={() => setIsLogin(false)}
@@ -241,7 +277,7 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated }: AuthDialogProps
               </>
             ) : (
               <>
-                Already have an account?{' '}
+                Already have an account?{" "}
                 <button
                   type="button"
                   onClick={() => setIsLogin(true)}
