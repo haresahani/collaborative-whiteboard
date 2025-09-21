@@ -1,6 +1,11 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useState, ReactNode, useEffect } from "react";
-import { login, signup, refreshToken, AuthResponse, LoginPayload, SignupPayload } from "@/api/auth";
+import { AuthResponse, LoginPayload, SignupPayload } from "@/types/auth";
+import {
+  loginUser as apiLoginUser,
+  signupUser as apiSignupUser,
+  refreshToken,
+} from "@/api/auth";
 
 export interface AuthContextType {
   user: AuthResponse["user"] | null;
@@ -17,13 +22,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   const loginUser = async (payload: LoginPayload) => {
-    const res = await login(payload);
+    const res = await apiLoginUser(payload);
     setUser(res.user);
     setAccessToken(res.accessToken);
   };
 
   const signupUser = async (payload: SignupPayload) => {
-    const res = await signup(payload);
+    const res = await apiSignupUser(payload);
     setUser(res.user);
     setAccessToken(res.accessToken);
   };
@@ -48,7 +53,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, loginUser, signupUser, logoutUser }}>
+    <AuthContext.Provider
+      value={{ user, accessToken, loginUser, signupUser, logoutUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
