@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { LoginPayload, SignupPayload } from "@/types/auth";
+import { useNavigate } from "react-router-dom"; // Added import
 
 interface AuthDialogProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate(); // Added for navigation
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,6 +130,11 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
       description: "You can collaborate on the whiteboard without signing up.",
     });
     onClose();
+  };
+
+  const handleSwitchView = () => {
+    // Navigate to the other route instead of toggling view
+    navigate(isLogin ? "/signup" : "/login");
   };
 
   return (
@@ -270,7 +277,7 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
                 Don't have an account?{" "}
                 <button
                   type="button"
-                  onClick={() => setIsLogin(false)}
+                  onClick={handleSwitchView} // Updated to use handleSwitchView
                   className="text-primary hover:underline font-medium"
                 >
                   Sign up
@@ -281,7 +288,7 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
                 Already have an account?{" "}
                 <button
                   type="button"
-                  onClick={() => setIsLogin(true)}
+                  onClick={handleSwitchView} // Updated to use handleSwitchView
                   className="text-primary hover:underline font-medium"
                 >
                   Sign in
