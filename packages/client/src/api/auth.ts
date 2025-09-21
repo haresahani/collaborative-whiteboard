@@ -1,31 +1,11 @@
-// src/api/auth.ts
+// packages/client/src/api/auth.ts
 import { API_URL } from "@/config/constants";
-
-export interface LoginPayload {
-  email: string;
-  password: string;
-}
-
-export interface SignupPayload {
-  username: string;
-  email: string;
-  password: string;
-}
-
-export interface AuthResponse {
-  user: {
-    id: string;
-    username: string;
-    email: string;
-  };
-  accessToken: string;
-  refreshToken?: string;
-}
+import type { LoginPayload, SignupPayload, AuthResponse } from "@/types/auth";
 
 /**
  * LOGIN
  */
-export async function login(payload: LoginPayload): Promise<AuthResponse> {
+export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
   const res = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -43,7 +23,7 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
 /**
  * SIGNUP
  */
-export async function signup(payload: SignupPayload): Promise<AuthResponse> {
+export async function signupUser(payload: SignupPayload): Promise<AuthResponse> {
   const res = await fetch(`${API_URL}/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -64,7 +44,7 @@ export async function signup(payload: SignupPayload): Promise<AuthResponse> {
 export async function logout(): Promise<void> {
   const res = await fetch(`${API_URL}/auth/logout`, {
     method: "POST",
-    credentials: "include", // if cookies are used for refresh token
+    credentials: "include", // if cookies are used
   });
 
   if (!res.ok) {
