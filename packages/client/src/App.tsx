@@ -22,16 +22,11 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Home */}
             <Route path="/" element={<Index />} />
-
-            {/* Auth Pages */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-
-            {/* Whiteboard with dynamic ID */}
             <Route path="/board/:id" element={<Whiteboard />} />
-
+            
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>

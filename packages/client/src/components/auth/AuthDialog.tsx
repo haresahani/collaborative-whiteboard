@@ -1,4 +1,3 @@
-// packages/client/src/components/auth/AuthDialog.tsx
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Eye, EyeOff, Chrome } from "lucide-react";
@@ -16,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { LoginPayload, SignupPayload } from "@/types/auth";
-import { useNavigate } from "react-router-dom"; // Added import
+import { useNavigate } from "react-router-dom";
 
 interface AuthDialogProps {
   isOpen: boolean;
@@ -31,13 +30,13 @@ interface AuthDialogProps {
 }
 
 export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "login" }: AuthDialogProps) {
-  const { signIn, signUp } = useAuth(); // ✅ fixed
+  const { signIn, signUp } = useAuth();
   const [isLogin, setIsLogin] = useState(initialView === "login");
   const [formData, setFormData] = useState({ email: "", password: "", name: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate(); // Added for navigation
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,12 +132,17 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
   };
 
   const handleSwitchView = () => {
-    // Navigate to the other route instead of toggling view
     navigate(isLogin ? "/signup" : "/login");
   };
 
+  // Handle close button navigation
+  const handleDialogClose = () => {
+    navigate("/");
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center">
@@ -277,7 +281,7 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
                 Don't have an account?{" "}
                 <button
                   type="button"
-                  onClick={handleSwitchView} // Updated to use handleSwitchView
+                  onClick={handleSwitchView}
                   className="text-primary hover:underline font-medium"
                 >
                   Sign up
@@ -288,7 +292,7 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
                 Already have an account?{" "}
                 <button
                   type="button"
-                  onClick={handleSwitchView} // Updated to use handleSwitchView
+                  onClick={handleSwitchView}
                   className="text-primary hover:underline font-medium"
                 >
                   Sign in
