@@ -36,7 +36,7 @@ const mockUsers: Record<string, User> = {
 
 function WhiteboardContent() {
   const [boardName, setBoardName] = useState('Untitled Board');
-  const [isAuthOpen, setIsAuthOpen] = useState(true);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [isLeftToolbarCollapsed, setIsLeftToolbarCollapsed] = useState(false);
   const isMobile = useIsMobile();
@@ -53,7 +53,22 @@ function WhiteboardContent() {
     },
   });
 
-  // Initialize mock users when authenticated
+  // Set guest user if no current user
+  useEffect(() => {
+    if (!state.currentUser) {
+      const guestUser: User = {
+        id: `guest-${crypto.randomUUID()}`,
+        name: 'Guest',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guest',
+        color: 'hsl(var(--presence-guest))',
+        cursor: { x: 0, y: 0 },
+        isOnline: true,
+      };
+      dispatch({ type: 'SET_CURRENT_USER', payload: guestUser });
+    }
+  }, [state.currentUser, dispatch]);
+
+  // Initialize mock users when user is set
   useEffect(() => {
     if (state.currentUser) {
       Object.values(mockUsers).forEach(user => {
@@ -87,6 +102,7 @@ function WhiteboardContent() {
       isOnline: true,
     };
     dispatch({ type: 'SET_CURRENT_USER', payload: userWithColor });
+    setIsAuthOpen(false);
   };
 
   const handleZoom = (delta: number) => {
@@ -125,16 +141,6 @@ function WhiteboardContent() {
     });
   };
 
-  if (!state.currentUser) {
-    return (
-      <AuthDialog
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onAuthenticated={handleAuthenticated}
-      />
-    );
-  }
-
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
       {/* Top Navigation */}
@@ -167,7 +173,7 @@ function WhiteboardContent() {
         {/* Canvas Area */}
         <div className="flex-1 relative">
           <WhiteboardCanvas
-            onCursorMove={sendCursor}
+            onCursorMove={(point) => sendCursor(point.x, point.y)}
             className="w-full h-full"
           />
         </div>
@@ -203,13 +209,20 @@ function WhiteboardContent() {
 
       {/* Mobile Tools Drawer */}
       <MobileToolTray open={isMobileToolsOpen} onOpenChange={setIsMobileToolsOpen} />
+
+      {/* Auth Dialog (optional, shown on demand) */}
+      <AuthDialog
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onAuthenticated={handleAuthenticated}
+      />
     </div>
   );
 }
 
 export default function Whiteboard() {
   return (
-    <WhiteboardProvider>
+    <WhiteboardProvider boardId="demo-board">
       <WhiteboardContent />
     </WhiteboardProvider>
   );
