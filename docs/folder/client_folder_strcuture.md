@@ -1,4 +1,4 @@
-collab-whiteboard-ui-master/
+client/
 │── .gitignore              # Git ignore rules
 │── README.md               # Project documentation
 │── bun.lockb               # Bun lockfile for dependencies
