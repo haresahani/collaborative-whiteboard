@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "*.ts", // e.g., vite.config.ts
+    "*.js" // e.g., postcss.config.js
+  ]
+}

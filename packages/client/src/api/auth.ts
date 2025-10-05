@@ -23,7 +23,9 @@ export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
 /**
  * SIGNUP
  */
-export async function signupUser(payload: SignupPayload): Promise<AuthResponse> {
+export async function signupUser(
+  payload: SignupPayload,
+): Promise<AuthResponse> {
   const res = await fetch(`${API_URL}/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

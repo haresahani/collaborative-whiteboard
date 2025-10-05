@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { WhiteboardEvent, User } from '@/types/whiteboard';
+import { useEffect, useRef, useState } from "react";
+import type { Socket } from "socket.io-client";
+import { io } from "socket.io-client";
+import type { WhiteboardEvent, User } from "@/types/whiteboard";
 
 interface UseWebSocketProps {
   url: string;
@@ -9,7 +10,12 @@ interface UseWebSocketProps {
   onEvent: (event: WhiteboardEvent) => void;
 }
 
-export function useWebSocket({ url, boardId, user, onEvent }: UseWebSocketProps) {
+export function useWebSocket({
+  url,
+  boardId,
+  user,
+  onEvent,
+}: UseWebSocketProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -20,34 +26,34 @@ export function useWebSocket({ url, boardId, user, onEvent }: UseWebSocketProps)
     // Create socket connection
     const socket = io(url, {
       query: { boardId, userId: user.id },
-      transports: ['websocket', 'polling'],
+      transports: ["websocket", "polling"],
     });
 
     socketRef.current = socket;
 
     // Connection handlers
-    socket.on('connect', () => {
-      console.log('Connected to whiteboard server');
+    socket.on("connect", () => {
+      console.log("Connected to whiteboard server");
       setIsConnected(true);
       setError(null);
-      
+
       // Join board room
-      socket.emit('join-board', { boardId, user });
+      socket.emit("join-board", { boardId, user });
     });
 
-    socket.on('disconnect', () => {
-      console.log('Disconnected from whiteboard server');
+    socket.on("disconnect", () => {
+      console.log("Disconnected from whiteboard server");
       setIsConnected(false);
     });
 
-    socket.on('connect_error', (err) => {
-      console.error('Connection error:', err);
+    socket.on("connect_error", (err) => {
+      console.error("Connection error:", err);
       setError(err.message);
       setIsConnected(false);
     });
 
     // Whiteboard events
-    socket.on('whiteboard-event', onEvent);
+    socket.on("whiteboard-event", onEvent);
 
     // Cleanup
     return () => {
@@ -57,7 +63,7 @@ export function useWebSocket({ url, boardId, user, onEvent }: UseWebSocketProps)
   }, [url, boardId, user, onEvent]);
 
   // Send event to server
-  const sendEvent = (event: Omit<WhiteboardEvent, 'userId' | 'timestamp'>) => {
+  const sendEvent = (event: Omit<WhiteboardEvent, "userId" | "timestamp">) => {
     if (!socketRef.current || !user) return;
 
     const fullEvent: WhiteboardEvent = {
@@ -66,14 +72,14 @@ export function useWebSocket({ url, boardId, user, onEvent }: UseWebSocketProps)
       timestamp: Date.now(),
     };
 
-    socketRef.current.emit('whiteboard-event', fullEvent);
+    socketRef.current.emit("whiteboard-event", fullEvent);
   };
 
   // Send cursor position
   const sendCursor = (x: number, y: number) => {
     if (!socketRef.current || !user) return;
 
-    socketRef.current.emit('cursor-move', {
+    socketRef.current.emit("cursor-move", {
       userId: user.id,
       x,
       y,
@@ -90,7 +96,10 @@ export function useWebSocket({ url, boardId, user, onEvent }: UseWebSocketProps)
 }
 
 // Mock WebSocket hook for development
-export function useMockWebSocket({ user, onEvent }: Pick<UseWebSocketProps, 'user' | 'onEvent'>) {
+export function useMockWebSocket({
+  user: _user,
+  onEvent: _onEvent,
+}: Pick<UseWebSocketProps, "user" | "onEvent">) {
   const [isConnected, setIsConnected] = useState(true);
   const [error] = useState<string | null>(null);
 
@@ -100,13 +109,13 @@ export function useMockWebSocket({ user, onEvent }: Pick<UseWebSocketProps, 'use
     return () => clearTimeout(timer);
   }, []);
 
-  const sendEvent = (event: Omit<WhiteboardEvent, 'userId' | 'timestamp'>) => {
-    console.log('Mock WebSocket event:', event);
+  const sendEvent = (event: Omit<WhiteboardEvent, "userId" | "timestamp">) => {
+    console.log("Mock WebSocket event:", event);
     // In a real implementation, this would send to server
   };
 
   const sendCursor = (x: number, y: number) => {
-    console.log('Mock cursor position:', { x, y });
+    console.log("Mock cursor position:", { x, y });
     // In a real implementation, this would send cursor position
   };
 

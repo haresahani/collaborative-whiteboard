@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { motion } from "framer-motion";
 import {
   MousePointer2,
   Pen,
@@ -10,13 +10,18 @@ import {
   StickyNote,
   Eraser,
   Hand,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { DrawingTool } from '@/types/whiteboard';
-import { useWhiteboard } from '@/contexts/WhiteboardContext';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { DrawingTool } from "@/types/whiteboard";
+import { useWhiteboard } from "@/contexts/WhiteboardContext";
+import { cn } from "@/lib/utils";
 
 const tools: Array<{
   id: DrawingTool;
@@ -24,15 +29,15 @@ const tools: Array<{
   label: string;
   shortcut: string;
 }> = [
-  { id: 'select', icon: MousePointer2, label: 'Select', shortcut: 'V' },
-  { id: 'hand', icon: Hand, label: 'Hand', shortcut: 'H' },
-  { id: 'pen', icon: Pen, label: 'Pen', shortcut: 'P' },
-  { id: 'line', icon: Minus, label: 'Line', shortcut: 'L' },
-  { id: 'rectangle', icon: Square, label: 'Rectangle', shortcut: 'R' },
-  { id: 'circle', icon: Circle, label: 'Circle', shortcut: 'O' },
-  { id: 'text', icon: Type, label: 'Text', shortcut: 'T' },
-  { id: 'sticky-note', icon: StickyNote, label: 'Sticky Note', shortcut: 'S' },
-  { id: 'eraser', icon: Eraser, label: 'Eraser', shortcut: 'E' },
+  { id: "select", icon: MousePointer2, label: "Select", shortcut: "V" },
+  { id: "hand", icon: Hand, label: "Hand", shortcut: "H" },
+  { id: "pen", icon: Pen, label: "Pen", shortcut: "P" },
+  { id: "line", icon: Minus, label: "Line", shortcut: "L" },
+  { id: "rectangle", icon: Square, label: "Rectangle", shortcut: "R" },
+  { id: "circle", icon: Circle, label: "Circle", shortcut: "O" },
+  { id: "text", icon: Type, label: "Text", shortcut: "T" },
+  { id: "sticky-note", icon: StickyNote, label: "Sticky Note", shortcut: "S" },
+  { id: "eraser", icon: Eraser, label: "Eraser", shortcut: "E" },
 ];
 
 interface LeftToolbarProps {
@@ -50,7 +55,7 @@ export function LeftToolbar({ isCollapsed = false }: LeftToolbarProps) {
         animate={{ x: 0, opacity: 1 }}
         className={cn(
           "flex flex-col gap-1 p-3 bg-surface border-r border-border-subtle h-full",
-          isCollapsed ? "items-center" : "w-64"
+          isCollapsed ? "items-center" : "w-64",
         )}
       >
         {/* Tools Section */}
@@ -58,7 +63,7 @@ export function LeftToolbar({ isCollapsed = false }: LeftToolbarProps) {
           {tools.map((tool, index) => {
             const Icon = tool.icon;
             const isActive = activeTool === tool.id;
-            
+
             return (
               <Tooltip key={tool.id} delayDuration={500}>
                 <TooltipTrigger asChild>
@@ -73,8 +78,9 @@ export function LeftToolbar({ isCollapsed = false }: LeftToolbarProps) {
                       onClick={() => setTool(tool.id)}
                       className={cn(
                         "justify-start gap-3 w-full transition-all duration-200",
-                        isActive && "bg-primary text-primary-foreground shadow-sm",
-                        !isCollapsed && "px-3"
+                        isActive &&
+                          "bg-primary text-primary-foreground shadow-sm",
+                        !isCollapsed && "px-3",
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -90,7 +96,10 @@ export function LeftToolbar({ isCollapsed = false }: LeftToolbarProps) {
                   </motion.div>
                 </TooltipTrigger>
                 {isCollapsed && (
-                  <TooltipContent side="right" className="flex items-center gap-2">
+                  <TooltipContent
+                    side="right"
+                    className="flex items-center gap-2"
+                  >
                     {tool.label}
                     <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-mono text-muted-foreground opacity-100">
                       {tool.shortcut}
@@ -105,7 +114,7 @@ export function LeftToolbar({ isCollapsed = false }: LeftToolbarProps) {
         {!isCollapsed && (
           <>
             <Separator className="my-2" />
-            
+
             {/* Tool Properties */}
             <div className="space-y-3">
               <div>
@@ -132,14 +141,14 @@ export function LeftToolbar({ isCollapsed = false }: LeftToolbarProps) {
                 </label>
                 <div className="grid grid-cols-4 gap-1">
                   {[
-                    'hsl(var(--accent-blue))',
-                    'hsl(var(--accent-purple))',
-                    'hsl(var(--accent-green))',
-                    'hsl(var(--accent-orange))',
-                    'hsl(var(--accent-red))',
-                    'hsl(var(--accent-yellow))',
-                    'hsl(var(--foreground))',
-                    'hsl(var(--muted-foreground))',
+                    "hsl(var(--accent-blue))",
+                    "hsl(var(--accent-purple))",
+                    "hsl(var(--accent-green))",
+                    "hsl(var(--accent-orange))",
+                    "hsl(var(--accent-red))",
+                    "hsl(var(--accent-yellow))",
+                    "hsl(var(--foreground))",
+                    "hsl(var(--muted-foreground))",
                   ].map((color, index) => (
                     <button
                       key={index}

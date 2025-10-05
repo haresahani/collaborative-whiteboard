@@ -31,6 +31,7 @@ The system follows a distributed, event-driven architecture with stateless appli
 ```
 
 ### Component Breakdown
+
 1. **Client (React + TypeScript)**:
    - Renders the whiteboard canvas, toolbar, sticky notes, and live cursors.
    - Manages local state, operation buffering, and undo/redo stacks.
@@ -69,6 +70,7 @@ The system follows a distributed, event-driven architecture with stateless appli
 ---
 
 ## 📡 Real-Time Synchronization
+
 The system uses an **event-driven protocol** over Socket.IO for low-latency collaboration. Key events include:
 
 - **Join**: Clients join a board (`boardId`) and receive the latest snapshot + recent ops.
@@ -77,6 +79,7 @@ The system uses an **event-driven protocol** over Socket.IO for low-latency coll
 - **Acknowledgment (ack)**: Servers confirm ops with a `serverSeq` for ordering.
 
 ### Conflict Resolution
+
 - **CRDT (Conflict-Free Replicated Data Type)**:
   - Used for strokes, shapes, and sticky note text (Yjs/Automerge or custom RGA).
   - Operations are immutable (e.g., `stroke.add`, `stroke.delete`).
@@ -89,6 +92,7 @@ The system uses an **event-driven protocol** over Socket.IO for low-latency coll
 ---
 
 ## 💾 Data Flow & Persistence
+
 1. **Client Operation**:
    - User draws a stroke → client generates `opId` → sends `{ type: "stroke.add", payload }` via Socket.IO.
 2. **Server Processing**:
@@ -101,6 +105,7 @@ The system uses an **event-driven protocol** over Socket.IO for low-latency coll
    - New clients load the latest snapshot and replay recent ops to rebuild the board.
 
 ### Example Data Flow
+
 ```
 User A draws stroke → Client A: { type: "stroke.add", opId: "userA:123", payload: {...} }
 → Socket Server: validate, assign serverSeq=4568, store in oplog
@@ -112,6 +117,7 @@ User A draws stroke → Client A: { type: "stroke.add", opId: "userA:123", paylo
 ---
 
 ## 📈 Scalability
+
 - **Socket.IO Scaling**:
   - Stateless socket servers scale horizontally with Redis pub/sub for cross-instance sync.
   - Consistent hashing routes boards to specific socket pools for locality.
@@ -128,6 +134,7 @@ User A draws stroke → Client A: { type: "stroke.add", opId: "userA:123", paylo
 ---
 
 ## 🛡️ Security
+
 - **Authentication**: JWT with refresh tokens; OAuth 2.0 for SSO.
 - **Authorization**: Board-level ACLs (owner, editor, viewer) stored in MongoDB.
 - **Rate Limiting**: Redis-based limits on socket messages per user.
@@ -137,6 +144,7 @@ User A draws stroke → Client A: { type: "stroke.add", opId: "userA:123", paylo
 ---
 
 ## 📊 Observability
+
 - **Metrics** (Prometheus):
   - Events per second, connected users, p99 latency, snapshot duration.
   - Worker queue depth and export job success rate.
@@ -152,6 +160,7 @@ User A draws stroke → Client A: { type: "stroke.add", opId: "userA:123", paylo
 ---
 
 ## ☁️ Deployment
+
 - **Local**: Docker Compose for MongoDB, Redis, and app services.
 - **Production**: Kubernetes with Helm charts for API, socket, and worker pods.
 - **CI/CD**: GitHub Actions for linting, testing, building, and deploying.
@@ -161,6 +170,7 @@ User A draws stroke → Client A: { type: "stroke.add", opId: "userA:123", paylo
 ---
 
 ## 🛠️ Key Design Decisions
+
 1. **Oplog + Snapshots**:
    - Append-only oplog ensures auditability and recoverability.
    - Snapshots reduce replay time and storage costs.
@@ -176,6 +186,7 @@ User A draws stroke → Client A: { type: "stroke.add", opId: "userA:123", paylo
 ---
 
 ## 📚 Further Reading
+
 - [protocol.md](/docs/protocol.md): Detailed event schemas and versioning.
 - [crdt-design.md](/docs/crdt-design.md): CRDT implementation and conflict scenarios.
 - [runbook.md](/docs/runbook.md): Incident response and recovery procedures.

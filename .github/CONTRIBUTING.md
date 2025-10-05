@@ -89,18 +89,21 @@ docker compose logs -f redis
 Open **3 terminals** (or use the provided `dev-commands.sh` script).
 
 **API**
+
 ```bash
 cd packages/api
 pnpm dev
 ```
 
 **Socket Server**
+
 ```bash
 cd packages/socket
 pnpm dev
 ```
 
 **Client**
+
 ```bash
 cd packages/client
 pnpm dev
@@ -108,12 +111,14 @@ pnpm dev
 ```
 
 **Worker (optional)**
+
 ```bash
 cd packages/worker
 pnpm dev
 ```
 
 Shortcut (run all in background):
+
 ```bash
 pnpm --filter "packages/api..." dev & \
  pnpm --filter "packages/socket..." dev & \
@@ -253,4 +258,3 @@ rm -rf node_modules pnpm-lock.yaml && pnpm install
 ---
 
 > This contributor guide ensures anyone can set up, run, and debug the project without friction — a hallmark of production-quality repos.
-

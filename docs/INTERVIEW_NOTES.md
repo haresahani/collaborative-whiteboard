@@ -5,40 +5,48 @@ This document provides resume-ready snippets and interview talking points for th
 ## 📝 Resume Snippets
 
 ### Short (Single Line)
+
 > Built a real-time collaborative whiteboard using MERN and Socket.IO, achieving <200ms operation propagation for 100 users, with CRDT-based conflict resolution and async export pipelines.
 
 ### Medium (1-2 Lines)
+
 > Engineered a production-ready collaborative whiteboard with React, Node.js, and Socket.IO, achieving <200ms op-to-propagation latency and 1,000 ops/sec throughput, with oplog persistence, CRDTs, and scalable WebSocket communication via Redis pub/sub.
 
 ### Detailed (Bullet Points)
-> **Collaborative Whiteboard** (MERN + Socket.IO)  
-> - Designed and implemented a real-time collaborative whiteboard supporting multi-user drawing, shapes, and sticky notes, using React, Node.js, Express, and Socket.IO, with <200ms operation-to-propagation latency for 100 users.  
-> - Leveraged MongoDB for oplog persistence (snapshots every 1,000 ops or 5 minutes) and Redis for pub/sub, enabling 1,000 ops/sec per server.  
-> - Implemented CRDTs (RGA for text, operational for strokes/shapes) for deterministic conflict resolution, validated with property-based testing.  
-> - Built an async export pipeline with BullMQ workers, headless rendering (Puppeteer), and S3 uploads, with idempotent retries for reliability.  
-> - Enabled horizontal scaling with Redis pub/sub and Kubernetes, supporting multi-region deployment with CDN for static assets.  
-> - Secured with JWT rotation, Socket.IO rate-limiting, and input sanitization, protecting against replay attacks and DoS.  
+
+> **Collaborative Whiteboard** (MERN + Socket.IO)
+>
+> - Designed and implemented a real-time collaborative whiteboard supporting multi-user drawing, shapes, and sticky notes, using React, Node.js, Express, and Socket.IO, with <200ms operation-to-propagation latency for 100 users.
+> - Leveraged MongoDB for oplog persistence (snapshots every 1,000 ops or 5 minutes) and Redis for pub/sub, enabling 1,000 ops/sec per server.
+> - Implemented CRDTs (RGA for text, operational for strokes/shapes) for deterministic conflict resolution, validated with property-based testing.
+> - Built an async export pipeline with BullMQ workers, headless rendering (Puppeteer), and S3 uploads, with idempotent retries for reliability.
+> - Enabled horizontal scaling with Redis pub/sub and Kubernetes, supporting multi-region deployment with CDN for static assets.
+> - Secured with JWT rotation, Socket.IO rate-limiting, and input sanitization, protecting against replay attacks and DoS.
 > - Integrated OpenTelemetry for tracing, Prometheus for metrics (p99 latency), and Sentry for error tracking, with E2E tests for multi-client sync.
 
 ### Alternative (System Design Focus)
-> **Real-Time Whiteboard Application**  
-> - Architected a scalable, real-time collaborative whiteboard using MERN and Socket.IO, achieving <200ms op-to-propagation for 100 users and 1,000 ops/sec throughput per server.  
-> - Designed an append-only oplog with snapshots every 1,000 ops or 5 minutes to optimize storage and recovery, with MongoDB sharding for 100,000+ users.  
-> - Implemented CRDT-based conflict resolution, validated with property-based testing to ensure deterministic convergence.  
-> - Deployed via Kubernetes with Helm charts, incorporating multi-region sync, CDN for assets, and Redis pub/sub for WebSocket scaling.  
-> - Secured with JWT refresh, rate-limited Socket.IO messages (100 ops/min/user), and protection against replay attacks.  
-> - Evaluated tradeoffs: MongoDB (flexible JSON) vs. Postgres (strict schema); Redis pub/sub (simple) vs. Kafka (durable); CRDT (automatic merge) vs. OT (coordination-heavy).  
+
+> **Real-Time Whiteboard Application**
+>
+> - Architected a scalable, real-time collaborative whiteboard using MERN and Socket.IO, achieving <200ms op-to-propagation for 100 users and 1,000 ops/sec throughput per server.
+> - Designed an append-only oplog with snapshots every 1,000 ops or 5 minutes to optimize storage and recovery, with MongoDB sharding for 100,000+ users.
+> - Implemented CRDT-based conflict resolution, validated with property-based testing to ensure deterministic convergence.
+> - Deployed via Kubernetes with Helm charts, incorporating multi-region sync, CDN for assets, and Redis pub/sub for WebSocket scaling.
+> - Secured with JWT refresh, rate-limited Socket.IO messages (100 ops/min/user), and protection against replay attacks.
+> - Evaluated tradeoffs: MongoDB (flexible JSON) vs. Postgres (strict schema); Redis pub/sub (simple) vs. Kafka (durable); CRDT (automatic merge) vs. OT (coordination-heavy).
 > - Ensured reliability with graceful degradation (Redis downtime fallback to sticky sessions) and idempotent worker retries.
 
 ## 💬 Interview Talking Points
 
 ### Project Overview
+
 - **Problem Statement**: Built a real-time collaborative whiteboard where multiple users can draw, write, and edit simultaneously, with persistence, scalability (up to 100,000+ users), and features like live cursors, undo/redo, and async exports.
 - **High-Level Architecture**: Frontend (React + Canvas/Socket.IO) for rendering and optimistic updates; Backend (Node.js + Express + Socket.IO/WebSockets) for event handling; MongoDB for oplog/snapshots; Redis for pub/sub; BullMQ workers for exports; Deployed with Docker + Kubernetes and CDN for assets.
 - **Key Technologies**: React (TypeScript), Node.js/Express, Socket.IO, MongoDB (oplog + snapshots every 1,000 ops), Redis (pub/sub), BullMQ, Kubernetes, OpenTelemetry, Prometheus, Sentry.
 - **Why It Matters**: Demonstrates FAANG-level engineering with concrete metrics (<200ms latency, 1,000 ops/sec), robust failure handling, rigorous testing, and production-grade security/scalability.
 
 ### Technical Highlights
+
 1. **Oplog + Snapshots**:
    - **What**: Implemented an append-only oplog in MongoDB, with snapshots every 1,000 ops or 5 minutes, storing operations (e.g., strokes, text edits) instead of bitmaps for replayable, versioned persistence.
    - **Metrics**: Supports 1,000 ops/sec per server; snapshots reduce replay time to <1s for new clients.
@@ -93,6 +101,7 @@ This document provides resume-ready snippets and interview talking points for th
     - **Interview Angle**: Show forward-thinking design and potential for iteration.
 
 ### FAANG/MANG-Relevant Questions to Prepare For
+
 1. **Scalability**: “How would you handle thousands of concurrent users on a single board?”
    - **Answer**: Use Redis pub/sub for Socket.IO scaling, partition boards with consistent hashing, autoscale pods via Kubernetes, and leverage sharded Redis/Kafka for 100,000+ users.
 2. **Conflict Resolution**: “How do you ensure deterministic state across clients?”
@@ -114,6 +123,7 @@ This document provides resume-ready snippets and interview talking points for th
    - **A**: Store as a sequence of operations (events) instead of bitmaps for smaller, replayable, versioned persistence.
 
 ### One-Minute Pitch Variants
+
 1. **Technical Focus**:
    > I built a real-time collaborative whiteboard using MERN and Socket.IO, achieving <200ms op-to-propagation for 100 users and 1,000 ops/sec throughput. It features an oplog with snapshots every 1,000 ops, CRDTs for conflict-free edits, and an async export pipeline with BullMQ and S3. I ensured scalability with Redis pub/sub, Kubernetes, and multi-region deployment, plus robust observability with OpenTelemetry and Sentry.
 2. **Problem-Solving Focus**:
@@ -122,11 +132,13 @@ This document provides resume-ready snippets and interview talking points for th
    > I created a collaborative whiteboard enabling seamless multi-user interaction, with <200ms latency and 1,000 ops/sec throughput. Using CRDTs, Redis-backed scaling, and Kubernetes, I ensured production-grade reliability and security, including JWT rotation and rate-limiting. This project reflects my passion for impactful, scalable applications.
 
 ## 📋 Usage Tips
+
 - **Resume**: Use the short or medium snippet for your resume’s “Projects” section, adjusting for space. The detailed version suits portfolio websites or LinkedIn.
 - **Interviews**: Memorize the talking points to confidently explain architecture, metrics, failure handling, and tradeoffs. Tailor the one-minute pitch to the role (e.g., system design for senior roles, coding for junior roles).
 - **Portfolio**: Include a link to your GitHub repo and live demo (if available) alongside these snippets.
 
 ## 📚 Related Docs
+
 - [architecture.md](/docs/architecture.md): System architecture and data flow.
 - [protocol.md](/docs/protocol.md): Event schemas and communication protocol.
 - [crdt-design.md](/docs/crdt-design.md): CRDT implementation for conflict resolution.

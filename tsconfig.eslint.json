@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true, // No build output
+    "checkJs": true // Allow linting JS files with TS parser
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js", // Covers root and package configs/scripts
+    ".eslintrc.js" // If you still have it
+  ],
+  "exclude": ["node_modules", "dist", "build"]
+}

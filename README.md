@@ -4,20 +4,23 @@
 
 A **real-time, multi-user collaborative whiteboard** engineered for low-latency drawing, deterministic conflict resolution, and horizontal scaling. Built with a **MERN stack + Socket.IO**, it features an append-only oplog, periodic snapshots, and an async export pipeline. This project showcases production-grade system design, observability, and scalability for technical interviews or enterprise deployment.
 
-[Demo GIF](/docs/demo.gif) | [Live Demo](https://demo.collab-whiteboard.app) *(replace with deployed URL)* | [Docs](/docs)
+[Demo GIF](/docs/demo.gif) | [Live Demo](https://demo.collab-whiteboard.app) _(replace with deployed URL)_ | [Docs](/docs)
 
 ---
 
 ## TL;DR (Recruiters & Quick Skim)
-- **What**: Collaborative whiteboard with real-time, low-latency (<200ms) drawing (pen, line, rectangle, circle), shapes, sticky notes, presence, undo/redo, and async exports (PNG/PDF/JSON) for 100+ users.  
-- **Why**: Demonstrates FAANG-level engineering: WebSocket scaling with Redis pub/sub, CRDT-based conflict resolution, observability, and production-grade infrastructure.  
-- **Stack**: React (TypeScript), Node.js/Express, Socket.IO, MongoDB (oplog + snapshots), Redis (pub/sub), Docker, Kubernetes, Prometheus/Grafana.  
+
+- **What**: Collaborative whiteboard with real-time, low-latency (<200ms) drawing (pen, line, rectangle, circle), shapes, sticky notes, presence, undo/redo, and async exports (PNG/PDF/JSON) for 100+ users.
+- **Why**: Demonstrates FAANG-level engineering: WebSocket scaling with Redis pub/sub, CRDT-based conflict resolution, observability, and production-grade infrastructure.
+- **Stack**: React (TypeScript), Node.js/Express, Socket.IO, MongoDB (oplog + snapshots), Redis (pub/sub), Docker, Kubernetes, Prometheus/Grafana.
 - **Resume 1-Liner**: Built a production-ready collaborative whiteboard (MERN + Socket.IO) with oplog persistence, snapshotting every 1,000 ops, and async export pipelines, optimized for <200ms latency and scalability.
 
 ---
 
 ## Features
+
 ### MVP
+
 - Real-time multi-user drawing (pen, line, rectangle, circle) with Socket.IO/WebSockets, achieving <200ms op-to-propagation.
 - Persistent board state via MongoDB oplog + snapshots (every 1,000 ops or 5 minutes).
 - Live cursors and user presence indicators.
@@ -25,12 +28,14 @@ A **real-time, multi-user collaborative whiteboard** engineered for low-latency 
 - Client-side PNG export fallback.
 
 ### Advanced
+
 - Per-user and session-level undo/redo with version history.
 - Sticky notes with text/image embedding, shapes, and drag-select functionality.
 - Async server-side export pipeline (BullMQ + headless rendering → S3, PNG/PDF/JSON).
 - JWT-based auth with board-level ACLs (owner/editor/viewer).
 
 ### Production Polish
+
 - Horizontal scaling with Redis pub/sub for Socket.IO, supporting 2,000 ops/sec per instance.
 - CRDT for text (RGA or Yjs/Automerge) and strokes/shapes for conflict-free merges.
 - Observability with OpenTelemetry (tracing), Prometheus (metrics), Grafana (dashboards), and Sentry (errors).
@@ -39,6 +44,7 @@ A **real-time, multi-user collaborative whiteboard** engineered for low-latency 
 ---
 
 ## Architecture Overview
+
 ```
 Browser Clients (React) <--> Load Balancer (HTTPS/WebSocket)
 │
@@ -54,6 +60,7 @@ See [docs/architecture.md](/docs/architecture.md) for detailed diagrams and flow
 ---
 
 ## Repository Structure
+
 This project uses a **monorepo** pattern for type safety and simplified refactors, reflecting production practices at scale.
 
 ```
@@ -79,6 +86,7 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
 ---
 
 ## Tech Stack & Rationale
+
 - **TypeScript**: End-to-end type safety for robust code.
 - **React (Vite/Next.js)**: Performant UI with optimized canvas rendering.
 - **Node.js + Express**: REST API for metadata and auth.
@@ -91,34 +99,44 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
 ---
 
 ## Data Models
+
 ### `boards` Collection
+
 ```json
 {
   "_id": "board_abc",
   "name": "Team Brainstorm",
   "ownerId": "user_123",
-  "privacy": "team",                // "public" | "private" | "team"
+  "privacy": "team", // "public" | "private" | "team"
   "createdAt": "2025-09-12T10:00:00Z",
   "lastSnapshotId": "snap_001"
 }
 ```
 
 ### `snapshots` Collection
+
 ```json
 {
   "_id": "snap_001",
   "boardId": "board_abc",
   "createdAt": "2025-09-12T10:00:00Z",
-  "opIndex": 4567,                  // The oplog position this snapshot covers
+  "opIndex": 4567, // The oplog position this snapshot covers
   "snapshotJson": {
-    "strokes": [ /* array of stroke objects */ ],
-    "shapes": [ /* array of shape objects */ ],
-    "notes":  [ /* array of sticky notes */ ]
+    "strokes": [
+      /* array of stroke objects */
+    ],
+    "shapes": [
+      /* array of shape objects */
+    ],
+    "notes": [
+      /* array of sticky notes */
+    ]
   }
 }
 ```
 
 ### `oplog` Collection (Append-Only)
+
 ```json
 {
   "boardId": ObjectId("..."),
@@ -139,7 +157,9 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
 ---
 
 ## Real-Time Protocol
+
 ### Sample Events
+
 - **Client → Server**:
   - `join`: `{ type: "join", boardId: "abc", userId: "user_123" }`
   - `stroke.add`: `{ type: "stroke.add", boardId: "abc", opId: "user_123:162", payload: { ... } }`
@@ -150,6 +170,7 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
   - `presence.update`: `{ type: "presence.update", boardId: "abc", users: [{ userId: "user_123", x: 100, y: 200 }, ...] }`
 
 **Design Notes**:
+
 - `opId` (`clientId:counter`) ensures operation uniqueness.
 - `serverSeq` or Lamport timestamps ensure deterministic ordering.
 - See [docs/protocol.md](/docs/protocol.md) for full schemas.
@@ -157,6 +178,7 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
 ---
 
 ## Conflict Resolution
+
 - **Approach**: Operational CRDT for strokes, shapes, and text (RGA or Yjs/Automerge for sticky notes).
 - **Why CRDT**: Immutable operations (e.g., `stroke.add`, `stroke.delete`) simplify state convergence without data loss.
 - **Tradeoffs**:
@@ -168,13 +190,16 @@ This project uses a **monorepo** pattern for type safety and simplified refactor
 ---
 
 ## Quick Start
+
 ### Prerequisites
+
 - Node.js >= 18 (or latest LTS)
 - pnpm (recommended) or npm/yarn with workspace support
 - Docker & Docker Compose (for MongoDB/Redis)
 - Optional: minikube/kind/k3d for Kubernetes testing
 
 ### Clone
+
 ```bash
 git clone https://github.com/<your-username>/collab-whiteboard.git
 cd collab-whiteboard
@@ -182,12 +207,15 @@ cp .env.example .env
 ```
 
 ### Development (Fast)
+
 Start all services (MongoDB, Redis, backend, frontend) with Docker Compose:
+
 ```bash
 docker-compose -f infra/docker-compose.yml up --build
 ```
 
 Start frontend and backend separately (dev mode):
+
 ```bash
 # Backend (new terminal)
 cd packages/api
@@ -208,6 +236,7 @@ pnpm dev
 Open `http://localhost:3000` to view the app.
 
 ### Environment Variables
+
 ```bash
 # .env file
 MONGO_URI=mongodb://localhost:27017/collab
@@ -218,6 +247,7 @@ S3_REGION=us-east-1
 ```
 
 ### Run Tests
+
 ```bash
 # Unit and integration tests
 pnpm --filter packages/api test
@@ -231,7 +261,8 @@ pnpm --filter tests e2e
 ---
 
 ## Benchmarks & Performance Targets
-> *Note*: Run `scripts/bench/` (k6 or Artillery) to measure performance and update these targets.
+
+> _Note_: Run `scripts/bench/` (k6 or Artillery) to measure performance and update these targets.
 
 - **Latency**: <200ms operation-to-propagation for boards with ≤50 concurrent users.
 - **Throughput**: 2,000 ops/sec per server instance (depends on op size and persistence latency).
@@ -243,6 +274,7 @@ See `docs/BENCHMARKS.md` for detailed results and benchmarking scripts.
 ---
 
 ## Testing & Quality
+
 - **Unit Tests**: Jest for server logic, CRDT operations, and shared utilities.
 - **E2E Tests**: Playwright for multi-user sync and state convergence verification.
 - **Property-Based Tests**: Fast-check for CRDT correctness, ensuring commutative and idempotent operations.
@@ -253,6 +285,7 @@ See `docs/BENCHMARKS.md` for detailed results and benchmarking scripts.
 ---
 
 ## Observability
+
 - **Metrics**: Prometheus for `ops_processed_total`, `ops_latency_ms`, `active_connections`, `snapshot_duration_ms`, `reconnect_rate`.
 - **Tracing**: OpenTelemetry for request, socket, and export job tracing (Jaeger compatible).
 - **Logging**: Structured JSON logs with correlation IDs (Winston).
@@ -262,6 +295,7 @@ See `docs/BENCHMARKS.md` for detailed results and benchmarking scripts.
 ---
 
 ## Security
+
 - **Authentication**: JWT with 15-minute expiry and refresh tokens; OAuth 2.0 for SSO.
 - **Authorization**: Board-level ACLs (owner, editor, viewer).
 - **Rate Limiting**: 100 ops/min/user for Socket.IO messages via Redis to prevent DoS.
@@ -272,6 +306,7 @@ See `docs/BENCHMARKS.md` for detailed results and benchmarking scripts.
 ---
 
 ## Deployment & Scaling
+
 - **Docker**: Multi-stage `Dockerfile` for backend, socket, and frontend; `NODE_ENV=production`.
 - **Kubernetes**: Helm charts in `infra/k8s/` for deployments, services, and autoscaling; CDN for static assets.
 - **Socket.IO Scaling**: Redis adapter for pub/sub; session affinity for sticky sessions.
@@ -280,6 +315,7 @@ See `docs/BENCHMARKS.md` for detailed results and benchmarking scripts.
 - **CI/CD**: GitHub Actions for lint, test, build, and Helm-based deployment.
 
 **Sample CI Workflow**:
+
 ```yaml
 name: CI
 on: [push, pull_request]
@@ -300,6 +336,7 @@ jobs:
 ---
 
 ## Troubleshooting & Runbook
+
 - **Clients Fail to Connect**: Check WSS ingress, TLS certs, and load balancer sticky-session settings.
 - **High Reconnect Rates**: Monitor `reconnect_rate` metric; inspect network issues or instance overload.
 - **Snapshot Job Failure**: Verify worker logs, S3 credentials, and Redis queue health.
@@ -311,6 +348,7 @@ See [docs/runbook.md](/docs/runbook.md) for detailed incident response procedure
 ---
 
 ## Roadmap & Limitations
+
 - **Roadmap**:
   - Per-board sharding for extreme scale.
   - Offline-first mobile experience with local event queue sync.
@@ -322,6 +360,7 @@ See [docs/runbook.md](/docs/runbook.md) for detailed incident response procedure
 ---
 
 ## Contribution Guidelines
+
 - Branch: `feat/<short-desc>` or `fix/<short-desc>` from `main`.
 - PRs: Include clear description, testing plan, and tests; run `pnpm lint && pnpm test`.
 - Commits: Use descriptive messages; update `CHANGELOG.md` for releases.
@@ -330,6 +369,7 @@ See [docs/runbook.md](/docs/runbook.md) for detailed incident response procedure
 ---
 
 ## Key Docs
+
 - [architecture.md](/docs/architecture.md): System diagrams and flow.
 - [protocol.md](/docs/protocol.md): Event schemas and versioning.
 - [crdt-design.md](/docs/crdt-design.md): CRDT model and conflict scenarios.
@@ -340,9 +380,11 @@ See [docs/runbook.md](/docs/runbook.md) for detailed incident response procedure
 ---
 
 ## License
+
 MIT © Hare Sahani
 
 ---
 
 ## Contact
+
 Created by **Hare Sahani** — [harecareer@gmail.com](mailto:harecareer@gmail.com) | [LinkedIn](https://www.linkedin.com/in/hare-sahani-18239b240/) | [GitHub](https://github.com/haresahani) | [LeetCode](https://leetcode.com/u/haresahani/)

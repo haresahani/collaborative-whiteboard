@@ -29,10 +29,19 @@ interface AuthDialogProps {
   initialView?: "login" | "signup";
 }
 
-export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "login" }: AuthDialogProps) {
+export function AuthDialog({
+  isOpen,
+  onClose,
+  onAuthenticated,
+  initialView = "login",
+}: AuthDialogProps) {
   const { signIn, signUp } = useAuth();
   const [isLogin, setIsLogin] = useState(initialView === "login");
-  const [formData, setFormData] = useState({ email: "", password: "", name: "" });
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    name: "",
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
@@ -78,10 +87,12 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
         }
       }
       onClose();
-    } catch (err: any) {
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Please check your credentials.";
       toast({
         title: "Authentication failed",
-        description: err.message || "Please check your credentials.",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -158,7 +169,9 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
         <div className="space-y-6">
           {/* Google Sign In */}
           <Button
-            onClick={handleGoogleAuth}
+            onClick={() => {
+              void handleGoogleAuth();
+            }}
             disabled={isLoading}
             variant="outline"
             className="w-full h-11"
@@ -172,12 +185,19 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
               <Separator className="w-full" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">or</span>
+              <span className="bg-background px-2 text-muted-foreground">
+                or
+              </span>
             </div>
           </div>
 
           {/* Email/Password Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              void handleSubmit(e);
+            }}
+            className="space-y-4"
+          >
             <AnimatePresence mode="wait">
               {!isLogin && (
                 <motion.div
@@ -229,7 +249,10 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
                   className="pr-10"
                   value={formData.password}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, password: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
                   }
                   required
                 />
@@ -266,11 +289,17 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">or</span>
+                <span className="bg-background px-2 text-muted-foreground">
+                  or
+                </span>
               </div>
             </div>
 
-            <Button onClick={handleGuestAccess} variant="outline" className="w-full">
+            <Button
+              onClick={handleGuestAccess}
+              variant="outline"
+              className="w-full"
+            >
               Continue as Guest
             </Button>
           </div>
@@ -281,7 +310,9 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
                 Don't have an account?{" "}
                 <button
                   type="button"
-                  onClick={handleSwitchView}
+                  onClick={() => {
+                    handleSwitchView();
+                  }}
                   className="text-primary hover:underline font-medium"
                 >
                   Sign up
@@ -292,7 +323,9 @@ export function AuthDialog({ isOpen, onClose, onAuthenticated, initialView = "lo
                 Already have an account?{" "}
                 <button
                   type="button"
-                  onClick={handleSwitchView}
+                  onClick={() => {
+                    handleSwitchView();
+                  }}
                   className="text-primary hover:underline font-medium"
                 >
                   Sign in

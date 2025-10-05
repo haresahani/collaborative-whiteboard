@@ -19,7 +19,7 @@ export interface User {
 
 export interface DrawingElement {
   id: string;
-  type: 'path' | 'rectangle' | 'circle' | 'line' | 'text' | 'sticky-note';
+  type: "path" | "rectangle" | "circle" | "line" | "text" | "sticky-note";
   position: Point;
   size: Size;
   rotation: number;
@@ -29,14 +29,14 @@ export interface DrawingElement {
     fill: string;
     opacity: number;
   };
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   createdBy: string;
   createdAt: number;
   updatedAt: number;
 }
 
 export interface DrawingPath extends DrawingElement {
-  type: 'path';
+  type: "path";
   data: {
     points: Point[];
     smooth: boolean;
@@ -44,7 +44,7 @@ export interface DrawingPath extends DrawingElement {
 }
 
 export interface StickyNote extends DrawingElement {
-  type: 'sticky-note';
+  type: "sticky-note";
   data: {
     text: string;
     color: string;
@@ -52,7 +52,7 @@ export interface StickyNote extends DrawingElement {
 }
 
 export interface TextElement extends DrawingElement {
-  type: 'text';
+  type: "text";
   data: {
     text: string;
     fontSize: number;
@@ -61,16 +61,16 @@ export interface TextElement extends DrawingElement {
   };
 }
 
-export type DrawingTool = 
-  | 'select' 
-  | 'pen' 
-  | 'line' 
-  | 'rectangle' 
-  | 'circle' 
-  | 'text' 
-  | 'sticky-note' 
-  | 'eraser'
-  | 'hand';
+export type DrawingTool =
+  | "select"
+  | "pen"
+  | "line"
+  | "rectangle"
+  | "circle"
+  | "text"
+  | "sticky-note"
+  | "eraser"
+  | "hand";
 
 export interface WhiteboardState {
   elements: DrawingElement[];
@@ -92,10 +92,16 @@ export interface WhiteboardState {
 }
 
 export interface WhiteboardEvent {
-  type: 'element-created' | 'element-updated' | 'element-deleted' | 'cursor-moved' | 'user-joined' | 'user-left';
+  type:
+    | "element-created"
+    | "element-updated"
+    | "element-deleted"
+    | "cursor-moved"
+    | "user-joined"
+    | "user-left";
   userId: string;
   timestamp: number;
-  data: any;
+  data: unknown;
 }
 
 export interface KeyboardShortcut {

@@ -19,7 +19,7 @@
 
 //     this.isIntentionallyClosed = false;
 //     const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
-    
+
 //     try {
 //       console.log('[DEBUG ws.ts] Connecting to WebSocket:', `${wsUrl}/whiteboard/${boardId}?userId=${userId}`);
 //       this.ws = new WebSocket(`${wsUrl}/whiteboard/${boardId}?userId=${userId}`);
@@ -118,7 +118,7 @@
 //     };
 //   }, [boardId, userId, onEvent]);
 
-//   return { 
+//   return {
 //     sendCursor: (x: number, y: number) => {
 //       console.log('[DEBUG ws.ts] sendCursor:', { x, y });
 //       wsManager.send({
