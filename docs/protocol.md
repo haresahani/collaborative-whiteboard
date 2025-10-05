@@ -187,6 +187,7 @@ These events are emitted by the server to update clients or confirm actions.
    - CRDT ensures conflict-free merging (e.g., immutable strokes, RGA for text).
 
 ### Example: Stroke Add
+
 ```
 Client A: { type: "op", boardId: "board_abc", opId: "user_123:162", payload: { type: "stroke.add", data: { points: [[100, 100], [150, 150]], color: "#000", width: 2 } } }
 → Server: Validates, assigns serverSeq=4568, stores in oplog

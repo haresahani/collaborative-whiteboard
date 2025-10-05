@@ -3,15 +3,12 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "composite": true,                  // required for project references
+    "composite": true, // required for project references
     "esModuleInterop": true,
     "strict": true,
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*", "tests/**/*"],
-  "references": [
-    { "path": "../shared" },
-    { "path": "../infra-utils" }
-  ]
+  "references": [{ "path": "../shared" }, { "path": "../infra-utils" }]
 }

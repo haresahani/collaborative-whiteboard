@@ -9,29 +9,29 @@
     /* Core Brand Colors - Professional Blue/Purple Palette */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
-    
+
     /* Canvas & Surface Colors */
     --canvas: 0 0% 98%;
     --canvas-grid: 210 20% 92%;
     --surface: 0 0% 100%;
     --surface-elevated: 0 0% 100%;
-    
+
     /* Interactive Elements */
     --primary: 0 0% 9%;
     --primary-foreground: 0 0% 98%;
     --primary-hover: 245 58% 46%;
     --primary-active: 245 58% 41%;
-    
+
     /* Secondary Actions */
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --secondary-hover: 210 16% 88%;
-    
+
     /* Neutral Palette */
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
     --subtle: 210 20% 96%;
-    
+
     /* Accent Colors for Tools */
     --accent-blue: 213 94% 68%;
     --accent-purple: 263 85% 70%;
@@ -39,7 +39,7 @@
     --accent-orange: 25 95% 63%;
     --accent-red: 0 84% 60%;
     --accent-yellow: 48 94% 68%;
-    
+
     /* Status & Feedback */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -47,19 +47,19 @@
     --warning-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    
+
     /* UI Elements */
     --border: 0 0% 89.8%;
     --border-subtle: 210 20% 96%;
     --input: 0 0% 89.8%;
     --ring: 0 0% 3.9%;
-    
+
     /* Card & Elevation */
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    
+
     /* Presence Colors for Collaborative Features */
     --presence-1: 213 94% 68%;
     --presence-2: 263 85% 70%;
@@ -67,17 +67,28 @@
     --presence-4: 25 95% 63%;
     --presence-5: 320 85% 70%;
     --presence-6: 185 84% 59%;
-    
+
     /* Shadows & Effects */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-base: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    
+    --shadow-base:
+      0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md:
+      0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg:
+      0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(245 58% 51%), hsl(263 85% 70%));
-    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 20% 99%));
-    
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(245 58% 51%),
+      hsl(263 85% 70%)
+    );
+    --gradient-surface: linear-gradient(
+      180deg,
+      hsl(0 0% 100%),
+      hsl(210 20% 99%)
+    );
+
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
@@ -115,29 +126,29 @@
     /* Dark Mode - Professional & Eye-friendly */
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
-    
+
     /* Canvas & Surface Colors */
     --canvas: 210 11% 9%;
     --canvas-grid: 210 20% 15%;
     --surface: 210 11% 11%;
     --surface-elevated: 210 11% 13%;
-    
+
     /* Interactive Elements */
     --primary: 0 0% 98%;
     --primary-foreground: 0 0% 9%;
     --primary-hover: 245 58% 56%;
     --primary-active: 245 58% 51%;
-    
+
     /* Secondary Actions */
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
     --secondary-hover: 210 11% 18%;
-    
+
     /* Neutral Palette */
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
     --subtle: 210 11% 13%;
-    
+
     /* Status & Feedback */
     --success: 142 69% 48%;
     --success-foreground: 0 0% 100%;
@@ -145,22 +156,30 @@
     --warning-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    
+
     /* UI Elements */
     --border: 0 0% 14.9%;
     --border-subtle: 210 11% 15%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
-    
+
     /* Card & Elevation */
     --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    
+
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(245 58% 61%), hsl(263 85% 75%));
-    --gradient-surface: linear-gradient(180deg, hsl(210 11% 11%), hsl(210 11% 9%));
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(245 58% 61%),
+      hsl(263 85% 75%)
+    );
+    --gradient-surface: linear-gradient(
+      180deg,
+      hsl(210 11% 11%),
+      hsl(210 11% 9%)
+    );
     --accent: 0 0% 14.9%;
     --accent-foreground: 0 0% 98%;
     --chart-1: 220 70% 50%;
@@ -179,28 +198,31 @@
            focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
            active:scale-95;
   }
-  
+
   .tool-button-active {
     @apply tool-button bg-primary text-primary-foreground border-primary;
   }
-  
+
   /* Canvas Grid Pattern */
   .canvas-grid {
-    background-image: 
-      radial-gradient(circle, hsl(var(--canvas-grid)) 1px, transparent 1px);
+    background-image: radial-gradient(
+      circle,
+      hsl(var(--canvas-grid)) 1px,
+      transparent 1px
+    );
     background-size: 20px 20px;
   }
-  
+
   /* Presence Cursor Animation */
   .presence-cursor {
     @apply absolute pointer-events-none transition-all duration-100 ease-out;
   }
-  
+
   /* Floating Panel */
   .floating-panel {
     @apply bg-surface border border-border rounded-xl shadow-lg backdrop-blur-sm;
   }
-  
+
   /* Collaboration Badge */
   .collaboration-badge {
     @apply inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium

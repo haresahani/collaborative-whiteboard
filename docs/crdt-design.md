@@ -13,6 +13,7 @@ The whiteboard supports concurrent operations (e.g., strokes, shapes, sticky not
 ## 🖌️ CRDT Design by Component
 
 ### 1. Strokes
+
 - **Description**: A stroke is a sequence of points drawn on the canvas (e.g., `[[x1, y1], [x2, y2]]`, color, width).
 - **CRDT Approach**: **Operational CRDT with immutable operations**.
   - Each stroke is assigned a unique `opId` (`<userId>:<localCounter>`, e.g., `user_123:162`).
@@ -32,7 +33,10 @@ The whiteboard supports concurrent operations (e.g., strokes, shapes, sticky not
       "type": "stroke.add",
       "data": {
         "strokeId": "stroke_001",
-        "points": [[100, 100], [150, 150]],
+        "points": [
+          [100, 100],
+          [150, 150]
+        ],
         "color": "#000000",
         "width": 2
       }
@@ -42,6 +46,7 @@ The whiteboard supports concurrent operations (e.g., strokes, shapes, sticky not
 - **Storage**: Stored in MongoDB oplog as immutable operations; snapshots materialize the current set of strokes.
 
 ### 2. Shapes
+
 - **Description**: Geometric shapes (e.g., rectangles, circles) with properties like position, size, and color.
 - **CRDT Approach**: **Operational CRDT with immutable operations**.
   - Similar to strokes, shapes use `shape.add`, `shape.delete`, `shape.transform`.
@@ -74,6 +79,7 @@ The whiteboard supports concurrent operations (e.g., strokes, shapes, sticky not
 - **Storage**: Stored in oplog; snapshots include the current set of shapes.
 
 ### 3. Sticky Notes (Text)
+
 - **Description**: Text-based sticky notes with position and content, editable by multiple users.
 - **CRDT Approach**: **Replicated Growable Array (RGA)** or **Yjs/Automerge** for text.
   - Text is modeled as a sequence of characters with unique identifiers.
@@ -108,6 +114,7 @@ The whiteboard supports concurrent operations (e.g., strokes, shapes, sticky not
 ## 🔄 CRDT Mechanics
 
 ### Operation Structure
+
 - Each operation includes:
   - `opId`: `<userId>:<localCounter>` for uniqueness.
   - `serverSeq`: Server-assigned sequence number for ordering.
@@ -115,6 +122,7 @@ The whiteboard supports concurrent operations (e.g., strokes, shapes, sticky not
 - Operations are immutable to simplify state transformations and ensure commutativity.
 
 ### Conflict Resolution
+
 - **Strokes/Shapes**:
   - Immutable operations (`add`, `delete`, `transform`) are commutative or resolved by `serverSeq`/timestamp.
   - Example: Concurrent `stroke.add` and `stroke.delete` resolve by prioritizing the later operation.
@@ -124,6 +132,7 @@ The whiteboard supports concurrent operations (e.g., strokes, shapes, sticky not
 - **Tombstones**: Deleted elements (e.g., strokes, characters) are marked with tombstones to preserve history and allow undo/redo.
 
 ### State Synchronization
+
 - **Joining Clients**:
   - Receive a `snapshot.sync` event with the latest snapshot and recent ops (see `protocol.md`).
   - Replay ops in `serverSeq` order to rebuild the board state.
@@ -134,11 +143,13 @@ The whiteboard supports concurrent operations (e.g., strokes, shapes, sticky not
 ## ⚖️ Design Rationale & Tradeoffs
 
 ### Why CRDT?
+
 - **Deterministic Convergence**: Ensures all clients reach the same state without complex coordination.
 - **Simplified Implementation**: Immutable operations reduce edge cases compared to Operational Transformation (OT).
 - **Scalability**: Operations are lightweight and suitable for oplog storage and Redis pub/sub.
 
 ### CRDT vs. Alternatives
+
 - **Operational Transformation (OT)**:
   - **Pros**: More compact message size.
   - **Cons**: Complex to implement correctly, especially for text; prone to edge cases.
@@ -153,22 +164,26 @@ The whiteboard supports concurrent operations (e.g., strokes, shapes, sticky not
   - **Decision**: Custom RGA used for sticky note text to minimize dependencies; Yjs/Automerge considered for future rich text features.
 
 ### Tradeoffs
+
 - **Message Overhead**: CRDTs increase message size (e.g., character IDs for text), mitigated by snapshotting and oplog compaction.
 - **Storage**: Immutable operations grow the oplog, addressed by periodic snapshots and compaction workers.
 - **Complexity**: RGA for text adds implementation complexity but ensures robust text editing.
 
 ## 📈 Performance Considerations
+
 - **Oplog Growth**: Periodic snapshots and compaction workers reduce oplog size.
 - **Message Size**: Stroke and shape ops are lightweight; text ops use compression (e.g., delta encoding) where possible.
 - **Client Performance**: Clients buffer operations locally and apply CRDT merges incrementally to minimize rendering lag.
 
 ## 🧪 Testing & Validation
+
 - **Unit Tests**: Jest tests for CRDT merge logic (e.g., concurrent stroke adds, text inserts).
 - **E2E Tests**: Playwright simulates multi-client scenarios to verify state convergence.
 - **Load Tests**: k6 measures CRDT performance under high-concurrency workloads.
 - **Invariants**: Tests ensure commutative and idempotent operations (e.g., applying the same op twice has no effect).
 
 ## 📚 Related Docs
+
 - [architecture.md](/docs/architecture.md): System architecture and data flow.
 - [protocol.md](/docs/protocol.md): Event schemas and communication protocol.
 - [runbook.md](/docs/runbook.md): Incident response and recovery procedures.

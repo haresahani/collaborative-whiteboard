@@ -1,6 +1,7 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useState, ReactNode, useEffect } from "react";
-import { AuthResponse, LoginPayload, SignupPayload } from "@/types/auth";
+import type { ReactNode } from "react";
+import React, { createContext, useState, useEffect } from "react";
+import type { AuthResponse, LoginPayload, SignupPayload } from "@/types/auth";
 import {
   loginUser as apiLoginUser,
   signupUser as apiSignupUser,
@@ -15,7 +16,9 @@ export interface AuthContextType {
   logoutUser: () => void;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthResponse["user"] | null>(null);
@@ -49,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setAccessToken(null);
       }
     };
-    refresh();
+    void refresh();
   }, []);
 
   return (

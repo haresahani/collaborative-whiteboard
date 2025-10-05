@@ -1,7 +1,12 @@
 // packages/client/src/hooks/useAuth.ts
 import { useState, useCallback } from "react";
 import { loginUser, signupUser, logout } from "@/api/auth";
-import type { LoginPayload, SignupPayload, User, AuthResponse } from "@/types/auth";
+import type {
+  LoginPayload,
+  SignupPayload,
+  User,
+  AuthResponse,
+} from "@/types/auth";
 
 interface AuthState {
   user: User | null;
@@ -29,13 +34,14 @@ export function useAuth() {
         error: null,
       });
       return { user: res.user };
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Login failed";
       setAuthState((prev) => ({
         ...prev,
         isLoading: false,
-        error: err.message || "Login failed",
+        error: message,
       }));
-      return { error: { message: err.message } };
+      return { error: { message } };
     }
   }, []);
 
@@ -50,13 +56,14 @@ export function useAuth() {
         error: null,
       });
       return { user: res.user };
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Signup failed";
       setAuthState((prev) => ({
         ...prev,
         isLoading: false,
-        error: err.message || "Signup failed",
+        error: message,
       }));
-      return { error: { message: err.message } };
+      return { error: { message } };
     }
   }, []);
 

@@ -1,11 +1,18 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { WhiteboardState, DrawingElement, DrawingTool, User, WhiteboardEvent } from '@/types/whiteboard';
+import type { ReactNode } from "react";
+import React, { createContext, useContext, useReducer } from "react";
+import type {
+  WhiteboardState,
+  DrawingElement,
+  DrawingTool,
+  User,
+} from "@/types/whiteboard";
+// import { WhiteboardEvent } from "@/types/whiteboard";
 
 // Initial state
 const initialState: WhiteboardState = {
   elements: [],
   selectedElements: [],
-  tool: 'select',
+  tool: "select",
   viewport: { x: 0, y: 0, zoom: 1 },
   history: {
     past: [],
@@ -19,27 +26,33 @@ const initialState: WhiteboardState = {
 
 // Action types
 type WhiteboardAction =
-  | { type: 'SET_TOOL'; payload: DrawingTool }
-  | { type: 'ADD_ELEMENT'; payload: DrawingElement }
-  | { type: 'UPDATE_ELEMENT'; payload: { id: string; updates: Partial<DrawingElement> } }
-  | { type: 'DELETE_ELEMENT'; payload: string }
-  | { type: 'SELECT_ELEMENTS'; payload: string[] }
-  | { type: 'SET_VIEWPORT'; payload: { x: number; y: number; zoom: number } }
-  | { type: 'UNDO' }
-  | { type: 'REDO' }
-  | { type: 'UPDATE_USER'; payload: User }
-  | { type: 'REMOVE_USER'; payload: string }
-  | { type: 'SET_CURRENT_USER'; payload: User }
-  | { type: 'SET_CONNECTION_STATUS'; payload: boolean }
-  | { type: 'SYNC_STATE'; payload: Partial<WhiteboardState> };
+  | { type: "SET_TOOL"; payload: DrawingTool }
+  | { type: "ADD_ELEMENT"; payload: DrawingElement }
+  | {
+      type: "UPDATE_ELEMENT";
+      payload: { id: string; updates: Partial<DrawingElement> };
+    }
+  | { type: "DELETE_ELEMENT"; payload: string }
+  | { type: "SELECT_ELEMENTS"; payload: string[] }
+  | { type: "SET_VIEWPORT"; payload: { x: number; y: number; zoom: number } }
+  | { type: "UNDO" }
+  | { type: "REDO" }
+  | { type: "UPDATE_USER"; payload: User }
+  | { type: "REMOVE_USER"; payload: string }
+  | { type: "SET_CURRENT_USER"; payload: User }
+  | { type: "SET_CONNECTION_STATUS"; payload: boolean }
+  | { type: "SYNC_STATE"; payload: Partial<WhiteboardState> };
 
 // Reducer
-function whiteboardReducer(state: WhiteboardState, action: WhiteboardAction): WhiteboardState {
+function whiteboardReducer(
+  state: WhiteboardState,
+  action: WhiteboardAction,
+): WhiteboardState {
   switch (action.type) {
-    case 'SET_TOOL':
+    case "SET_TOOL":
       return { ...state, tool: action.payload };
-      
-    case 'ADD_ELEMENT':
+
+    case "ADD_ELEMENT":
       const newElements = [...state.elements, action.payload];
       return {
         ...state,
@@ -50,35 +63,39 @@ function whiteboardReducer(state: WhiteboardState, action: WhiteboardAction): Wh
           future: [],
         },
       };
-      
-    case 'UPDATE_ELEMENT':
-      const updatedElements = state.elements.map(element =>
+
+    case "UPDATE_ELEMENT":
+      const updatedElements = state.elements.map((element) =>
         element.id === action.payload.id
           ? { ...element, ...action.payload.updates }
-          : element
+          : element,
       );
       return { ...state, elements: updatedElements };
-      
-    case 'DELETE_ELEMENT':
-      const filteredElements = state.elements.filter(el => el.id !== action.payload);
+
+    case "DELETE_ELEMENT":
+      const filteredElements = state.elements.filter(
+        (el) => el.id !== action.payload,
+      );
       return {
         ...state,
         elements: filteredElements,
-        selectedElements: state.selectedElements.filter(id => id !== action.payload),
+        selectedElements: state.selectedElements.filter(
+          (id) => id !== action.payload,
+        ),
         history: {
           past: [...state.history.past, state.elements],
           present: filteredElements,
           future: [],
         },
       };
-      
-    case 'SELECT_ELEMENTS':
+
+    case "SELECT_ELEMENTS":
       return { ...state, selectedElements: action.payload };
-      
-    case 'SET_VIEWPORT':
+
+    case "SET_VIEWPORT":
       return { ...state, viewport: action.payload };
-      
-    case 'UNDO':
+
+    case "UNDO":
       if (state.history.past.length === 0) return state;
       const previous = state.history.past[state.history.past.length - 1];
       return {
@@ -90,8 +107,8 @@ function whiteboardReducer(state: WhiteboardState, action: WhiteboardAction): Wh
           future: [state.elements, ...state.history.future],
         },
       };
-      
-    case 'REDO':
+
+    case "REDO":
       if (state.history.future.length === 0) return state;
       const next = state.history.future[0];
       return {
@@ -103,26 +120,26 @@ function whiteboardReducer(state: WhiteboardState, action: WhiteboardAction): Wh
           future: state.history.future.slice(1),
         },
       };
-      
-    case 'UPDATE_USER':
+
+    case "UPDATE_USER":
       return {
         ...state,
         users: { ...state.users, [action.payload.id]: action.payload },
       };
-      
-    case 'REMOVE_USER':
-      const { [action.payload]: removed, ...remainingUsers } = state.users;
+
+    case "REMOVE_USER":
+      const { [action.payload]: _removed, ...remainingUsers } = state.users;
       return { ...state, users: remainingUsers };
-      
-    case 'SET_CURRENT_USER':
+
+    case "SET_CURRENT_USER":
       return { ...state, currentUser: action.payload };
-      
-    case 'SET_CONNECTION_STATUS':
+
+    case "SET_CONNECTION_STATUS":
       return { ...state, isConnected: action.payload };
-      
-    case 'SYNC_STATE':
+
+    case "SYNC_STATE":
       return { ...state, ...action.payload };
-      
+
     default:
       return state;
   }
@@ -145,7 +162,9 @@ interface WhiteboardContextType {
   canRedo: boolean;
 }
 
-const WhiteboardContext = createContext<WhiteboardContextType | undefined>(undefined);
+const WhiteboardContext = createContext<WhiteboardContextType | undefined>(
+  undefined,
+);
 
 // Provider
 interface WhiteboardProviderProps {
@@ -153,20 +172,27 @@ interface WhiteboardProviderProps {
   children: ReactNode;
 }
 
-export function WhiteboardProvider({ boardId, children }: WhiteboardProviderProps) {
+export function WhiteboardProvider({
+  boardId: _boardId,
+  children,
+}: WhiteboardProviderProps) {
   const [state, dispatch] = useReducer(whiteboardReducer, initialState);
 
   // Helper functions
-  const setTool = (tool: DrawingTool) => dispatch({ type: 'SET_TOOL', payload: tool });
-  const addElement = (element: DrawingElement) => dispatch({ type: 'ADD_ELEMENT', payload: element });
-  const updateElement = (id: string, updates: Partial<DrawingElement>) => 
-    dispatch({ type: 'UPDATE_ELEMENT', payload: { id, updates } });
-  const deleteElement = (id: string) => dispatch({ type: 'DELETE_ELEMENT', payload: id });
-  const selectElements = (ids: string[]) => dispatch({ type: 'SELECT_ELEMENTS', payload: ids });
-  const setViewport = (viewport: { x: number; y: number; zoom: number }) => 
-    dispatch({ type: 'SET_VIEWPORT', payload: viewport });
-  const undo = () => dispatch({ type: 'UNDO' });
-  const redo = () => dispatch({ type: 'REDO' });
+  const setTool = (tool: DrawingTool) =>
+    dispatch({ type: "SET_TOOL", payload: tool });
+  const addElement = (element: DrawingElement) =>
+    dispatch({ type: "ADD_ELEMENT", payload: element });
+  const updateElement = (id: string, updates: Partial<DrawingElement>) =>
+    dispatch({ type: "UPDATE_ELEMENT", payload: { id, updates } });
+  const deleteElement = (id: string) =>
+    dispatch({ type: "DELETE_ELEMENT", payload: id });
+  const selectElements = (ids: string[]) =>
+    dispatch({ type: "SELECT_ELEMENTS", payload: ids });
+  const setViewport = (viewport: { x: number; y: number; zoom: number }) =>
+    dispatch({ type: "SET_VIEWPORT", payload: viewport });
+  const undo = () => dispatch({ type: "UNDO" });
+  const redo = () => dispatch({ type: "REDO" });
 
   // Computed values
   const canUndo = state.history.past.length > 0;
@@ -198,7 +224,7 @@ export function WhiteboardProvider({ boardId, children }: WhiteboardProviderProp
 export function useWhiteboard() {
   const context = useContext(WhiteboardContext);
   if (context === undefined) {
-    throw new Error('useWhiteboard must be used within a WhiteboardProvider');
+    throw new Error("useWhiteboard must be used within a WhiteboardProvider");
   }
   return context;
 }

@@ -6,8 +6,5 @@
     "composite": true
   },
   "include": ["src/**/*"],
-  "references": [
-    { "path": "../shared" },
-    { "path": "../infra-utils" }
-  ]
+  "references": [{ "path": "../shared" }, { "path": "../infra-utils" }]
 }

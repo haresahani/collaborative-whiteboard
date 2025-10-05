@@ -7,6 +7,7 @@ A production-ready, FAANG-level collaborative whiteboard application built with 
 ## Features
 
 ### Core Functionality
+
 - **Real-time Collaboration** - Multiple users can draw and interact simultaneously
 - **Drawing Tools** - Pen, line, rectangle, circle, text, sticky notes, and eraser
 - **Selection & Manipulation** - Select, move, resize, and rotate elements
@@ -14,6 +15,7 @@ A production-ready, FAANG-level collaborative whiteboard application built with 
 - **Zoom & Pan** - Smooth viewport navigation and scaling
 
 ### Professional UI/UX
+
 - **Modern Design** - Clean, minimalistic interface inspired by Figma and Miro
 - **Responsive Layout** - Works seamlessly on desktop, tablet, and mobile
 - **Dark/Light Mode** - Automatic theme switching with user preference
@@ -21,12 +23,14 @@ A production-ready, FAANG-level collaborative whiteboard application built with 
 - **Keyboard Shortcuts** - Complete shortcut support for power users
 
 ### Collaboration Features
+
 - **Presence Indicators** - See other users' cursors and selections in real-time
 - **User Management** - Online user list with avatars and status
 - **Live Chat** - Built-in messaging for team communication
 - **Board Sharing** - Easy link sharing for collaboration
 
 ### Technical Excellence
+
 - **TypeScript** - Fully typed for reliability and developer experience
 - **Modular Architecture** - Clean separation of concerns and reusable components
 - **State Management** - Context-based state with optimistic updates
@@ -36,23 +40,27 @@ A production-ready, FAANG-level collaborative whiteboard application built with 
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - Modern web browser with HTML5 Canvas support
 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <YOUR_GIT_URL>
    cd whiteboard-app
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Start development server**
+
    ```bash
    npm run dev
    ```
@@ -63,23 +71,27 @@ A production-ready, FAANG-level collaborative whiteboard application built with 
 ## Technology Stack
 
 ### Frontend Core
+
 - **React 18** - Modern React with hooks and concurrent features
 - **TypeScript** - Type safety and enhanced developer experience
 - **Vite** - Fast build tool and development server
 - **Tailwind CSS** - Utility-first CSS framework
 
 ### UI Components
+
 - **shadcn/ui** - High-quality, accessible component library
 - **Radix UI** - Unstyled, accessible primitives
 - **Lucide React** - Beautiful, customizable icons
 - **Framer Motion** - Production-ready motion library
 
 ### State & Data
+
 - **React Context** - Global state management
 - **TanStack Query** - Server state management
 - **Zustand** - Lightweight state management (ready for use)
 
 ### Real-time Features
+
 - **Socket.IO Client** - WebSocket communication
 - **Presence System** - Live user indicators and cursors
 
@@ -112,6 +124,7 @@ The application uses a comprehensive design system with:
 ## Keyboard Shortcuts
 
 ### Tools
+
 - `V` - Select tool
 - `P` - Pen tool
 - `L` - Line tool
@@ -123,6 +136,7 @@ The application uses a comprehensive design system with:
 - `H` - Hand tool
 
 ### Actions
+
 - `Ctrl/Cmd + Z` - Undo
 - `Ctrl/Cmd + Shift + Z` - Redo
 - `Ctrl/Cmd + C` - Copy
@@ -132,6 +146,7 @@ The application uses a comprehensive design system with:
 - `Delete/Backspace` - Delete selected
 
 ### Navigation
+
 - `Ctrl/Cmd + +` - Zoom in
 - `Ctrl/Cmd + -` - Zoom out
 - `Ctrl/Cmd + 0` - Reset zoom
@@ -139,6 +154,7 @@ The application uses a comprehensive design system with:
 ## Configuration
 
 ### Environment Variables
+
 Create a `.env.local` file for environment-specific configuration:
 
 ```env
@@ -148,13 +164,14 @@ VITE_GOOGLE_CLIENT_ID=your_google_client_id
 ```
 
 ### Theme Customization
+
 Modify `src/index.css` to customize the design system:
 
 ```css
 :root {
-  --primary: 245 58% 51%;        /* Brand color */
-  --secondary: 210 16% 93%;      /* Secondary actions */
-  --accent-blue: 213 94% 68%;    /* Tool accent colors */
+  --primary: 245 58% 51%; /* Brand color */
+  --secondary: 210 16% 93%; /* Secondary actions */
+  --accent-blue: 213 94% 68%; /* Tool accent colors */
   /* ... more theme variables */
 }
 ```
@@ -166,7 +183,11 @@ The application is designed to work with a WebSocket server for real-time featur
 ```typescript
 // Mock WebSocket events
 interface WhiteboardEvent {
-  type: 'element-created' | 'element-updated' | 'element-deleted' | 'cursor-moved';
+  type:
+    | "element-created"
+    | "element-updated"
+    | "element-deleted"
+    | "cursor-moved";
   userId: string;
   timestamp: number;
   data: any;
@@ -174,6 +195,7 @@ interface WhiteboardEvent {
 ```
 
 ### Integration Points
+
 - `src/hooks/useWebSocket.ts` - WebSocket connection management
 - `src/contexts/WhiteboardContext.tsx` - State synchronization
 - `src/components/canvas/PresenceCursors.tsx` - Live cursor rendering
@@ -199,17 +221,20 @@ Built-in authentication with multiple options:
 ## Deployment
 
 ### Build for Production
+
 ```bash
 npm run build
 ```
 
 ### Deploy to Vercel
+
 ```bash
 npm install -g vercel
 vercel --prod
 ```
 
 ### Deploy to Netlify
+
 ```bash
 npm run build
 # Upload dist/ folder to Netlify

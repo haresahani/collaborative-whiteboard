@@ -7,6 +7,7 @@ This runbook is meant for operators, SREs, and contributors to understand **how 
 ## 🔧 Startup procedures
 
 ### Local development
+
 ```bash
 # Install deps
 pnpm install
@@ -19,6 +20,7 @@ docker compose -f infra/docker-compose.yml up -d
 ```
 
 ### Production (Docker Compose example)
+
 ```bash
 # Build images
 docker compose -f infra/docker-compose.yml build
@@ -31,6 +33,7 @@ docker compose logs -f api
 ```
 
 ### Kubernetes (example)
+
 ```bash
 kubectl apply -f infra/k8s/
 
@@ -61,28 +64,37 @@ kubectl get pods -n whiteboard
 ## ⚠️ Common issues & fixes
 
 ### MongoDB connection refused
+
 - Check service:
+
 ```bash
 docker compose logs mongo
 ```
+
 - Validate `MONGO_URL` in `.env`
 
 ### Redis pub/sub not propagating
+
 - Ensure Redis is running:
+
 ```bash
 docker compose logs redis
 ```
+
 - Check network policies if on k8s.
 
 ### API returns 401 Unauthorized
+
 - Verify JWT secret consistency across API and Socket `.env`
 - Ensure client sends correct `Authorization: Bearer <token>`
 
 ### Socket events not syncing across instances
+
 - Verify Redis pub/sub config.
 - Check that socket servers share the same `REDIS_URL`.
 
 ### High latency (>500ms p99)
+
 - Inspect metrics: is Mongo slow? Are snapshots too frequent?
 - Scale socket servers: `kubectl scale deployment socket --replicas=4`
 
@@ -91,6 +103,7 @@ docker compose logs redis
 ## 🔄 Recovery procedures
 
 ### Restore from snapshot
+
 ```bash
 # Identify latest snapshot
 db.snapshots.find({ boardId: ObjectId("...") }).sort({ createdAt: -1 }).limit(1)
@@ -100,12 +113,14 @@ node scripts/replay-oplog.js --board <boardId> --fromSnapshot <snapshotId>
 ```
 
 ### Drop and reseed DB (dev only)
+
 ```bash
 docker compose exec mongo mongosh --eval 'db.getSiblingDB("whiteboard").dropDatabase()'
 node scripts/seed.js
 ```
 
 ### Restart all services
+
 ```bash
 docker compose down && docker compose up -d
 ```
@@ -115,9 +130,11 @@ docker compose down && docker compose up -d
 ## 🧪 Testing in production-like environments
 
 - Run **load tests** with k6:
+
 ```bash
 k6 run tests/load/socket-load.js
 ```
+
 - Observe latency metrics in Grafana.
 - Simulate failover by killing one socket pod: `kubectl delete pod socket-xyz`.
 - Verify clients reconnect and state re-syncs from oplog.
@@ -156,4 +173,3 @@ k6 run tests/load/socket-load.js
 ---
 
 **Tip:** In interviews, reference this runbook to show you understand real-world ops, recovery, and monitoring — a big plus for FAANG/MANG interviews.
-

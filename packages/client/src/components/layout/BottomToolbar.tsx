@@ -1,22 +1,27 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Undo, 
-  Redo, 
-  ZoomIn, 
-  ZoomOut, 
-  Maximize, 
+import React from "react";
+import { motion } from "framer-motion";
+import {
+  Undo,
+  Redo,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
   Download,
   Copy,
   Trash2,
-  Move
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useWhiteboard } from '@/contexts/WhiteboardContext';
-import { cn } from '@/lib/utils';
+  Move,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useWhiteboard } from "@/contexts/WhiteboardContext";
+import { cn } from "@/lib/utils";
 
 interface BottomToolbarProps {
   onExport: () => void;
@@ -25,26 +30,26 @@ interface BottomToolbarProps {
   onZoomOut: () => void;
 }
 
-export function BottomToolbar({ 
-  onExport, 
-  onFitToScreen, 
-  onZoomIn, 
-  onZoomOut 
+export function BottomToolbar({
+  onExport,
+  onFitToScreen,
+  onZoomIn,
+  onZoomOut,
 }: BottomToolbarProps) {
   const { state, undo, redo, canUndo, canRedo } = useWhiteboard();
   const { viewport, selectedElements } = state;
-  
+
   const zoomPercentage = Math.round(viewport.zoom * 100);
   const hasSelection = selectedElements.length > 0;
 
   const handleCopy = () => {
     // In a real app, this would copy selected elements to clipboard
-    console.log('Copying selected elements:', selectedElements);
+    console.log("Copying selected elements:", selectedElements);
   };
 
   const handleDelete = () => {
     // In a real app, this would delete selected elements
-    console.log('Deleting selected elements:', selectedElements);
+    console.log("Deleting selected elements:", selectedElements);
   };
 
   return (
@@ -66,7 +71,7 @@ export function BottomToolbar({
                   disabled={!canUndo}
                   className={cn(
                     "h-8 w-8",
-                    !canUndo && "opacity-50 cursor-not-allowed"
+                    !canUndo && "opacity-50 cursor-not-allowed",
                   )}
                 >
                   <Undo className="h-4 w-4" />
@@ -91,7 +96,7 @@ export function BottomToolbar({
                   disabled={!canRedo}
                   className={cn(
                     "h-8 w-8",
-                    !canRedo && "opacity-50 cursor-not-allowed"
+                    !canRedo && "opacity-50 cursor-not-allowed",
                   )}
                 >
                   <Redo className="h-4 w-4" />
@@ -189,9 +194,9 @@ export function BottomToolbar({
               </TooltipContent>
             </Tooltip>
 
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-8 px-3 text-xs font-mono min-w-16"
               onClick={onFitToScreen}
             >
