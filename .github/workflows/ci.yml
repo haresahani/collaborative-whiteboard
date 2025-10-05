@@ -21,23 +21,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js
+      # 2️⃣ Setup Node.js + Corepack
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: "pnpm"
 
-      # 3️⃣ Setup PNPM (primary)
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 10
-          run_install: false
+      - name: Enable Corepack (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
 
-      # 3.1️⃣ Ensure pnpm is available (fallback)
-      - name: Ensure pnpm is available (fallback)
-        run: npm install -g pnpm
+      # 3️⃣ (Optional) Setup pnpm action to pin exact version
+      - name: Setup pnpm (action)
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+          run_install: false
 
       # 4️⃣ Cache PNPM store (optional, speeds up installs)
       - name: Cache PNPM store
