@@ -73,6 +73,64 @@
 
 
 
+# name: CI
+
+# on:
+#   push:
+#     branches:
+#       - main
+#       - develop
+#       - feat/**
+#   pull_request:
+#     branches:
+#       - main
+#       - develop
+#       - feat/**
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # 1️⃣ Checkout the repo
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+
+#       # 2️⃣ Setup pnpm to pin exact version
+#       - name: Setup pnpm
+#         uses: pnpm/action-setup@v4  # Updated to v4
+#         with:
+#           version: 9
+#           run_install: false
+
+#       # 3️⃣ Setup Node.js with built-in pnpm caching
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 22
+#           cache: "pnpm"
+
+#       # 4️⃣ Install dependencies
+#       - name: Install dependencies
+#         run: pnpm install --frozen-lockfile
+
+#       # 5️⃣ Typecheck (matches Husky pre-commit)
+#       - name: Typecheck
+#         run: pnpm typecheck
+
+#       # 6️⃣ Lint
+#       - name: Lint
+#         run: pnpm -w lint
+
+#       # 7️⃣ Run Tests
+#       - name: Run Tests
+#         run: pnpm -w test
+
+#       # 8️⃣ Build
+#       - name: Build
+#         run: pnpm -w build
+
+
 name: CI
 
 on:
@@ -94,38 +152,46 @@ jobs:
     steps:
       # 1️⃣ Checkout the repo
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      # 2️⃣ Setup pnpm to pin exact version
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4  # Updated to v4
-        with:
-          version: 9
-          run_install: false
-
-      # 3️⃣ Setup Node.js with built-in pnpm caching
+      # 2️⃣ Setup Node.js (disable built-in caching to avoid pnpm lookup error)
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: "pnpm"
+          package-manager-cache: false  # Disables auto caching if package.json has "packageManager"
 
-      # 4️⃣ Install dependencies
+      # 3️⃣ Enable Corepack (pnpm)
+      - name: Enable Corepack (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+
+      # 4️⃣ Cache PNPM store (manual, speeds up installs)
+      - name: Cache PNPM store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}  # Add '**/' for monorepos if needed
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # 5️⃣ Install dependencies
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 5️⃣ Typecheck (matches Husky pre-commit)
+      # 6️⃣ Typecheck (matches Husky pre-commit)
       - name: Typecheck
         run: pnpm typecheck
 
-      # 6️⃣ Lint
+      # 7️⃣ Lint
       - name: Lint
         run: pnpm -w lint
 
-      # 7️⃣ Run Tests
+      # 8️⃣ Run Tests
       - name: Run Tests
         run: pnpm -w test
 
-      # 8️⃣ Build
+      # 9️⃣ Build
       - name: Build
         run: pnpm -w build
