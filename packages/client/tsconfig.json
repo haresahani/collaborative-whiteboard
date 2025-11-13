@@ -11,9 +11,17 @@
     "paths": {
       "@/*": ["src/*"],
       "@shared/*": ["../../packages/shared/src/*"]
-    }
+    },
+    "types": ["jest", "node"] // ✅ add this line
   },
-  "include": ["src/**/*", "*.ts", "*.js", "components.json"],
+  "include": [
+    "src/**/*",
+    "tests/**/*", // ✅ include test files
+    "jest.setup.ts", // ✅ include setup file
+    "*.ts",
+    "*.js",
+    "components.json"
+  ],
   "exclude": ["node_modules", "dist"],
   "references": []
 }
