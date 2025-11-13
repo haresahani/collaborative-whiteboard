@@ -69,10 +69,6 @@
 #       - name: Build
 #         run: pnpm -w build
 
-
-
-
-
 # name: CI
 
 # on:
@@ -130,7 +126,6 @@
 #       - name: Build
 #         run: pnpm -w build
 
-
 name: CI
 
 on:
@@ -159,7 +154,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
-          package-manager-cache: false  # Disables auto caching if package.json has "packageManager"
+          package-manager-cache: false # Disables auto caching if package.json has "packageManager"
 
       # 3️⃣ Enable Corepack (pnpm)
       - name: Enable Corepack (pnpm)
@@ -172,7 +167,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}  # Add '**/' for monorepos if needed
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }} # Add '**/' for monorepos if needed
           restore-keys: |
             ${{ runner.os }}-pnpm-
 
