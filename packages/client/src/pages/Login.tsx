@@ -18,6 +18,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { AuthDialog } from "@/components/auth/AuthDialog";
+import { generateUUID } from "@/lib/utils";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function Login() {
       onClose={() => {}} // Empty function to prevent default navigation
       onAuthenticated={(user) => {
         console.log("✅ Logged in:", user);
-        navigate(`/board/${crypto.randomUUID()}`);
+        navigate(`/board/${generateUUID()}`);
       }}
     />
   );
