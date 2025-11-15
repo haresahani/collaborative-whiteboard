@@ -70,12 +70,12 @@ export function RightPanel({ isOpen, onClose }: RightPanelProps) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop for mobile */}
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
             onClick={onClose}
           />
 
@@ -85,7 +85,7 @@ export function RightPanel({ isOpen, onClose }: RightPanelProps) {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-14 bottom-0 w-80 bg-surface border-l border-border-subtle z-50 lg:relative lg:top-0"
+            className="fixed right-0 top-14 bottom-0 w-80 bg-surface border-l border-border-subtle z-50"
           >
             <div className="flex flex-col h-full">
               {/* Header */}

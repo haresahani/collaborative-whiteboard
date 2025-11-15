@@ -211,7 +211,7 @@ function WhiteboardContent() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
-          className="tool-button-active w-12 h-12 rounded-xl shadow-lg lg:hidden"
+          className="tool-button-active w-12 h-12 rounded-xl shadow-lg"
         >
           <span className="text-sm font-bold">
             {Object.values(state.users).filter((u) => u.isOnline).length}

@@ -18,8 +18,6 @@ export function generateUUID(): string {
     return crypto.randomUUID();
   }
 
-  // Fallback: Generate UUID v4 using crypto.getRandomValues()
-  // This is more widely supported than randomUUID()
   if (typeof crypto !== "undefined" && crypto.getRandomValues) {
     // UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
     const bytes = new Uint8Array(16);
@@ -43,8 +41,6 @@ export function generateUUID(): string {
     ].join("-");
   }
 
-  // Last resort: Math.random() fallback (not cryptographically secure)
-  // This should rarely be needed in modern browsers
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === "x" ? r : (r & 0x3) | 0x8;
