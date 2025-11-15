@@ -1,6 +1,7 @@
 // pages/Index.tsx
 import React, { useState } from "react";
 import { Menu, X, ArrowRight, Palette, Users, Zap } from "lucide-react";
+import { generateUUID } from "@/lib/utils";
 
 // Main App component containing all logic and sub-components.
 // All components are defined within this single file to adhere to the project's single-file mandate.
@@ -162,7 +163,7 @@ const App: React.FC = () => {
             </a>
             {/* The "Continue as Guest" button now directly navigates to a new board */}
             <a
-              href={`/board/${crypto.randomUUID()}`}
+              href={`/board/${generateUUID()}`}
               className="py-3.5 px-8 text-[hsl(var(--muted-foreground))] font-semibold rounded-xl hover:text-[hsl(var(--primary-hover))] transition-colors flex items-center space-x-2"
             >
               <span>Continue as Guest</span>

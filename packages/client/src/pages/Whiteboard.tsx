@@ -19,6 +19,7 @@ import type { User } from "@/types/whiteboard";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileToolTray } from "@/components/layout/MobileToolTray";
+import { generateUUID } from "@/lib/utils";
 
 // Mock users for demo
 const mockUsers: Record<string, User> = {
@@ -63,7 +64,7 @@ function WhiteboardContent() {
   useEffect(() => {
     if (!state.currentUser) {
       const guestUser: User = {
-        id: `guest-${crypto.randomUUID()}`,
+        id: `guest-${generateUUID()}`,
         name: "Guest",
         avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest",
         color: "hsl(var(--presence-guest))",
