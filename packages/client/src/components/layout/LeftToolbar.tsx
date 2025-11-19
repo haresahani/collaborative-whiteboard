@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { DrawingTool } from "@/types/whiteboard";
+import type { DrawingTool, StrokeStyle } from "@/types/whiteboard";
 import { useWhiteboard } from "@/contexts/WhiteboardContext";
 import { cn } from "@/lib/utils";
 
@@ -45,8 +45,25 @@ interface LeftToolbarProps {
 }
 
 export function LeftToolbar({ isCollapsed = false }: LeftToolbarProps) {
-  const { state, setTool } = useWhiteboard();
-  const { tool: activeTool } = state;
+  const { state, setTool, setToolSettings } = useWhiteboard();
+  const { tool: activeTool, toolSettings } = state;
+
+  const strokeStyles: { id: StrokeStyle; label: string }[] = [
+    { id: "solid", label: "Solid" },
+    { id: "dashed", label: "Dashed" },
+    { id: "dotted", label: "Dotted" },
+  ];
+
+  const colorOptions = [
+    "hsl(213 94% 68%)",
+    "hsl(263 85% 70%)",
+    "hsl(142 69% 58%)",
+    "hsl(25 95% 63%)",
+    "hsl(0 84% 60%)",
+    "hsl(48 94% 68%)",
+    "hsl(0 0% 3.9%)",
+    "hsl(0 0% 100%)",
+  ];
 
   return (
     <TooltipProvider>
@@ -125,9 +142,12 @@ export function LeftToolbar({ isCollapsed = false }: LeftToolbarProps) {
                   {[1, 2, 4, 8].map((width) => (
                     <Button
                       key={width}
-                      variant="ghost"
+                      variant={
+                        toolSettings.strokeWidth === width ? "default" : "ghost"
+                      }
                       size="sm"
                       className="w-full h-8 text-xs"
+                      onClick={() => setToolSettings({ strokeWidth: width })}
                     >
                       {width}px
                     </Button>
@@ -137,22 +157,61 @@ export function LeftToolbar({ isCollapsed = false }: LeftToolbarProps) {
 
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                  Stroke Style
+                </label>
+                <div className="grid grid-cols-3 gap-1">
+                  {strokeStyles.map((styleOption) => (
+                    <Button
+                      key={styleOption.id}
+                      variant={
+                        toolSettings.strokeStyle === styleOption.id
+                          ? "default"
+                          : "ghost"
+                      }
+                      size="sm"
+                      className="text-xs"
+                      onClick={() =>
+                        setToolSettings({ strokeStyle: styleOption.id })
+                      }
+                    >
+                      {styleOption.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                  Opacity ({Math.round(toolSettings.opacity * 100)}%)
+                </label>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={toolSettings.opacity}
+                  onChange={(event) =>
+                    setToolSettings({ opacity: Number(event.target.value) })
+                  }
+                  className="w-full accent-primary"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-2 block">
                   Colors
                 </label>
                 <div className="grid grid-cols-4 gap-1">
-                  {[
-                    "hsl(var(--accent-blue))",
-                    "hsl(var(--accent-purple))",
-                    "hsl(var(--accent-green))",
-                    "hsl(var(--accent-orange))",
-                    "hsl(var(--accent-red))",
-                    "hsl(var(--accent-yellow))",
-                    "hsl(var(--foreground))",
-                    "hsl(var(--muted-foreground))",
-                  ].map((color, index) => (
+                  {colorOptions.map((color, index) => (
                     <button
                       key={index}
-                      className="w-6 h-6 rounded border border-border-subtle hover:scale-110 transition-transform"
+                      onClick={() => setToolSettings({ strokeColor: color })}
+                      className={cn(
+                        "w-6 h-6 rounded border hover:scale-110 transition-transform",
+                        toolSettings.strokeColor === color
+                          ? "border-primary scale-110"
+                          : "border-border-subtle",
+                      )}
                       style={{ backgroundColor: color }}
                     />
                   ))}

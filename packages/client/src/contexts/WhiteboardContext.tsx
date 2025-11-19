@@ -5,6 +5,7 @@ import type {
   DrawingElement,
   DrawingTool,
   User,
+  ToolSettings,
 } from "@/types/whiteboard";
 // import { WhiteboardEvent } from "@/types/whiteboard";
 
@@ -22,11 +23,19 @@ const initialState: WhiteboardState = {
   users: {},
   currentUser: null,
   isConnected: false,
+  toolSettings: {
+    strokeWidth: 2,
+    strokeColor: "hsl(213 94% 68%)",
+    fillColor: "transparent",
+    strokeStyle: "solid",
+    opacity: 1,
+  },
 };
 
 // Action types
 type WhiteboardAction =
   | { type: "SET_TOOL"; payload: DrawingTool }
+  | { type: "SET_TOOL_SETTINGS"; payload: Partial<ToolSettings> }
   | { type: "ADD_ELEMENT"; payload: DrawingElement }
   | {
       type: "UPDATE_ELEMENT";
@@ -51,6 +60,12 @@ function whiteboardReducer(
   switch (action.type) {
     case "SET_TOOL":
       return { ...state, tool: action.payload };
+
+    case "SET_TOOL_SETTINGS":
+      return {
+        ...state,
+        toolSettings: { ...state.toolSettings, ...action.payload },
+      };
 
     case "ADD_ELEMENT":
       const newElements = [...state.elements, action.payload];
@@ -151,6 +166,7 @@ interface WhiteboardContextType {
   dispatch: React.Dispatch<WhiteboardAction>;
   // Helper functions
   setTool: (tool: DrawingTool) => void;
+  setToolSettings: (settings: Partial<ToolSettings>) => void;
   addElement: (element: DrawingElement) => void;
   updateElement: (id: string, updates: Partial<DrawingElement>) => void;
   deleteElement: (id: string) => void;
@@ -181,6 +197,8 @@ export function WhiteboardProvider({
   // Helper functions
   const setTool = (tool: DrawingTool) =>
     dispatch({ type: "SET_TOOL", payload: tool });
+  const setToolSettings = (settings: Partial<ToolSettings>) =>
+    dispatch({ type: "SET_TOOL_SETTINGS", payload: settings });
   const addElement = (element: DrawingElement) =>
     dispatch({ type: "ADD_ELEMENT", payload: element });
   const updateElement = (id: string, updates: Partial<DrawingElement>) =>
@@ -202,6 +220,7 @@ export function WhiteboardProvider({
     state,
     dispatch,
     setTool,
+    setToolSettings,
     addElement,
     updateElement,
     deleteElement,

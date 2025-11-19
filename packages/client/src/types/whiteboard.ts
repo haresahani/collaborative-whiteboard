@@ -17,6 +17,8 @@ export interface User {
   isOnline: boolean;
 }
 
+export type StrokeStyle = "solid" | "dashed" | "dotted";
+
 export interface DrawingElement {
   id: string;
   type: "path" | "rectangle" | "circle" | "line" | "text" | "sticky-note";
@@ -28,6 +30,7 @@ export interface DrawingElement {
     strokeWidth: number;
     fill: string;
     opacity: number;
+    strokeStyle?: StrokeStyle;
   };
   data: Record<string, unknown>;
   createdBy: string;
@@ -72,6 +75,14 @@ export type DrawingTool =
   | "eraser"
   | "hand";
 
+export interface ToolSettings {
+  strokeWidth: number;
+  strokeColor: string;
+  fillColor: string;
+  strokeStyle: StrokeStyle;
+  opacity: number;
+}
+
 export interface WhiteboardState {
   elements: DrawingElement[];
   selectedElements: string[];
@@ -89,6 +100,7 @@ export interface WhiteboardState {
   users: Record<string, User>;
   currentUser: User | null;
   isConnected: boolean;
+  toolSettings: ToolSettings;
 }
 
 export interface WhiteboardEvent {
