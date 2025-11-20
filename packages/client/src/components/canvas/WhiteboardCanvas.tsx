@@ -134,6 +134,15 @@ export function WhiteboardCanvas({
     };
   }, []);
 
+  const getPathPoints = useCallback((element: DrawingElement) => {
+    if (element.type !== "path") return undefined;
+    const data = element.data as { points?: unknown };
+    if (Array.isArray(data.points)) {
+      return data.points as Point[];
+    }
+    return undefined;
+  }, []);
+
   const getNormalizedShape = useCallback((start: Point, current: Point) => {
     const width = current.x - start.x;
     const height = current.y - start.y;
@@ -174,13 +183,10 @@ export function WhiteboardCanvas({
         case "sticky-note":
           return normalizeBounds(element.position, element.size);
         case "path":
-          if (
-            element.data.points &&
-            Array.isArray(element.data.points) &&
-            element.data.points.length > 0
-          ) {
-            const xs = element.data.points.map((p: Point) => p.x);
-            const ys = element.data.points.map((p: Point) => p.y);
+          const pathPoints = getPathPoints(element);
+          if (pathPoints && pathPoints.length > 0) {
+            const xs = pathPoints.map((p: Point) => p.x);
+            const ys = pathPoints.map((p: Point) => p.y);
             const minX = Math.min(...xs);
             const maxX = Math.max(...xs);
             const minY = Math.min(...ys);
@@ -197,7 +203,7 @@ export function WhiteboardCanvas({
           return null;
       }
     },
-    [normalizeBounds],
+    [normalizeBounds, getPathPoints],
   );
 
   const distanceFromSegment = (p: Point, a: Point, b: Point) => {
@@ -321,15 +327,12 @@ export function WhiteboardCanvas({
         if (el) {
           acc[id] = {
             position: { ...el.position },
-            pathPoints:
-              el.type === "path" && el.data.points
-                ? el.data.points.map((p: Point) => ({ ...p }))
-                : undefined,
+            pathPoints: getPathPoints(el)?.map((p: Point) => ({ ...p })),
           };
         }
         return acc;
       }, {}),
-    [elements],
+    [elements, getPathPoints],
   );
 
   const handlePointerDown = useCallback(
@@ -739,11 +742,12 @@ export function WhiteboardCanvas({
       // Render based on type
       switch (element.type) {
         case "path":
-          if (element.data.points && element.data.points.length > 1) {
+          const pathPoints = getPathPoints(element);
+          if (pathPoints && pathPoints.length > 1) {
             ctx.beginPath();
-            ctx.moveTo(element.data.points[0].x, element.data.points[0].y);
-            for (let i = 1; i < element.data.points.length; i++) {
-              ctx.lineTo(element.data.points[i].x, element.data.points[i].y);
+            ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
+            for (let i = 1; i < pathPoints.length; i++) {
+              ctx.lineTo(pathPoints[i].x, pathPoints[i].y);
             }
             ctx.stroke();
           }

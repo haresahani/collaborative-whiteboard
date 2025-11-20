@@ -1,14 +1,27 @@
 // src/config/constants.ts
 // Support both Vite (import.meta.env) and Jest/Node (process.env)
-const _env: Record<string, string | undefined> = (() => {
+type EnvRecord = Record<string, string | undefined>;
+
+const _env: EnvRecord = (() => {
   try {
-    // @ts-expect-error - import.meta may not exist in Node
-    return typeof import.meta !== "undefined" && import.meta?.env
-      ? // @ts-expect-error - import.meta.env is not typed in Node environment
-        import.meta.env
-      : (process.env as Record<string, string | undefined>);
+    const importMeta =
+      typeof import.meta !== "undefined" ? (import.meta as unknown) : undefined;
+    const importMetaEnv = (importMeta as { env?: EnvRecord } | undefined)?.env;
+
+    if (importMetaEnv) {
+      return importMetaEnv;
+    }
+
+    if (typeof process !== "undefined" && process.env) {
+      return process.env as EnvRecord;
+    }
+
+    return {};
   } catch {
-    return process.env as Record<string, string | undefined>;
+    if (typeof process !== "undefined" && process.env) {
+      return process.env as EnvRecord;
+    }
+    return {};
   }
 })();
 
