@@ -6,15 +6,22 @@ const _env: EnvRecord = (() => {
   try {
     const importMeta =
       typeof import.meta !== "undefined" ? (import.meta as unknown) : undefined;
-    const importMetaEnv = (importMeta as { env?: EnvRecord })?.env;
+    const importMetaEnv = (importMeta as { env?: EnvRecord } | undefined)?.env;
 
     if (importMetaEnv) {
       return importMetaEnv;
     }
 
-    return process.env as EnvRecord;
+    if (typeof process !== "undefined" && process.env) {
+      return process.env as EnvRecord;
+    }
+
+    return {};
   } catch {
-    return process.env as EnvRecord;
+    if (typeof process !== "undefined" && process.env) {
+      return process.env as EnvRecord;
+    }
+    return {};
   }
 })();
 
