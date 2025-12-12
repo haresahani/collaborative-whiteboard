@@ -1,6 +1,9 @@
 import React, { useRef, useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useWhiteboard } from "@/contexts/WhiteboardContext";
+import SelectionBox from "@/components/canvas/SelectionBox";
+import { degToRad, rotatePoint } from "@/lib/transform";
+
 import type {
   DrawingElement,
   Point,
@@ -238,14 +241,28 @@ export function WhiteboardCanvas({
 
   const isPointInElement = useCallback(
     (element: DrawingElement, point: Point) => {
+      // Short-circuit for lines by rotating point and endpoints into local space
       if (element.type === "line") {
-        const start = element.position;
-        const end = {
-          x: element.position.x + element.size.width,
-          y: element.position.y + element.size.height,
+        const center = {
+          x: element.position.x + element.size.width / 2,
+          y: element.position.y + element.size.height / 2,
         };
+        const rotRad = degToRad(element.rotation || 0);
+
+        // rotate point and endpoints into element-local (unrotated) space
+        const localPoint = rotatePoint(point, center, -rotRad);
+        const start = rotatePoint(element.position, center, -rotRad);
+        const end = rotatePoint(
+          {
+            x: element.position.x + element.size.width,
+            y: element.position.y + element.size.height,
+          },
+          center,
+          -rotRad,
+        );
+
         return (
-          distanceFromSegment(point, start, end) <=
+          distanceFromSegment(localPoint, start, end) <=
           (element.style.strokeWidth || 2) + 4
         );
       }
@@ -253,23 +270,30 @@ export function WhiteboardCanvas({
       const bounds = getElementBounds(element);
       if (!bounds) return false;
 
+      // Rotate the test point into the element-local (non-rotated) coordinate system
+      const center = {
+        x: element.position.x + element.size.width / 2,
+        y: element.position.y + element.size.height / 2,
+      };
+      const rotRad = degToRad(element.rotation || 0);
+      const testPoint = element.rotation
+        ? rotatePoint(point, center, -rotRad)
+        : point;
+
       const withinBounds =
-        point.x >= bounds.x &&
-        point.x <= bounds.x + bounds.width &&
-        point.y >= bounds.y &&
-        point.y <= bounds.y + bounds.height;
+        testPoint.x >= bounds.x &&
+        testPoint.x <= bounds.x + bounds.width &&
+        testPoint.y >= bounds.y &&
+        testPoint.y <= bounds.y + bounds.height;
 
       if (!withinBounds) return false;
 
       if (element.type === "circle") {
         const radiusX = bounds.width / 2 || 0.0001;
         const radiusY = bounds.height / 2 || 0.0001;
-        const center = {
-          x: bounds.x + radiusX,
-          y: bounds.y + radiusY,
-        };
-        const normalizedX = (point.x - center.x) / radiusX;
-        const normalizedY = (point.y - center.y) / radiusY;
+        const centerLocal = { x: bounds.x + radiusX, y: bounds.y + radiusY };
+        const normalizedX = (testPoint.x - centerLocal.x) / radiusX;
+        const normalizedY = (testPoint.y - centerLocal.y) / radiusY;
         return normalizedX * normalizedX + normalizedY * normalizedY <= 1;
       }
 
@@ -714,16 +738,15 @@ export function WhiteboardCanvas({
     [...elements, ...(tempElement ? [tempElement] : [])].forEach((element) => {
       ctx.save();
 
-      // Apply element transform
       if (element.rotation !== 0) {
         ctx.translate(
           element.position.x + element.size.width / 2,
           element.position.y + element.size.height / 2,
         );
-        ctx.rotate(element.rotation);
+        ctx.rotate(degToRad(element.rotation));
         ctx.translate(
           -(element.position.x + element.size.width / 2),
-          -(element.position.y + element.size.height / 2),
+          -(element.position.y + element.size.height / 2), // <-- use height here
         );
       }
 
@@ -908,12 +931,32 @@ export function WhiteboardCanvas({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
+      {/* 🎨 Canvas */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
         style={{ touchAction: "none" }}
       />
 
+      {/* 🎯 Selection boxes for currently selected elements */}
+      {selectedElements.map((id) => {
+        const el = elements.find((e) => e.id === id);
+        if (!el) return null;
+        return (
+          <SelectionBox
+            key={"sel-" + el.id}
+            element={el}
+            viewport={viewport}
+            screenToCanvas={screenToCanvas}
+            onTransform={(updates) => {
+              // Use RAF-throttled update commit to store to avoid thrashing.
+              updateElement(el.id, updates);
+            }}
+          />
+        );
+      })}
+
+      {/* 🟦 Marquee selection */}
       {tool === "select" && selectionRect && (
         <div
           className="absolute border border-primary/60 bg-primary/10 pointer-events-none"
@@ -926,10 +969,10 @@ export function WhiteboardCanvas({
         />
       )}
 
-      {/* Presence cursors for collaboration */}
+      {/* 👤 Presence cursors */}
       <PresenceCursors />
 
-      {/* Loading state overlay */}
+      {/* 🔄 Loading overlay */}
       {!state.isConnected && (
         <motion.div
           initial={{ opacity: 0 }}

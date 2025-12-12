@@ -1,4 +1,5 @@
-import React from "react";
+// src/components/layout/BottomToolbar.tsx
+import React, { useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Undo,
@@ -9,7 +10,6 @@ import {
   Download,
   Copy,
   Trash2,
-  Move,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -36,21 +36,59 @@ export function BottomToolbar({
   onZoomIn,
   onZoomOut,
 }: BottomToolbarProps) {
-  const { state, undo, redo, canUndo, canRedo } = useWhiteboard();
+  // NOTE: added deleteElement to destructure here
+  const { state, undo, redo, canUndo, canRedo, deleteElement } =
+    useWhiteboard();
   const { viewport, selectedElements } = state;
 
   const zoomPercentage = Math.round(viewport.zoom * 100);
-  const hasSelection = selectedElements.length > 0;
+  const hasSelection = selectedElements && selectedElements.length > 0;
 
-  const handleCopy = () => {
-    // In a real app, this would copy selected elements to clipboard
+  // Copy selected elements (placeholder — adapt to your clipboard logic)
+  const handleCopy = useCallback(() => {
+    if (!hasSelection) return;
+    // For now, just a console message. Replace with real copy logic if you have it.
     console.log("Copying selected elements:", selectedElements);
-  };
+  }, [hasSelection, selectedElements]);
 
-  const handleDelete = () => {
-    // In a real app, this would delete selected elements
-    console.log("Deleting selected elements:", selectedElements);
-  };
+  // Delete selected elements using store's deleteElement function
+  const handleDelete = useCallback(() => {
+    if (!hasSelection) return;
+    if (typeof deleteElement !== "function") {
+      console.warn("deleteElement is not available from useWhiteboard()");
+      return;
+    }
+    // delete each selected element
+    selectedElements.forEach((id: string) => {
+      try {
+        deleteElement(id);
+      } catch (err) {
+        console.error("Failed to delete element", id, err);
+      }
+    });
+  }, [hasSelection, selectedElements, deleteElement]);
+
+  // Keyboard shortcut: Delete / Backspace
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // ignore when typing in inputs
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      )
+        return;
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        handleDelete();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleDelete]);
 
   return (
     <TooltipProvider>
@@ -151,6 +189,7 @@ export function BottomToolbar({
                       size="icon"
                       onClick={handleDelete}
                       className="h-8 w-8 text-destructive hover:text-destructive"
+                      aria-label="Delete selected"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
