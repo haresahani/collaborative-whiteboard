@@ -1,4 +1,3 @@
-// src/components/layout/BottomToolbar.tsx
 import React, { useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import {

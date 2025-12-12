@@ -1,4 +1,3 @@
-// src/store/whiteboardStore.ts
 import { create } from "zustand";
 
 /** Types */

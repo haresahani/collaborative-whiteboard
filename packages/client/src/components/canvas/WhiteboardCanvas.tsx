@@ -931,14 +931,14 @@ export function WhiteboardCanvas({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      {/* 🎨 Canvas */}
+      {/* Canvas */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
         style={{ touchAction: "none" }}
       />
 
-      {/* 🎯 Selection boxes for currently selected elements */}
+      {/* Selection boxes for currently selected elements */}
       {selectedElements.map((id) => {
         const el = elements.find((e) => e.id === id);
         if (!el) return null;

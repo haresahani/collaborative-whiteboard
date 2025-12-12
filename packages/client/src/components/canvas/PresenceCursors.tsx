@@ -1,4 +1,3 @@
-// src/components/canvas/PresenceCursors.tsx
 import React, { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MousePointer2 } from "lucide-react";

@@ -1,4 +1,3 @@
-// src/components/canvas/SelectionBox.tsx
 import React, { useRef, useEffect, useState } from "react";
 import type { DrawingElement, Point } from "@/types/whiteboard";
 import { degToRad, radToDeg, rotatePoint } from "@/lib/transform"; // you can implement tiny helpers if missing
