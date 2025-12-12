@@ -62,7 +62,7 @@ export const useWhiteboardElementsStore = create<WhiteboardElementsState>(
             ...e,
             data: { ...e.data, ...dataPatch },
             updatedAt: Date.now(),
-          } as DrawingElement; // safe because we're only adding/override properties
+          } as DrawingElement;
         });
         return { elements };
       }),
