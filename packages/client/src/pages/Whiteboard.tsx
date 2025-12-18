@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+// src/pages/Whiteboard.tsx
+
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { TopNavigation } from "@/components/layout/TopNavigation";
 import { LeftToolbar } from "@/components/layout/LeftToolbar";
@@ -15,11 +17,12 @@ import {
   useKeyboardShortcuts,
   createWhiteboardShortcuts,
 } from "@/hooks/useKeyboardShortcuts";
-import type { User } from "@/types/whiteboard";
+import type { User, Point } from "@/types/whiteboard";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileToolTray } from "@/components/layout/MobileToolTray";
 import { generateUUID } from "@/lib/utils";
+import { cloneElements } from "@/lib/clipboard";
 
 // Mock users for demo
 const mockUsers: Record<string, User> = {
@@ -49,8 +52,21 @@ function WhiteboardContent() {
   const isMobile = useIsMobile();
   const [isMobileToolsOpen, setIsMobileToolsOpen] = useState(false);
 
-  const { state, dispatch, setTool, undo, redo, setViewport } = useWhiteboard();
+  const {
+    state,
+    dispatch,
+    setTool,
+    undo,
+    redo,
+    setViewport,
+    addElement,
+    selectElements,
+    deleteElement,
+  } = useWhiteboard();
+
   const { toast } = useToast();
+
+  const lastMousePosition = useRef<Point | null>(null);
 
   // Mock WebSocket connection
   const { sendCursor } = useMockWebSocket({
@@ -85,20 +101,137 @@ function WhiteboardContent() {
     }
   }, [state.currentUser, dispatch]);
 
-  // Keyboard shortcuts
-  const shortcuts = createWhiteboardShortcuts({
+  // Track mouse position for accurate paste location
+  const handleCursorMove = (point: Point) => {
+    lastMousePosition.current = point;
+    sendCursor(point.x, point.y);
+  };
+
+  // Fallback center if no mouse position
+  const getFallbackCenter = (): Point => ({
+    x: (window.innerWidth / 2 - state.viewport.x) / state.viewport.zoom,
+    y: (window.innerHeight / 2 - state.viewport.y) / state.viewport.zoom,
+  });
+
+  const getPastePosition = (): Point => {
+    return lastMousePosition.current || getFallbackCenter();
+  };
+
+  // Keyboard shortcut actions with toast feedback
+  const actions = {
     undo,
     redo,
-    copy: () => console.log("Copy"),
-    paste: () => console.log("Paste"),
-    delete: () => console.log("Delete"),
-    selectAll: () => console.log("Select all"),
-    duplicate: () => console.log("Duplicate"),
+    copy: () => {
+      if (state.selectedElements.length === 0) return;
+      const toCopy = state.elements.filter((el) =>
+        state.selectedElements.includes(el.id),
+      );
+      dispatch({ type: "SET_CLIPBOARD", payload: toCopy });
+      toast({
+        title: "Copied",
+        description: `${toCopy.length} element${toCopy.length > 1 ? "s" : ""} copied`,
+      });
+    },
+    paste: () => {
+      if (state.clipboard.length === 0) return;
+
+      const cursorPos = lastMousePosition.current || { x: 0, y: 0 };
+
+      // Calculate bounding box of the copied group
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+
+      state.clipboard.forEach((el) => {
+        if (el.type === "path" && Array.isArray(el.data.points)) {
+          el.data.points.forEach((p: Point) => {
+            minX = Math.min(minX, p.x);
+            minY = Math.min(minY, p.y);
+            maxX = Math.max(maxX, p.x);
+            maxY = Math.max(maxY, p.y);
+          });
+        } else {
+          minX = Math.min(minX, el.position.x);
+          minY = Math.min(minY, el.position.y);
+          maxX = Math.max(maxX, el.position.x + el.size.width);
+          maxY = Math.max(maxY, el.position.y + el.size.height);
+        }
+      });
+
+      // Fallback if empty
+      if (minX === Infinity) {
+        minX = maxX = cursorPos.x;
+        minY = maxY = cursorPos.y;
+      }
+
+      // Center of the group
+      const groupCenterX = (minX + maxX) / 2;
+      const groupCenterY = (minY + maxY) / 2;
+
+      // Offset so group center lands at cursor
+      const offset = {
+        x: cursorPos.x - groupCenterX,
+        y: cursorPos.y - groupCenterY,
+      };
+
+      const newEls = cloneElements(
+        state.clipboard,
+        offset,
+        state.currentUser?.id || "anonymous",
+      );
+
+      newEls.forEach(addElement);
+      selectElements(newEls.map((el) => el.id));
+
+      toast({
+        title: "Pasted",
+        description: `${newEls.length} element${newEls.length > 1 ? "s" : ""} pasted`,
+      });
+    },
+    delete: () => {
+      const count = state.selectedElements.length;
+      if (count === 0) return;
+      state.selectedElements.forEach((id) => deleteElement(id));
+      toast({
+        title: "Deleted",
+        description: `${count} element${count > 1 ? "s" : ""} deleted`,
+      });
+    },
+    selectAll: () => selectElements(state.elements.map((el) => el.id)),
+    duplicate: () => {
+      if (state.selectedElements.length === 0) return;
+
+      // First copy current selection to clipboard
+      const toDuplicate = state.elements.filter((el) =>
+        state.selectedElements.includes(el.id),
+      );
+      dispatch({ type: "SET_CLIPBOARD", payload: toDuplicate });
+
+      // Then paste with offset
+      const pos = getPastePosition();
+      const offset = { x: pos.x + 50, y: pos.y + 50 };
+
+      const newEls = cloneElements(
+        toDuplicate,
+        offset,
+        state.currentUser?.id || "anonymous",
+      );
+      newEls.forEach(addElement);
+      selectElements(newEls.map((el) => el.id));
+
+      toast({
+        title: "Duplicated",
+        description: `${newEls.length} element${newEls.length > 1 ? "s" : ""} duplicated`,
+      });
+    },
     setTool,
     zoomIn: () => handleZoom(0.1),
     zoomOut: () => handleZoom(-0.1),
     resetZoom: () => setViewport({ x: 0, y: 0, zoom: 1 }),
-  });
+  };
+
+  const shortcuts = createWhiteboardShortcuts(actions);
 
   useKeyboardShortcuts(shortcuts);
 
@@ -185,7 +318,7 @@ function WhiteboardContent() {
         {/* Canvas Area */}
         <div className="flex-1 relative">
           <WhiteboardCanvas
-            onCursorMove={(point) => sendCursor(point.x, point.y)}
+            onCursorMove={handleCursorMove}
             className="w-full h-full"
           />
         </div>

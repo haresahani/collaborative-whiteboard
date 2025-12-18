@@ -1,4 +1,3 @@
-// src/components/layout/LeftSidebarItem.tsx
 import React, { useRef, useEffect, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";

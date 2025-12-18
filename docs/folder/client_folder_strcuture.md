@@ -46,6 +46,9 @@ client/
 │ │ │ ├── LeftToolbar.tsx # Sidebar tools
 │ │ │ ├── RightPanel.tsx # Properties/Inspector panel
 │ │ │ └── TopNavigation.tsx # Top navigation bar
+| | | |** LeftSidebarItem.tsx
+| | | |** MobileToolTray.tsx
+| | | |** LeftSidebar.tsx
 │ │ └── ui/ # Generic ShadCN UI components
 │ │ ├── accordion.tsx
 │ │ ├── alert-dialog.tsx
@@ -112,15 +115,20 @@ client/
 │ │
 │ ├── lib/
 │ │ ├── utils.ts # Helper utilities
-│ │ └── crdt.ts # CRDT (conflict-free replicated data type)
+| | |** clipboard.ts
+| | |** hit.ts
+| | |** transform.ts
 │ │
 │ ├── store/
 │ │ └── whiteboardStore.ts # Zustand/Redux store for whiteboard
+| | |** whiteboardElementsStore.ts
 │ │
 │ ├── pages/
 │ │ ├── Index.tsx # Landing page
 │ │ ├── NotFound.tsx # 404 fallback page
 │ │ └── Whiteboard.tsx # Whiteboard page
+| | |** Login.tsx
+| | |\_\_ Signup.tsx
 │ │
 │ ├── types/
 │ │ ├── whiteboard.ts # Whiteboard-related types

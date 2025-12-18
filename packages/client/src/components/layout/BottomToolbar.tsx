@@ -1,4 +1,5 @@
-// src/components/layout/BottomToolbar.tsx
+// client/src/components/layout/BottomToolbar.tsx
+
 import React, { useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
@@ -8,7 +9,6 @@ import {
   ZoomOut,
   Maximize,
   Download,
-  Copy,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,42 +36,25 @@ export function BottomToolbar({
   onZoomIn,
   onZoomOut,
 }: BottomToolbarProps) {
-  // NOTE: added deleteElement to destructure here
   const { state, undo, redo, canUndo, canRedo, deleteElement } =
     useWhiteboard();
   const { viewport, selectedElements } = state;
 
   const zoomPercentage = Math.round(viewport.zoom * 100);
-  const hasSelection = selectedElements && selectedElements.length > 0;
+  const hasSelection = selectedElements.length > 0;
 
-  // Copy selected elements (placeholder — adapt to your clipboard logic)
-  const handleCopy = useCallback(() => {
-    if (!hasSelection) return;
-    // For now, just a console message. Replace with real copy logic if you have it.
-    console.log("Copying selected elements:", selectedElements);
-  }, [hasSelection, selectedElements]);
-
-  // Delete selected elements using store's deleteElement function
+  // Delete selected elements
   const handleDelete = useCallback(() => {
     if (!hasSelection) return;
-    if (typeof deleteElement !== "function") {
-      console.warn("deleteElement is not available from useWhiteboard()");
-      return;
-    }
-    // delete each selected element
+
     selectedElements.forEach((id: string) => {
-      try {
-        deleteElement(id);
-      } catch (err) {
-        console.error("Failed to delete element", id, err);
-      }
+      deleteElement(id);
     });
   }, [hasSelection, selectedElements, deleteElement]);
 
   // Keyboard shortcut: Delete / Backspace
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // ignore when typing in inputs
       const target = e.target as HTMLElement | null;
       if (
         target &&
@@ -86,6 +69,7 @@ export function BottomToolbar({
         handleDelete();
       }
     };
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [handleDelete]);
@@ -160,27 +144,6 @@ export function BottomToolbar({
                 <Badge variant="secondary" className="h-6 text-xs px-2">
                   {selectedElements.length} selected
                 </Badge>
-
-                <Tooltip delayDuration={500}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleCopy}
-                      className="h-8 w-8"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="flex items-center gap-2">
-                      Copy
-                      <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-mono text-muted-foreground">
-                        ⌘C
-                      </kbd>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
 
                 <Tooltip delayDuration={500}>
                   <TooltipTrigger asChild>

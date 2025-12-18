@@ -1,3 +1,5 @@
+// client/src/hooks/useKeyboardShortcuts.ts
+
 import { useEffect } from "react";
 import type { KeyboardShortcut } from "@/types/whiteboard";
 
@@ -36,7 +38,7 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
   }, [shortcuts]);
 }
 
-// Generic version for shortcuts
+// Simple action type — all actions are parameterless
 export type WhiteboardActions<TTool extends string> = {
   undo: () => void;
   redo: () => void;
