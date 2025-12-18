@@ -1,11 +1,9 @@
 import type { WhiteboardState } from "@/types/whiteboard";
 
 // Mock API functions for whiteboard operations
+// client/src/api/whiteboard.ts
 export async function fetchBoard(boardId: string): Promise<WhiteboardState> {
-  // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 500));
-
-  // Return mock whiteboard state
   return {
     elements: [],
     selectedElements: [],
@@ -15,6 +13,14 @@ export async function fetchBoard(boardId: string): Promise<WhiteboardState> {
     users: {},
     currentUser: null,
     isConnected: false,
+    toolSettings: {
+      strokeWidth: 2,
+      strokeColor: "hsl(213 94% 68%)",
+      fillColor: "transparent",
+      strokeStyle: "solid",
+      opacity: 1,
+    },
+    clipboard: [], // ← Add this line
   };
 }
 
@@ -24,7 +30,5 @@ export async function updateBoard(data: {
 }): Promise<void> {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 200));
-
-  // In a real app, this would save to backend
   console.log("Board updated:", data.id);
 }

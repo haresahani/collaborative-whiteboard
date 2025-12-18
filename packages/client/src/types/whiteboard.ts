@@ -2,12 +2,10 @@ export interface Point {
   x: number;
   y: number;
 }
-
 export interface Size {
   width: number;
   height: number;
 }
-
 export interface User {
   id: string;
   name: string;
@@ -16,9 +14,7 @@ export interface User {
   cursor?: Point;
   isOnline: boolean;
 }
-
 export type StrokeStyle = "solid" | "dashed" | "dotted";
-
 export interface DrawingElement {
   id: string;
   type: "path" | "rectangle" | "circle" | "line" | "text" | "sticky-note";
@@ -37,7 +33,6 @@ export interface DrawingElement {
   createdAt: number;
   updatedAt: number;
 }
-
 export interface DrawingPath extends DrawingElement {
   type: "path";
   data: {
@@ -45,7 +40,6 @@ export interface DrawingPath extends DrawingElement {
     smooth: boolean;
   };
 }
-
 export interface StickyNote extends DrawingElement {
   type: "sticky-note";
   data: {
@@ -53,7 +47,6 @@ export interface StickyNote extends DrawingElement {
     color: string;
   };
 }
-
 export interface TextElement extends DrawingElement {
   type: "text";
   data: {
@@ -63,7 +56,6 @@ export interface TextElement extends DrawingElement {
     fontWeight: string;
   };
 }
-
 export type DrawingTool =
   | "select"
   | "pen"
@@ -74,7 +66,6 @@ export type DrawingTool =
   | "sticky-note"
   | "eraser"
   | "hand";
-
 export interface ToolSettings {
   strokeWidth: number;
   strokeColor: string;
@@ -82,7 +73,6 @@ export interface ToolSettings {
   strokeStyle: StrokeStyle;
   opacity: number;
 }
-
 export interface WhiteboardState {
   elements: DrawingElement[];
   selectedElements: string[];
@@ -101,8 +91,8 @@ export interface WhiteboardState {
   currentUser: User | null;
   isConnected: boolean;
   toolSettings: ToolSettings;
+  clipboard: DrawingElement[];
 }
-
 export interface WhiteboardEvent {
   type:
     | "element-created"
@@ -115,7 +105,6 @@ export interface WhiteboardEvent {
   timestamp: number;
   data: unknown;
 }
-
 export interface KeyboardShortcut {
   key: string;
   ctrl?: boolean;

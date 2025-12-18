@@ -8,7 +8,6 @@ import type {
   ToolSettings,
 } from "@/types/whiteboard";
 // import { WhiteboardEvent } from "@/types/whiteboard";
-
 // Initial state
 const initialState: WhiteboardState = {
   elements: [],
@@ -30,8 +29,8 @@ const initialState: WhiteboardState = {
     strokeStyle: "solid",
     opacity: 1,
   },
+  clipboard: [],
 };
-
 // Action types
 type WhiteboardAction =
   | { type: "SET_TOOL"; payload: DrawingTool }
@@ -50,8 +49,8 @@ type WhiteboardAction =
   | { type: "REMOVE_USER"; payload: string }
   | { type: "SET_CURRENT_USER"; payload: User }
   | { type: "SET_CONNECTION_STATUS"; payload: boolean }
-  | { type: "SYNC_STATE"; payload: Partial<WhiteboardState> };
-
+  | { type: "SYNC_STATE"; payload: Partial<WhiteboardState> }
+  | { type: "SET_CLIPBOARD"; payload: DrawingElement[] };
 // Reducer
 function whiteboardReducer(
   state: WhiteboardState,
@@ -60,13 +59,11 @@ function whiteboardReducer(
   switch (action.type) {
     case "SET_TOOL":
       return { ...state, tool: action.payload };
-
     case "SET_TOOL_SETTINGS":
       return {
         ...state,
         toolSettings: { ...state.toolSettings, ...action.payload },
       };
-
     case "ADD_ELEMENT":
       const newElements = [...state.elements, action.payload];
       return {
@@ -78,7 +75,6 @@ function whiteboardReducer(
           future: [],
         },
       };
-
     case "UPDATE_ELEMENT":
       const updatedElements = state.elements.map((element) =>
         element.id === action.payload.id
@@ -86,7 +82,6 @@ function whiteboardReducer(
           : element,
       );
       return { ...state, elements: updatedElements };
-
     case "DELETE_ELEMENT":
       const filteredElements = state.elements.filter(
         (el) => el.id !== action.payload,
@@ -103,13 +98,10 @@ function whiteboardReducer(
           future: [],
         },
       };
-
     case "SELECT_ELEMENTS":
       return { ...state, selectedElements: action.payload };
-
     case "SET_VIEWPORT":
       return { ...state, viewport: action.payload };
-
     case "UNDO":
       if (state.history.past.length === 0) return state;
       const previous = state.history.past[state.history.past.length - 1];
@@ -122,7 +114,6 @@ function whiteboardReducer(
           future: [state.elements, ...state.history.future],
         },
       };
-
     case "REDO":
       if (state.history.future.length === 0) return state;
       const next = state.history.future[0];
@@ -135,31 +126,26 @@ function whiteboardReducer(
           future: state.history.future.slice(1),
         },
       };
-
     case "UPDATE_USER":
       return {
         ...state,
         users: { ...state.users, [action.payload.id]: action.payload },
       };
-
     case "REMOVE_USER":
       const { [action.payload]: _removed, ...remainingUsers } = state.users;
       return { ...state, users: remainingUsers };
-
     case "SET_CURRENT_USER":
       return { ...state, currentUser: action.payload };
-
     case "SET_CONNECTION_STATUS":
       return { ...state, isConnected: action.payload };
-
     case "SYNC_STATE":
       return { ...state, ...action.payload };
-
+    case "SET_CLIPBOARD":
+      return { ...state, clipboard: action.payload };
     default:
       return state;
   }
 }
-
 // Context
 interface WhiteboardContextType {
   state: WhiteboardState;
@@ -176,24 +162,21 @@ interface WhiteboardContextType {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  setClipboard: (elements: DrawingElement[]) => void;
 }
-
 const WhiteboardContext = createContext<WhiteboardContextType | undefined>(
   undefined,
 );
-
 // Provider
 interface WhiteboardProviderProps {
   boardId: string;
   children: ReactNode;
 }
-
 export function WhiteboardProvider({
   boardId: _boardId,
   children,
 }: WhiteboardProviderProps) {
   const [state, dispatch] = useReducer(whiteboardReducer, initialState);
-
   // Helper functions
   const setTool = (tool: DrawingTool) =>
     dispatch({ type: "SET_TOOL", payload: tool });
@@ -211,11 +194,11 @@ export function WhiteboardProvider({
     dispatch({ type: "SET_VIEWPORT", payload: viewport });
   const undo = () => dispatch({ type: "UNDO" });
   const redo = () => dispatch({ type: "REDO" });
-
+  const setClipboard = (elements: DrawingElement[]) =>
+    dispatch({ type: "SET_CLIPBOARD", payload: elements });
   // Computed values
   const canUndo = state.history.past.length > 0;
   const canRedo = state.history.future.length > 0;
-
   const value = {
     state,
     dispatch,
@@ -230,15 +213,14 @@ export function WhiteboardProvider({
     redo,
     canUndo,
     canRedo,
+    setClipboard,
   };
-
   return (
     <WhiteboardContext.Provider value={value}>
       {children}
     </WhiteboardContext.Provider>
   );
 }
-
 // Hook
 export function useWhiteboard() {
   const context = useContext(WhiteboardContext);
