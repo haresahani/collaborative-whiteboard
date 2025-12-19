@@ -1,5 +1,3 @@
-// client/src/components/canvas/WhiteboardCanvas.tsx
-
 import React, { useRef, useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useWhiteboard } from "@/contexts/WhiteboardContext";
@@ -48,6 +46,8 @@ interface SelectionRect {
   width: number;
   height: number;
 }
+
+const MARQUEE_THRESHOLD = 5; // Pixels to move before starting marquee
 
 export function WhiteboardCanvas({
   className,
@@ -105,9 +105,7 @@ export function WhiteboardCanvas({
     }
   }, [viewport, isPanning]);
 
-  // ===================================================================
   // Helper callbacks
-  // ===================================================================
 
   const normalizeBounds = useCallback((position: Point, size: Size) => {
     const width = size.width;
@@ -224,13 +222,31 @@ export function WhiteboardCanvas({
       const strokeWidth = element.style.strokeWidth || 2;
       const hitPadding = strokeWidth + 4; // Reduced padding, more precise
 
+      const center = {
+        x: element.position.x + element.size.width / 2,
+        y: element.position.y + element.size.height / 2,
+      };
+      const rotRad = degToRad(element.rotation || 0);
+      const testPoint = element.rotation
+        ? rotatePoint(point, center, -rotRad)
+        : point;
+
+      if (element.type === "path") {
+        const pathPoints = getPathPoints(element);
+        if (!pathPoints || pathPoints.length < 2) return false;
+        for (let i = 0; i < pathPoints.length - 1; i++) {
+          const a = pathPoints[i];
+          const b = pathPoints[i + 1];
+          // If rotated, rotate a and b back too
+          if (distanceFromSegment(testPoint, a, b) <= hitPadding) {
+            return true;
+          }
+        }
+        return false;
+      }
+
       if (element.type === "line") {
-        const center = {
-          x: element.position.x + element.size.width / 2,
-          y: element.position.y + element.size.height / 2,
-        };
-        const rotRad = degToRad(element.rotation || 0);
-        const localPoint = rotatePoint(point, center, -rotRad);
+        const localPoint = testPoint;
         const start = rotatePoint(element.position, center, -rotRad);
         const end = rotatePoint(
           {
@@ -245,15 +261,6 @@ export function WhiteboardCanvas({
 
       const bounds = getElementBounds(element);
       if (!bounds || bounds.width <= 0 || bounds.height <= 0) return false;
-
-      const center = {
-        x: element.position.x + element.size.width / 2,
-        y: element.position.y + element.size.height / 2,
-      };
-      const rotRad = degToRad(element.rotation || 0);
-      const testPoint = element.rotation
-        ? rotatePoint(point, center, -rotRad)
-        : point;
 
       // Filled shapes: must be inside
       const isFilled =
@@ -307,7 +314,7 @@ export function WhiteboardCanvas({
 
       return false;
     },
-    [getElementBounds],
+    [getElementBounds, getPathPoints],
   );
 
   const findElementAtPoint = useCallback(
@@ -359,9 +366,7 @@ export function WhiteboardCanvas({
     [elements, getPathPoints],
   );
 
-  // ===================================================================
-  // Pointer handlers – FIXED SELECTION LOGIC (Excalidraw-style)
-  // ===================================================================
+  // Pointer handlers
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -379,49 +384,46 @@ export function WhiteboardCanvas({
       if (tool === "select") {
         const element = findElementAtPoint(point);
 
-        // Click on empty area → deselect everything
-        if (!element) {
-          selectElements([]);
-          dragStateRef.current = null;
-          setIsMarqueeSelecting(false);
-          setSelectionRect(null);
-          selectionOriginRef.current = null;
-          return;
-        }
-
-        // Click on a shape
-        if (e.shiftKey) {
-          // Shift-click: toggle multi-selection
-          if (selectedElements.includes(element.id)) {
-            selectElements(selectedElements.filter((id) => id !== element.id));
+        if (element) {
+          // Hit an element
+          if (e.shiftKey) {
+            // Shift: toggle selection, no drag
+            if (selectedElements.includes(element.id)) {
+              selectElements(
+                selectedElements.filter((id) => id !== element.id),
+              );
+            } else {
+              selectElements([...selectedElements, element.id]);
+            }
+            dragStateRef.current = null;
           } else {
-            selectElements([...selectedElements, element.id]);
-          }
-          dragStateRef.current = null; // no drag on shift-click
-        } else {
-          // Normal click
-          if (selectedElements.includes(element.id)) {
-            // Clicked on already selected → start drag (keep current selection)
+            // No shift: select if not selected, then prepare drag (multi if already selected)
+            if (!selectedElements.includes(element.id)) {
+              selectElements([element.id]);
+            }
             dragStateRef.current = {
               origin: point,
-              elementIds: selectedElements,
+              elementIds: selectedElements, // Use current after potential update
               snapshots: buildDragSnapshots(selectedElements),
             };
-          } else {
-            // Clicked on new shape → single selection
-            selectElements([element.id]);
-            dragStateRef.current = {
-              origin: point,
-              elementIds: [element.id],
-              snapshots: buildDragSnapshots([element.id]),
-            };
           }
+        } else {
+          // No hit
+          if (!e.shiftKey) {
+            selectElements([]);
+          }
+          // Prepare for potential marquee
+          selectionOriginRef.current = point;
+          marqueeModeRef.current = e.shiftKey ? "add" : "replace";
+          marqueeBaseSelectionRef.current = e.shiftKey
+            ? [...selectedElements]
+            : [];
+          dragStateRef.current = null;
         }
 
-        // Clear marquee state
+        // Reset marquee visuals
         setIsMarqueeSelecting(false);
         setSelectionRect(null);
-        selectionOriginRef.current = null;
         return;
       }
 
@@ -474,8 +476,6 @@ export function WhiteboardCanvas({
       }
 
       if (tool === "select") {
-        // const element = findElementAtPoint(point);
-        // console.log("Clicked at canvas point:", point, "Hit element:", element?.id || "none")
         if (dragStateRef.current) {
           const deltaX = point.x - dragStateRef.current.origin.x;
           const deltaY = point.y - dragStateRef.current.origin.y;
@@ -508,28 +508,42 @@ export function WhiteboardCanvas({
               });
             }
           });
-        } else if (isMarqueeSelecting && selectionOriginRef.current) {
-          const rect = normalizeBounds(selectionOriginRef.current, {
-            width: point.x - selectionOriginRef.current.x,
-            height: point.y - selectionOriginRef.current.y,
-          });
-          setSelectionRect(rect);
+        } else if (selectionOriginRef.current) {
+          // Potential marquee
+          const deltaX = point.x - selectionOriginRef.current.x;
+          const deltaY = point.y - selectionOriginRef.current.y;
+          const dist = Math.hypot(deltaX, deltaY);
 
-          const ids = elements
-            .filter((element) => {
-              const bounds = getElementBounds(element);
-              if (!bounds) return false;
-              return rectsIntersect(rect, bounds);
-            })
-            .map((el) => el.id);
+          if (dist > MARQUEE_THRESHOLD) {
+            if (!isMarqueeSelecting) {
+              setIsMarqueeSelecting(true);
+            }
 
-          if (marqueeModeRef.current === "add") {
-            const merged = Array.from(
-              new Set([...marqueeBaseSelectionRef.current, ...ids]),
-            );
-            selectElements(merged);
-          } else {
-            selectElements(ids);
+            const rect = {
+              x: Math.min(selectionOriginRef.current.x, point.x),
+              y: Math.min(selectionOriginRef.current.y, point.y),
+              width: Math.abs(deltaX),
+              height: Math.abs(deltaY),
+            };
+            setSelectionRect(rect);
+
+            const ids = elements
+              .filter((element) => {
+                const bounds = getElementBounds(element);
+                if (!bounds) return false;
+                return rectsIntersect(rect, bounds);
+              })
+              .map((el) => el.id);
+
+            let newSelected;
+            if (marqueeModeRef.current === "add") {
+              newSelected = Array.from(
+                new Set([...marqueeBaseSelectionRef.current, ...ids]),
+              );
+            } else {
+              newSelected = ids;
+            }
+            selectElements(newSelected);
           }
         }
         return;
@@ -581,9 +595,8 @@ export function WhiteboardCanvas({
       dragStateRef,
       elements,
       updateElement,
-      isMarqueeSelecting,
       selectionOriginRef,
-      normalizeBounds,
+      isMarqueeSelecting,
       getElementBounds,
       rectsIntersect,
       marqueeModeRef,
@@ -609,6 +622,9 @@ export function WhiteboardCanvas({
       if (isMarqueeSelecting) {
         setIsMarqueeSelecting(false);
         setSelectionRect(null);
+        selectionOriginRef.current = null;
+      } else if (selectionOriginRef.current) {
+        // If marquee was prepared but not started (small click), do nothing extra
         selectionOriginRef.current = null;
       }
       return;
@@ -705,10 +721,7 @@ export function WhiteboardCanvas({
     currentUser?.id,
   ]);
 
-  // ===================================================================
   // Canvas rendering
-  // ===================================================================
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -911,10 +924,7 @@ export function WhiteboardCanvas({
     getCurrentStrokeStyle,
   ]);
 
-  // ===================================================================
   // Render
-  // ===================================================================
-
   return (
     <div
       ref={containerRef}
