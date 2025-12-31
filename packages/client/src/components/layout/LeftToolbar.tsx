@@ -36,7 +36,7 @@ const tools: Array<{
   { id: "rectangle", icon: Square, label: "Rectangle", shortcut: "R" },
   { id: "circle", icon: Circle, label: "Circle", shortcut: "O" },
   { id: "text", icon: Type, label: "Text", shortcut: "T" },
-  { id: "sticky-note", icon: StickyNote, label: "Sticky Note", shortcut: "S" },
+  // { id: "sticky-note", icon: StickyNote, label: "Sticky Note", shortcut: "S" },
   { id: "eraser", icon: Eraser, label: "Eraser", shortcut: "E" },
 ];
 

@@ -1,5 +1,3 @@
-// client/src/components/canvas/WhiteboardCanvas.tsx
-
 import React, { useRef, useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useWhiteboard } from "@/contexts/WhiteboardContext";
@@ -23,13 +21,6 @@ const DEFAULT_TEXT_STYLE = {
   height: 40,
 };
 
-const DEFAULT_STICKY_OPTIONS = {
-  width: 180,
-  height: 140,
-  color: "#fde68a",
-  textColor: "#1f2937",
-};
-
 const DASH_PATTERNS: Record<StrokeStyle, number[]> = {
   solid: [],
   dashed: [12, 6],
@@ -38,7 +29,6 @@ const DASH_PATTERNS: Record<StrokeStyle, number[]> = {
 
 interface WhiteboardCanvasProps {
   className?: string;
-  /** Called with canvas coordinates whenever the mouse moves over the canvas */
   onCursorMove?: (point: Point) => void;
 }
 
@@ -48,6 +38,8 @@ interface SelectionRect {
   width: number;
   height: number;
 }
+
+const MARQUEE_THRESHOLD = 5;
 
 export function WhiteboardCanvas({
   className,
@@ -81,6 +73,12 @@ export function WhiteboardCanvas({
   const [isPanning, setIsPanning] = useState(false);
   const [isSpacePanning, setIsSpacePanning] = useState(false);
 
+  // Eraser-specific state
+  const [eraserPath, setEraserPath] = useState<Point[]>([]);
+  const [erasedElementIds, setErasedElementIds] = useState<Set<string>>(
+    new Set(),
+  );
+
   const panStartRef = useRef<Point | null>(null);
   const panViewportRef = useRef(viewport);
 
@@ -105,9 +103,7 @@ export function WhiteboardCanvas({
     }
   }, [viewport, isPanning]);
 
-  // ===================================================================
-  // Helper callbacks
-  // ===================================================================
+  // Helpers
 
   const normalizeBounds = useCallback((position: Point, size: Size) => {
     const width = size.width;
@@ -168,22 +164,17 @@ export function WhiteboardCanvas({
         case "circle":
         case "line":
         case "text":
-        case "sticky-note":
           return normalizeBounds(element.position, element.size);
         case "path":
           const pathPoints = getPathPoints(element);
           if (pathPoints && pathPoints.length > 0) {
             const xs = pathPoints.map((p) => p.x);
             const ys = pathPoints.map((p) => p.y);
-            const minX = Math.min(...xs);
-            const maxX = Math.max(...xs);
-            const minY = Math.min(...ys);
-            const maxY = Math.max(...ys);
             return {
-              x: minX,
-              y: minY,
-              width: maxX - minX,
-              height: maxY - minY,
+              x: Math.min(...xs),
+              y: Math.min(...ys),
+              width: Math.max(...xs) - Math.min(...xs),
+              height: Math.max(...ys) - Math.min(...ys),
             };
           }
           return normalizeBounds(element.position, element.size);
@@ -219,18 +210,41 @@ export function WhiteboardCanvas({
     return Math.sqrt(dx * dx + dy * dy);
   };
 
+  const distanceBetweenSegments = (a: Point, b: Point, c: Point, d: Point) => {
+    const d1 = distanceFromSegment(a, c, d);
+    const d2 = distanceFromSegment(b, c, d);
+    const d3 = distanceFromSegment(c, a, b);
+    const d4 = distanceFromSegment(d, a, b);
+    return Math.min(d1, d2, d3, d4);
+  };
+
   const isPointInElement = useCallback(
     (element: DrawingElement, point: Point) => {
       const strokeWidth = element.style.strokeWidth || 2;
-      const hitPadding = strokeWidth + 4; // Reduced padding, more precise
+      const hitPadding = strokeWidth + 4;
+
+      const center = {
+        x: element.position.x + element.size.width / 2,
+        y: element.position.y + element.size.height / 2,
+      };
+      const rotRad = degToRad(element.rotation || 0);
+      const testPoint = element.rotation
+        ? rotatePoint(point, center, -rotRad)
+        : point;
+
+      if (element.type === "path") {
+        const pathPoints = getPathPoints(element);
+        if (!pathPoints || pathPoints.length < 2) return false;
+        for (let i = 0; i < pathPoints.length - 1; i++) {
+          const a = pathPoints[i];
+          const b = pathPoints[i + 1];
+          if (distanceFromSegment(testPoint, a, b) <= hitPadding) return true;
+        }
+        return false;
+      }
 
       if (element.type === "line") {
-        const center = {
-          x: element.position.x + element.size.width / 2,
-          y: element.position.y + element.size.height / 2,
-        };
-        const rotRad = degToRad(element.rotation || 0);
-        const localPoint = rotatePoint(point, center, -rotRad);
+        const localPoint = testPoint;
         const start = rotatePoint(element.position, center, -rotRad);
         const end = rotatePoint(
           {
@@ -246,16 +260,6 @@ export function WhiteboardCanvas({
       const bounds = getElementBounds(element);
       if (!bounds || bounds.width <= 0 || bounds.height <= 0) return false;
 
-      const center = {
-        x: element.position.x + element.size.width / 2,
-        y: element.position.y + element.size.height / 2,
-      };
-      const rotRad = degToRad(element.rotation || 0);
-      const testPoint = element.rotation
-        ? rotatePoint(point, center, -rotRad)
-        : point;
-
-      // Filled shapes: must be inside
       const isFilled =
         element.style.fill && element.style.fill !== "transparent";
       const withinBounds =
@@ -264,11 +268,8 @@ export function WhiteboardCanvas({
         testPoint.y >= bounds.y &&
         testPoint.y <= bounds.y + bounds.height;
 
-      if (isFilled) {
-        return withinBounds;
-      }
+      if (isFilled) return withinBounds;
 
-      // Unfilled: only hit if close to stroke
       const distToLeft = Math.abs(testPoint.x - bounds.x);
       const distToRight = Math.abs(testPoint.x - (bounds.x + bounds.width));
       const distToTop = Math.abs(testPoint.y - bounds.y);
@@ -280,10 +281,8 @@ export function WhiteboardCanvas({
         distToTop,
         distToBottom,
       );
-
       if (minDist <= hitPadding) return true;
 
-      // Circle stroke hit
       if (element.type === "circle") {
         const radiusX = bounds.width / 2;
         const radiusY = bounds.height / 2;
@@ -307,16 +306,14 @@ export function WhiteboardCanvas({
 
       return false;
     },
-    [getElementBounds],
+    [getElementBounds, getPathPoints],
   );
 
   const findElementAtPoint = useCallback(
     (point: Point) => {
       for (let i = elements.length - 1; i >= 0; i--) {
         const element = elements[i];
-        if (isPointInElement(element, point)) {
-          return element;
-        }
+        if (isPointInElement(element, point)) return element;
       }
       return null;
     },
@@ -328,6 +325,143 @@ export function WhiteboardCanvas({
     a.x + a.width > b.x &&
     a.y < b.y + b.height &&
     a.y + a.height > b.y;
+
+  const elementIntersectsLine = useCallback(
+    (
+      element: DrawingElement,
+      lineStart: Point,
+      lineEnd: Point,
+      padding: number,
+    ): boolean => {
+      const bounds = getElementBounds(element);
+      if (!bounds) return false;
+
+      if (["rectangle", "text"].includes(element.type)) {
+        const left = bounds.x;
+        const right = bounds.x + bounds.width;
+        const top = bounds.y;
+        const bottom = bounds.y + bounds.height;
+
+        const sides = [
+          [
+            { x: left, y: top },
+            { x: right, y: top },
+          ],
+          [
+            { x: right, y: top },
+            { x: right, y: bottom },
+          ],
+          [
+            { x: right, y: bottom },
+            { x: left, y: bottom },
+          ],
+          [
+            { x: left, y: bottom },
+            { x: left, y: top },
+          ],
+        ];
+
+        for (const [a, b] of sides) {
+          if (distanceBetweenSegments(lineStart, lineEnd, a, b) <= padding) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      if (element.type === "circle") {
+        const cx = bounds.x + bounds.width / 2;
+        const cy = bounds.y + bounds.height / 2;
+        const radius = Math.min(bounds.width, bounds.height) / 2;
+
+        const A = lineEnd.y - lineStart.y;
+        const B = lineStart.x - lineEnd.x;
+        const C = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y;
+        const dist = Math.abs(A * cx + B * cy + C) / Math.hypot(A, B);
+
+        if (dist <= radius + padding) {
+          const t =
+            ((cx - lineStart.x) * (lineEnd.x - lineStart.x) +
+              (cy - lineStart.y) * (lineEnd.y - lineStart.y)) /
+            ((lineEnd.x - lineStart.x) ** 2 + (lineEnd.y - lineStart.y) ** 2);
+
+          if (t >= 0 && t <= 1) return true;
+        }
+        return false;
+      }
+
+      if (element.type === "line") {
+        const start = element.position;
+        const end = {
+          x: element.position.x + element.size.width,
+          y: element.position.y + element.size.height,
+        };
+        return (
+          distanceBetweenSegments(lineStart, lineEnd, start, end) <= padding
+        );
+      }
+
+      return false;
+    },
+    [getElementBounds],
+  );
+
+  const isElementIntersectedByEraser = useCallback(
+    (
+      element: DrawingElement,
+      eraserPoints: Point[],
+      eraserThickness: number,
+    ): boolean => {
+      if (element.type === "path") {
+        const points = getPathPoints(element);
+        if (!points || points.length < 2) return false;
+
+        const hitPadding = eraserThickness + (element.style.strokeWidth || 2);
+
+        for (let i = 0; i < points.length - 1; i++) {
+          for (let j = 0; j < eraserPoints.length - 1; j++) {
+            if (
+              distanceBetweenSegments(
+                points[i],
+                points[i + 1],
+                eraserPoints[j],
+                eraserPoints[j + 1],
+              ) <= hitPadding
+            ) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      const hitPadding = eraserThickness + (element.style.strokeWidth || 2);
+
+      const bounds = getElementBounds(element);
+      if (!bounds) return false;
+
+      for (let j = 0; j < eraserPoints.length - 1; j++) {
+        const start = eraserPoints[j];
+        const end = eraserPoints[j + 1];
+
+        const eraserBB = {
+          x: Math.min(start.x, end.x) - hitPadding,
+          y: Math.min(start.y, end.y) - hitPadding,
+          width: Math.abs(start.x - end.x) + hitPadding * 2,
+          height: Math.abs(start.y - end.y) + hitPadding * 2,
+        };
+
+        if (!rectsIntersect(eraserBB, bounds)) continue;
+
+        if (elementIntersectsLine(element, start, end, hitPadding)) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+    [getPathPoints, getElementBounds, elementIntersectsLine],
+  );
 
   const screenToCanvas = useCallback(
     (screenX: number, screenY: number): Point => {
@@ -359,9 +493,7 @@ export function WhiteboardCanvas({
     [elements, getPathPoints],
   );
 
-  // ===================================================================
-  // Pointer handlers – FIXED SELECTION LOGIC (Excalidraw-style)
-  // ===================================================================
+  // Pointer handlers
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -379,61 +511,57 @@ export function WhiteboardCanvas({
       if (tool === "select") {
         const element = findElementAtPoint(point);
 
-        // Click on empty area → deselect everything
-        if (!element) {
-          selectElements([]);
-          dragStateRef.current = null;
-          setIsMarqueeSelecting(false);
-          setSelectionRect(null);
-          selectionOriginRef.current = null;
-          return;
-        }
-
-        // Click on a shape
-        if (e.shiftKey) {
-          // Shift-click: toggle multi-selection
-          if (selectedElements.includes(element.id)) {
-            selectElements(selectedElements.filter((id) => id !== element.id));
+        if (element) {
+          if (e.shiftKey) {
+            if (selectedElements.includes(element.id)) {
+              selectElements(
+                selectedElements.filter((id) => id !== element.id),
+              );
+            } else {
+              selectElements([...selectedElements, element.id]);
+            }
+            dragStateRef.current = null;
           } else {
-            selectElements([...selectedElements, element.id]);
-          }
-          dragStateRef.current = null; // no drag on shift-click
-        } else {
-          // Normal click
-          if (selectedElements.includes(element.id)) {
-            // Clicked on already selected → start drag (keep current selection)
+            if (!selectedElements.includes(element.id)) {
+              selectElements([element.id]);
+            }
             dragStateRef.current = {
               origin: point,
               elementIds: selectedElements,
               snapshots: buildDragSnapshots(selectedElements),
             };
-          } else {
-            // Clicked on new shape → single selection
-            selectElements([element.id]);
-            dragStateRef.current = {
-              origin: point,
-              elementIds: [element.id],
-              snapshots: buildDragSnapshots([element.id]),
-            };
           }
+        } else {
+          if (!e.shiftKey) {
+            selectElements([]);
+          }
+          selectionOriginRef.current = point;
+          marqueeModeRef.current = e.shiftKey ? "add" : "replace";
+          marqueeBaseSelectionRef.current = e.shiftKey
+            ? [...selectedElements]
+            : [];
+          dragStateRef.current = null;
         }
 
-        // Clear marquee state
         setIsMarqueeSelecting(false);
         setSelectionRect(null);
-        selectionOriginRef.current = null;
         return;
       }
 
       if (tool === "eraser") {
-        const element = findElementAtPoint(point);
-        if (element) {
-          deleteElement(element.id);
-        }
+        setIsDrawing(true);
+        setStartPoint(point);
+        setEraserPath([point]);
+        setErasedElementIds(new Set());
         return;
       }
 
-      // Start drawing new element
+      if (tool === "text") {
+        setStartPoint(point);
+        setIsDrawing(true);
+        return;
+      }
+
       setStartPoint(point);
       setIsDrawing(true);
       if (tool === "pen") {
@@ -448,7 +576,6 @@ export function WhiteboardCanvas({
       selectedElements,
       selectElements,
       buildDragSnapshots,
-      deleteElement,
     ],
   );
 
@@ -474,8 +601,6 @@ export function WhiteboardCanvas({
       }
 
       if (tool === "select") {
-        // const element = findElementAtPoint(point);
-        // console.log("Clicked at canvas point:", point, "Hit element:", element?.id || "none")
         if (dragStateRef.current) {
           const deltaX = point.x - dragStateRef.current.origin.x;
           const deltaY = point.y - dragStateRef.current.origin.y;
@@ -508,30 +633,76 @@ export function WhiteboardCanvas({
               });
             }
           });
-        } else if (isMarqueeSelecting && selectionOriginRef.current) {
-          const rect = normalizeBounds(selectionOriginRef.current, {
-            width: point.x - selectionOriginRef.current.x,
-            height: point.y - selectionOriginRef.current.y,
-          });
-          setSelectionRect(rect);
+        } else if (selectionOriginRef.current) {
+          const deltaX = point.x - selectionOriginRef.current.x;
+          const deltaY = point.y - selectionOriginRef.current.y;
+          const dist = Math.hypot(deltaX, deltaY);
 
-          const ids = elements
-            .filter((element) => {
-              const bounds = getElementBounds(element);
-              if (!bounds) return false;
-              return rectsIntersect(rect, bounds);
-            })
-            .map((el) => el.id);
+          if (dist > MARQUEE_THRESHOLD) {
+            if (!isMarqueeSelecting) setIsMarqueeSelecting(true);
 
-          if (marqueeModeRef.current === "add") {
-            const merged = Array.from(
-              new Set([...marqueeBaseSelectionRef.current, ...ids]),
-            );
-            selectElements(merged);
-          } else {
-            selectElements(ids);
+            const rect = {
+              x: Math.min(selectionOriginRef.current.x, point.x),
+              y: Math.min(selectionOriginRef.current.y, point.y),
+              width: Math.abs(deltaX),
+              height: Math.abs(deltaY),
+            };
+            setSelectionRect(rect);
+
+            const ids = elements
+              .filter((element) => {
+                const bounds = getElementBounds(element);
+                if (!bounds) return false;
+                return rectsIntersect(rect, bounds);
+              })
+              .map((el) => el.id);
+
+            let newSelected;
+            if (marqueeModeRef.current === "add") {
+              newSelected = Array.from(
+                new Set([...marqueeBaseSelectionRef.current, ...ids]),
+              );
+            } else {
+              newSelected = ids;
+            }
+            selectElements(newSelected);
           }
         }
+        return;
+      }
+
+      if (tool === "eraser" && isDrawing && startPoint) {
+        const point = screenToCanvas(e.clientX, e.clientY);
+
+        setEraserPath((prev) => {
+          if (prev.length === 0) return [point];
+
+          const last = prev[prev.length - 1];
+          const dist = Math.hypot(point.x - last.x, point.y - last.y);
+
+          if (dist > 3) {
+            return [...prev, point];
+          }
+          return prev;
+        });
+
+        const newErased = new Set(erasedElementIds);
+
+        elements.forEach((element) => {
+          if (newErased.has(element.id)) return;
+
+          if (
+            isElementIntersectedByEraser(
+              element,
+              eraserPath,
+              toolSettings.strokeWidth * 2,
+            )
+          ) {
+            newErased.add(element.id);
+          }
+        });
+
+        setErasedElementIds(newErased);
         return;
       }
 
@@ -581,9 +752,8 @@ export function WhiteboardCanvas({
       dragStateRef,
       elements,
       updateElement,
-      isMarqueeSelecting,
       selectionOriginRef,
-      normalizeBounds,
+      isMarqueeSelecting,
       getElementBounds,
       rectsIntersect,
       marqueeModeRef,
@@ -594,6 +764,10 @@ export function WhiteboardCanvas({
       getCurrentStrokeStyle,
       getNormalizedShape,
       currentUser?.id,
+      eraserPath,
+      erasedElementIds,
+      isElementIntersectedByEraser,
+      toolSettings.strokeWidth,
     ],
   );
 
@@ -610,7 +784,19 @@ export function WhiteboardCanvas({
         setIsMarqueeSelecting(false);
         setSelectionRect(null);
         selectionOriginRef.current = null;
+      } else if (selectionOriginRef.current) {
+        selectionOriginRef.current = null;
       }
+      return;
+    }
+
+    if (tool === "eraser" && isDrawing) {
+      erasedElementIds.forEach((id) => deleteElement(id));
+
+      setIsDrawing(false);
+      setStartPoint(null);
+      setEraserPath([]);
+      setErasedElementIds(new Set());
       return;
     }
 
@@ -630,61 +816,33 @@ export function WhiteboardCanvas({
         updatedAt: Date.now(),
       };
       addElement(element);
-    } else if (["text", "sticky-note"].includes(tool)) {
-      const common = {
+    } else if (tool === "text") {
+      const element: DrawingElement = {
         position: startPoint,
         rotation: 0,
+        id: `text-${Date.now()}`,
+        type: "text",
+        size: {
+          width: DEFAULT_TEXT_STYLE.width,
+          height: DEFAULT_TEXT_STYLE.height,
+        },
+        style: {
+          stroke: DEFAULT_TEXT_STYLE.color,
+          strokeWidth: 1,
+          fill: DEFAULT_TEXT_STYLE.color,
+          opacity: 1,
+        },
+        data: {
+          text: "New text",
+          fontSize: DEFAULT_TEXT_STYLE.fontSize,
+          fontFamily: DEFAULT_TEXT_STYLE.fontFamily,
+          fontWeight: DEFAULT_TEXT_STYLE.fontWeight,
+        },
         createdBy: currentUser?.id || "anonymous",
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-
-      if (tool === "text") {
-        const element: DrawingElement = {
-          ...common,
-          id: `text-${Date.now()}`,
-          type: "text",
-          size: {
-            width: DEFAULT_TEXT_STYLE.width,
-            height: DEFAULT_TEXT_STYLE.height,
-          },
-          style: {
-            stroke: DEFAULT_TEXT_STYLE.color,
-            strokeWidth: 1,
-            fill: DEFAULT_TEXT_STYLE.color,
-            opacity: 1,
-          },
-          data: {
-            text: "New text",
-            fontSize: DEFAULT_TEXT_STYLE.fontSize,
-            fontFamily: DEFAULT_TEXT_STYLE.fontFamily,
-            fontWeight: DEFAULT_TEXT_STYLE.fontWeight,
-          },
-        };
-        addElement(element);
-      } else {
-        const element: DrawingElement = {
-          ...common,
-          id: `sticky-${Date.now()}`,
-          type: "sticky-note",
-          size: {
-            width: DEFAULT_STICKY_OPTIONS.width,
-            height: DEFAULT_STICKY_OPTIONS.height,
-          },
-          style: {
-            stroke: DEFAULT_STICKY_OPTIONS.color,
-            strokeWidth: 2,
-            fill: DEFAULT_STICKY_OPTIONS.color,
-            opacity: 1,
-          },
-          data: {
-            text: "Sticky note",
-            color: DEFAULT_STICKY_OPTIONS.color,
-            textColor: DEFAULT_STICKY_OPTIONS.textColor,
-          },
-        };
-        addElement(element);
-      }
+      addElement(element);
     } else if (tempElement) {
       addElement(tempElement);
     }
@@ -703,12 +861,12 @@ export function WhiteboardCanvas({
     getCurrentStrokeStyle,
     addElement,
     currentUser?.id,
+    isDrawing,
+    erasedElementIds,
+    deleteElement,
   ]);
 
-  // ===================================================================
   // Canvas rendering
-  // ===================================================================
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -828,33 +986,6 @@ export function WhiteboardCanvas({
             element.position.y,
           );
           break;
-
-        case "sticky-note":
-          ctx.fillStyle =
-            (element.data.color as string) || DEFAULT_STICKY_OPTIONS.color;
-          ctx.strokeStyle =
-            (element.data.color as string) || DEFAULT_STICKY_OPTIONS.color;
-          ctx.beginPath();
-          ctx.rect(
-            element.position.x,
-            element.position.y,
-            element.size.width,
-            element.size.height,
-          );
-          ctx.fill();
-          ctx.stroke();
-
-          ctx.fillStyle =
-            (element.data.textColor as string) ||
-            DEFAULT_STICKY_OPTIONS.textColor;
-          ctx.font = "600 16px Inter";
-          ctx.textBaseline = "top";
-          ctx.fillText(
-            (element.data.text as string) || "Sticky note",
-            element.position.x + 12,
-            element.position.y + 12,
-          );
-          break;
       }
 
       if (selectedElements.includes(element.id)) {
@@ -898,6 +1029,24 @@ export function WhiteboardCanvas({
       ctx.restore();
     }
 
+    if (tool === "eraser" && eraserPath.length > 1) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 0, 0, 0.7)";
+      ctx.lineWidth = toolSettings.strokeWidth * 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.globalAlpha = 0.8;
+      ctx.setLineDash([5, 5]);
+
+      ctx.beginPath();
+      ctx.moveTo(eraserPath[0].x, eraserPath[0].y);
+      for (let i = 1; i < eraserPath.length; i++) {
+        ctx.lineTo(eraserPath[i].x, eraserPath[i].y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
     ctx.restore();
   }, [
     elements,
@@ -909,11 +1058,9 @@ export function WhiteboardCanvas({
     getElementBounds,
     getPathPoints,
     getCurrentStrokeStyle,
+    eraserPath,
+    toolSettings.strokeWidth,
   ]);
-
-  // ===================================================================
-  // Render
-  // ===================================================================
 
   return (
     <div
@@ -922,6 +1069,7 @@ export function WhiteboardCanvas({
         "relative w-full h-full overflow-hidden bg-canvas canvas-grid cursor-crosshair",
         (tool === "hand" || isSpacePanning) && "cursor-grab",
         tool === "select" && "cursor-default",
+        tool === "eraser" && "cursor-eraser",
         className,
       )}
       style={{

@@ -1,55 +1,60 @@
 client/
-│── .gitignore # Git ignore rules
-│── README.md # Project documentation
-│── bun.lockb # Bun lockfile for dependencies
-│── components.json # ShadCN UI component registry
-│── eslint.config.js # ESLint configuration
-│── index.html # App HTML entry point
-│── package-lock.json # NPM lockfile
-│── package.json # Project metadata & dependencies
-│── postcss.config.js # PostCSS configuration
-│── tailwind.config.ts # TailwindCSS configuration
-│── tsconfig.app.json # TS config for application code
-│── tsconfig.json # Root TypeScript configuration
-│── tsconfig.node.json # TS config for Node build tools
-│── vite.config.ts # Vite bundler configuration
+├── .gitignore
+├── README.md
+├── components.json
+├── eslint.config.js
+├── index.html
+├── jest.config.ts
+├── jest.setup.ts
+├── package.json
+├── postcss.config.js
+├── tailwind.config.js
+├── tailwind.config.ts
+├── tsconfig.app.json
+├── tsconfig.eslint.json
+├── tsconfig.json
+├── tsconfig.node.json
+├── vite.config.js
+├── vite.config.ts
+├── vitest.config.ts
 │
 ├── public/
-│ ├── favicon.ico # Browser tab icon
-│ ├── placeholder.svg # Placeholder image
-│ └── robots.txt # SEO crawler rules
+│ ├── favicon.png
+│ ├── og-image.png
+│ ├── placeholder.svg
+│ └── robots.txt
 │
 ├── src/
-│ │── App.css # App-level styles
-│ │── App.tsx # Main App component
-│ │── index.css # Global CSS (Tailwind base)
-│ │── main.tsx # React entry point with Vite
-│ │── vite-env.d.ts # Vite TypeScript env types
+│ ├── App.css
+│ ├── App.tsx
+│ ├── index.css
+│ ├── main.tsx
+│ ├── vite-env.d.ts
 │ │
-│ ├── api/  
-│ │ ├── auth.ts # Auth API (login, signup, logout, refresh)
-│ │ ├── whiteboard.ts # Whiteboard APIs (fetch, save, list)
-│ │ └── ws.ts # WebSocket connection manager
-│ │
-│ ├── assets/  
-│ │ └── logo.svg # App logo
+│ ├── api/
+│ │ ├── auth.ts
+│ │ ├── whiteboard.ts
+│ │ └── ws.ts
 │ │
 │ ├── components/
 │ │ ├── auth/
-│ │ │ └── AuthDialog.tsx # Auth modal dialog
+│ │ │ └── AuthDialog.tsx
+│ │ │
 │ │ ├── canvas/
-│ │ │ ├── PresenceCursors.tsx # Show live user cursors
-│ │ │ ├── WhiteboardCanvas.tsx # Main drawing canvas
-│ │ │ └── Toolbar.tsx # Canvas toolbar
+│ │ │ ├── PresenceCursors.tsx
+│ │ │ ├── SelectionBox.tsx
+│ │ │ └── WhiteboardCanvas.tsx
+│ │ │
 │ │ ├── layout/
-│ │ │ ├── BottomToolbar.tsx # Toolbar at bottom
-│ │ │ ├── LeftToolbar.tsx # Sidebar tools
-│ │ │ ├── RightPanel.tsx # Properties/Inspector panel
-│ │ │ └── TopNavigation.tsx # Top navigation bar
-| | | |** LeftSidebarItem.tsx
-| | | |** MobileToolTray.tsx
-| | | |** LeftSidebar.tsx
-│ │ └── ui/ # Generic ShadCN UI components
+│ │ │ ├── BottomToolbar.tsx
+│ │ │ ├── LeftSidebar.tsx
+│ │ │ ├── LeftSidebarItem.tsx
+│ │ │ ├── LeftToolbar.tsx
+│ │ │ ├── MobileToolTray.tsx
+│ │ │ ├── RightPanel.tsx
+│ │ │ └── TopNavigation.tsx
+│ │ │
+│ │ └── ui/
 │ │ ├── accordion.tsx
 │ │ ├── alert-dialog.tsx
 │ │ ├── alert.tsx
@@ -102,37 +107,53 @@ client/
 │ │ ├── tooltip.tsx
 │ │ └── use-toast.ts
 │ │
+│ ├── config/
+│ │ └── constants.ts
+│ │
 │ ├── contexts/
-│ │ ├── AuthContext.tsx # Provides authentication state
-│ │ └── WhiteboardContext.tsx # Provides whiteboard state
+│ │ ├── AuthContext.tsx
+│ │ └── WhiteboardContext.tsx
 │ │
 │ ├── hooks/
-│ │ ├── use-mobile.tsx # Detect mobile device
-│ │ ├── use-toast.ts # Toast notifications
-│ │ ├── useKeyboardShortcuts.ts # Keyboard shortcuts handler
-│ │ ├── useWebSocket.ts # WebSocket hook for real-time sync
-│ │ └── useAuth.ts # Authentication hook
+│ │ ├── use-mobile.tsx
+│ │ ├── use-toast.ts
+│ │ ├── useAuth.ts
+│ │ ├── useKeyboardShortcuts.ts
+│ │ └── useWebSocket.ts
 │ │
 │ ├── lib/
-│ │ ├── utils.ts # Helper utilities
-| | |** clipboard.ts
-| | |** hit.ts
-| | |** transform.ts
-│ │
-│ ├── store/
-│ │ └── whiteboardStore.ts # Zustand/Redux store for whiteboard
-| | |** whiteboardElementsStore.ts
+│ │ ├── clipboard.ts
+│ │ ├── hit.ts
+│ │ ├── transform.ts
+│ │ └── utils.ts
 │ │
 │ ├── pages/
-│ │ ├── Index.tsx # Landing page
-│ │ ├── NotFound.tsx # 404 fallback page
-│ │ └── Whiteboard.tsx # Whiteboard page
-| | |** Login.tsx
-| | |\_\_ Signup.tsx
+│ │ ├── Index.tsx
+│ │ ├── Login.tsx
+│ │ ├── Signup.tsx
+│ │ ├── Whiteboard.tsx
+│ │ └── NotFound.tsx
 │ │
-│ ├── types/
-│ │ ├── whiteboard.ts # Whiteboard-related types
-│ │ └── auth.ts # Auth-related types
+│ ├── store/
+│ │ ├── whiteboardElementsStore.ts
+│ │ └── whiteboardStore.ts
 │ │
-│ └── config/
-│ └── constants.ts # Config constants (API URL, envs)
+│ └── types/
+│ ├── auth.ts
+│ └── whiteboard.ts
+│
+├── tests/
+│ ├── components/
+│ │ └── Button.test.tsx
+│ │
+│ ├── mocks/
+│ │ └── constants.ts
+│ │
+│ ├── pages/
+│ │ └── Whiteboard.test.tsx
+│ │
+│ ├── utils/
+│ │ └── api.test.ts
+│ │
+│ ├── setupJest.ts
+│ └── setupTests.ts

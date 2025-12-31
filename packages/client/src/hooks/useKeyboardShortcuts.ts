@@ -119,11 +119,11 @@ export function createWhiteboardShortcuts<TTool extends string>(
       action: () => actions.setTool("text" as TTool),
       description: "Text tool",
     },
-    {
-      key: "s",
-      action: () => actions.setTool("sticky-note" as TTool),
-      description: "Sticky note tool",
-    },
+    // {
+    //   key: "s",
+    //   action: () => actions.setTool("sticky-note" as TTool),
+    //   description: "Sticky note tool",
+    // },
     {
       key: "e",
       action: () => actions.setTool("eraser" as TTool),
