@@ -56,7 +56,9 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "clsx": "^2.1.1",
+    "express": "^4.21.2",
     "react-window": "^2.2.3",
+    "socket.io": "^4.8.1",
     "tailwind-merge": "^3.3.1"
   }
 }

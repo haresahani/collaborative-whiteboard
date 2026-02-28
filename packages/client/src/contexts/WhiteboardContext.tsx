@@ -50,7 +50,8 @@ type WhiteboardAction =
   | { type: "SET_CURRENT_USER"; payload: User }
   | { type: "SET_CONNECTION_STATUS"; payload: boolean }
   | { type: "SYNC_STATE"; payload: Partial<WhiteboardState> }
-  | { type: "SET_CLIPBOARD"; payload: DrawingElement[] };
+  | { type: "SET_CLIPBOARD"; payload: DrawingElement[] }
+  | { type: "APPLY_REMOTE_OP"; payload: import("@/lib/ops").OpApplyResult };
 // Reducer
 function whiteboardReducer(
   state: WhiteboardState,
@@ -142,6 +143,42 @@ function whiteboardReducer(
       return { ...state, ...action.payload };
     case "SET_CLIPBOARD":
       return { ...state, clipboard: action.payload };
+    case "APPLY_REMOTE_OP": {
+      const op = action.payload;
+      if (op.action === "add") {
+        const exists = state.elements.some((e) => e.id === op.element.id);
+        if (exists) return state;
+        return {
+          ...state,
+          elements: [...state.elements, op.element],
+          // Remote ops do not touch history
+        };
+      }
+      if (op.action === "update") {
+        return {
+          ...state,
+          elements: state.elements.map((el) => {
+            if (el.id !== op.id) return el;
+            const u = op.updates;
+            const merged: DrawingElement = { ...el, ...u };
+            if (u.data && typeof u.data === "object")
+              merged.data = { ...el.data, ...u.data } as Record<
+                string,
+                unknown
+              >;
+            return merged;
+          }),
+        };
+      }
+      if (op.action === "delete") {
+        return {
+          ...state,
+          elements: state.elements.filter((el) => el.id !== op.id),
+          selectedElements: state.selectedElements.filter((id) => id !== op.id),
+        };
+      }
+      return state;
+    }
     default:
       return state;
   }
@@ -163,6 +200,7 @@ interface WhiteboardContextType {
   canUndo: boolean;
   canRedo: boolean;
   setClipboard: (elements: DrawingElement[]) => void;
+  applyRemoteOp: (result: import("@/lib/ops").OpApplyResult) => void;
 }
 const WhiteboardContext = createContext<WhiteboardContextType | undefined>(
   undefined,
@@ -196,6 +234,8 @@ export function WhiteboardProvider({
   const redo = () => dispatch({ type: "REDO" });
   const setClipboard = (elements: DrawingElement[]) =>
     dispatch({ type: "SET_CLIPBOARD", payload: elements });
+  const applyRemoteOp = (result: import("@/lib/ops").OpApplyResult) =>
+    dispatch({ type: "APPLY_REMOTE_OP", payload: result });
   // Computed values
   const canUndo = state.history.past.length > 0;
   const canRedo = state.history.future.length > 0;
@@ -214,6 +254,7 @@ export function WhiteboardProvider({
     canUndo,
     canRedo,
     setClipboard,
+    applyRemoteOp,
   };
   return (
     <WhiteboardContext.Provider value={value}>
