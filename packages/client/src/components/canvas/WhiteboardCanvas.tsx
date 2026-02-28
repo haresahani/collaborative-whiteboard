@@ -30,6 +30,10 @@ const DASH_PATTERNS: Record<StrokeStyle, number[]> = {
 interface WhiteboardCanvasProps {
   className?: string;
   onCursorMove?: (point: Point) => void;
+  /** Called when an element is added (for real-time sync) */
+  onElementAdded?: (element: DrawingElement) => void;
+  /** Called when element(s) are deleted (for real-time sync) */
+  onElementDeleted?: (id: string, elementType: DrawingElement["type"]) => void;
 }
 
 interface SelectionRect {
@@ -44,6 +48,8 @@ const MARQUEE_THRESHOLD = 5;
 export function WhiteboardCanvas({
   className,
   onCursorMove,
+  onElementAdded,
+  onElementDeleted,
 }: WhiteboardCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -791,7 +797,11 @@ export function WhiteboardCanvas({
     }
 
     if (tool === "eraser" && isDrawing) {
-      erasedElementIds.forEach((id) => deleteElement(id));
+      erasedElementIds.forEach((id) => {
+        const el = elements.find((e) => e.id === id);
+        if (el) onElementDeleted?.(id, el.type);
+        deleteElement(id);
+      });
 
       setIsDrawing(false);
       setStartPoint(null);
@@ -816,6 +826,7 @@ export function WhiteboardCanvas({
         updatedAt: Date.now(),
       };
       addElement(element);
+      onElementAdded?.(element);
     } else if (tool === "text") {
       const element: DrawingElement = {
         position: startPoint,
@@ -843,8 +854,10 @@ export function WhiteboardCanvas({
         updatedAt: Date.now(),
       };
       addElement(element);
+      onElementAdded?.(element);
     } else if (tempElement) {
       addElement(tempElement);
+      onElementAdded?.(tempElement);
     }
 
     setIsDrawing(false);
@@ -864,6 +877,9 @@ export function WhiteboardCanvas({
     isDrawing,
     erasedElementIds,
     deleteElement,
+    elements,
+    onElementAdded,
+    onElementDeleted,
   ]);
 
   // Canvas rendering
@@ -1121,16 +1137,9 @@ export function WhiteboardCanvas({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute inset-0 bg-canvas/80 backdrop-blur-sm flex items-center justify-center"
+          className="absolute bottom-2 left-2 px-3 py-1.5 rounded-lg bg-muted/90 text-muted-foreground text-xs font-medium"
         >
-          <div className="floating-panel p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-muted-foreground">
-                Connecting to whiteboard...
-              </span>
-            </div>
-          </div>
+          Offline · Changes saved locally
         </motion.div>
       )}
     </div>

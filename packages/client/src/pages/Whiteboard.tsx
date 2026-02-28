@@ -1,6 +1,7 @@
 // src/pages/Whiteboard.tsx
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { TopNavigation } from "@/components/layout/TopNavigation";
 import { LeftToolbar } from "@/components/layout/LeftToolbar";
@@ -12,17 +13,19 @@ import {
   WhiteboardProvider,
   useWhiteboard,
 } from "@/contexts/WhiteboardContext";
-import { useMockWebSocket } from "@/hooks/useWebSocket";
+import { useCollabSocket } from "@/hooks/useCollabSocket";
 import {
   useKeyboardShortcuts,
   createWhiteboardShortcuts,
 } from "@/hooks/useKeyboardShortcuts";
+import { applyOpPayload, snapshotToElements } from "@/lib/ops";
 import type { User, Point } from "@/types/whiteboard";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileToolTray } from "@/components/layout/MobileToolTray";
 import { generateUUID } from "@/lib/utils";
 import { cloneElements } from "@/lib/clipboard";
+import { SOCKET_IO_URL } from "@/config/constants";
 
 // Mock users for demo
 const mockUsers: Record<string, User> = {
@@ -44,7 +47,7 @@ const mockUsers: Record<string, User> = {
   },
 };
 
-function WhiteboardContent() {
+function WhiteboardContent({ boardId }: { boardId: string }) {
   const [boardName, setBoardName] = useState("Untitled Board");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
@@ -62,19 +65,75 @@ function WhiteboardContent() {
     addElement,
     selectElements,
     deleteElement,
+    applyRemoteOp,
   } = useWhiteboard();
 
   const { toast } = useToast();
 
   const lastMousePosition = useRef<Point | null>(null);
 
-  // Mock WebSocket connection
-  const { sendCursor } = useMockWebSocket({
-    user: state.currentUser,
-    onEvent: (event) => {
-      console.log("Received WebSocket event:", event);
+  const onOpBroadcast = useCallback(
+    (payload: { payload: import("@/types/protocol").OpPayloadData }) => {
+      const result = applyOpPayload(payload.payload);
+      if (result) applyRemoteOp(result);
     },
-  });
+    [applyRemoteOp],
+  );
+
+  const onSnapshotSync = useCallback(
+    (payload: import("@/types/protocol").SnapshotSyncPayload) => {
+      const elements = snapshotToElements(payload.snapshot.data);
+      const withReplay =
+        payload.ops?.reduce<typeof elements>((acc, op) => {
+          const result = applyOpPayload(op.payload);
+          if (!result) return acc;
+          if (result.action === "add") acc.push(result.element);
+          else if (result.action === "update")
+            acc = acc.map((el) =>
+              el.id === result.id ? { ...el, ...result.updates } : el,
+            );
+          else if (result.action === "delete")
+            acc = acc.filter((el) => el.id !== result.id);
+          return acc;
+        }, elements) ?? elements;
+      dispatch({ type: "SYNC_STATE", payload: { elements: withReplay } });
+    },
+    [dispatch],
+  );
+
+  const onPresenceUpdate = useCallback(
+    (payload: import("@/types/protocol").PresenceUpdatePayload) => {
+      payload.users.forEach((u) => {
+        dispatch({
+          type: "UPDATE_USER",
+          payload: {
+            id: u.userId,
+            name: u.userId,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.userId}`,
+            color: u.color ?? "hsl(var(--presence-guest))",
+            cursor: { x: u.x, y: u.y },
+            isOnline: true,
+          },
+        });
+      });
+    },
+    [dispatch],
+  );
+
+  const { isConnected, sendElement, sendDeleteElement, sendCursorThrottled } =
+    useCollabSocket({
+      url: SOCKET_IO_URL,
+      boardId,
+      user: state.currentUser,
+      onOpBroadcast,
+      onSnapshotSync,
+      onPresenceUpdate,
+    });
+
+  // Set connection status
+  useEffect(() => {
+    dispatch({ type: "SET_CONNECTION_STATUS", payload: isConnected });
+  }, [isConnected, dispatch]);
 
   // Set guest user if no current user
   useEffect(() => {
@@ -91,21 +150,23 @@ function WhiteboardContent() {
     }
   }, [state.currentUser, dispatch]);
 
-  // Initialize mock users when user is set
+  // Demo: mock users when not connected
   useEffect(() => {
-    if (state.currentUser) {
+    if (state.currentUser && !isConnected) {
       Object.values(mockUsers).forEach((user) => {
         dispatch({ type: "UPDATE_USER", payload: user });
       });
-      dispatch({ type: "SET_CONNECTION_STATUS", payload: true });
     }
-  }, [state.currentUser, dispatch]);
+  }, [state.currentUser, isConnected, dispatch]);
 
-  // Track mouse position for accurate paste location
-  const handleCursorMove = (point: Point) => {
-    lastMousePosition.current = point;
-    sendCursor(point.x, point.y);
-  };
+  // Track mouse position and broadcast cursor (throttled)
+  const handleCursorMove = useCallback(
+    (point: Point) => {
+      lastMousePosition.current = point;
+      sendCursorThrottled(point.x, point.y);
+    },
+    [sendCursorThrottled],
+  );
 
   // Fallback center if no mouse position
   const getFallbackCenter = (): Point => ({
@@ -192,7 +253,11 @@ function WhiteboardContent() {
     delete: () => {
       const count = state.selectedElements.length;
       if (count === 0) return;
-      state.selectedElements.forEach((id) => deleteElement(id));
+      state.selectedElements.forEach((id) => {
+        const el = state.elements.find((e) => e.id === id);
+        if (el && isConnected) sendDeleteElement(id, el.type);
+        deleteElement(id);
+      });
       toast({
         title: "Deleted",
         description: `${count} element${count > 1 ? "s" : ""} deleted`,
@@ -232,6 +297,14 @@ function WhiteboardContent() {
   };
 
   const shortcuts = createWhiteboardShortcuts(actions);
+
+  const handleElementAdded = isConnected
+    ? (el: import("@/types/whiteboard").DrawingElement) => sendElement(el)
+    : undefined;
+  const handleElementDeleted = isConnected
+    ? (id: string, type: import("@/types/whiteboard").DrawingElement["type"]) =>
+        sendDeleteElement(id, type)
+    : undefined;
 
   useKeyboardShortcuts(shortcuts);
 
@@ -319,6 +392,8 @@ function WhiteboardContent() {
         <div className="flex-1 relative">
           <WhiteboardCanvas
             onCursorMove={handleCursorMove}
+            onElementAdded={handleElementAdded}
+            onElementDeleted={handleElementDeleted}
             className="w-full h-full"
           />
         </div>
@@ -369,9 +444,12 @@ function WhiteboardContent() {
 }
 
 export default function Whiteboard() {
+  const { id } = useParams<{ id: string }>();
+  const boardId = id ?? "demo-board";
+
   return (
-    <WhiteboardProvider boardId="demo-board">
-      <WhiteboardContent />
+    <WhiteboardProvider boardId={boardId}>
+      <WhiteboardContent boardId={boardId} />
     </WhiteboardProvider>
   );
 }
