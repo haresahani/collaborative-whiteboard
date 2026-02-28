@@ -34,6 +34,14 @@ interface WhiteboardCanvasProps {
   onElementAdded?: (element: DrawingElement) => void;
   /** Called when element(s) are deleted (for real-time sync) */
   onElementDeleted?: (id: string, elementType: DrawingElement["type"]) => void;
+  /** Called during pen draw for live stroke preview */
+  onStrokeChunk?: (strokeId: string, points: Array<[number, number]>) => void;
+  /** Called when element is transformed (move/resize/rotate) */
+  onElementUpdated?: (
+    id: string,
+    elementType: DrawingElement["type"],
+    updates: Partial<DrawingElement>,
+  ) => void;
 }
 
 interface SelectionRect {
@@ -50,6 +58,8 @@ export function WhiteboardCanvas({
   onCursorMove,
   onElementAdded,
   onElementDeleted,
+  onStrokeChunk,
+  onElementUpdated,
 }: WhiteboardCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -96,6 +106,7 @@ export function WhiteboardCanvas({
 
   const selectionOriginRef = useRef<Point | null>(null);
   const marqueeModeRef = useRef<"add" | "replace">("replace");
+  const currentStrokeIdRef = useRef<string | null>(null);
   const marqueeBaseSelectionRef = useRef<string[]>([]);
 
   const [selectionRect, setSelectionRect] = useState<SelectionRect | null>(
@@ -571,6 +582,7 @@ export function WhiteboardCanvas({
       setStartPoint(point);
       setIsDrawing(true);
       if (tool === "pen") {
+        currentStrokeIdRef.current = `path-${Date.now()}`;
         setCurrentPath([point]);
       }
     },
@@ -614,29 +626,27 @@ export function WhiteboardCanvas({
           dragStateRef.current.elementIds.forEach((id) => {
             const snapshot = dragStateRef.current?.snapshots[id];
             if (!snapshot) return;
+            const el = elements.find((e) => e.id === id);
 
-            if (
-              elements.find((el) => el.id === id)?.type === "path" &&
-              snapshot.pathPoints
-            ) {
-              updateElement(id, {
-                data: {
-                  ...(elements.find((el) => el.id === id)?.data ?? {
-                    points: [],
-                  }),
-                  points: snapshot.pathPoints.map((p) => ({
-                    x: p.x + deltaX,
-                    y: p.y + deltaY,
-                  })),
-                },
-              });
-            } else {
-              updateElement(id, {
+            if (el?.type === "path" && snapshot.pathPoints) {
+              const newPoints = snapshot.pathPoints.map((p) => ({
+                x: p.x + deltaX,
+                y: p.y + deltaY,
+              }));
+              const updates = {
+                data: { ...el.data, points: newPoints },
+              };
+              updateElement(id, updates);
+              onElementUpdated?.(id, "path", updates);
+            } else if (snapshot.position) {
+              const updates = {
                 position: {
                   x: snapshot.position.x + deltaX,
                   y: snapshot.position.y + deltaY,
                 },
-              });
+              };
+              updateElement(id, updates);
+              onElementUpdated?.(id, el?.type ?? "rectangle", updates);
             }
           });
         } else if (selectionOriginRef.current) {
@@ -715,7 +725,14 @@ export function WhiteboardCanvas({
       if (!isDrawing || !startPoint) return;
 
       if (tool === "pen") {
-        setCurrentPath((prev) => [...prev, point]);
+        setCurrentPath((prev) => {
+          const next = [...prev, point];
+          if (currentStrokeIdRef.current && next.length >= 2) {
+            const coords = next.map((p) => [p.x, p.y] as [number, number]);
+            onStrokeChunk?.(currentStrokeIdRef.current, coords);
+          }
+          return next;
+        });
       } else if (["rectangle", "circle", "line"].includes(tool)) {
         const id = `temp-${Date.now()}`;
         const baseElement: Omit<DrawingElement, "type"> = {
@@ -774,6 +791,8 @@ export function WhiteboardCanvas({
       erasedElementIds,
       isElementIntersectedByEraser,
       toolSettings.strokeWidth,
+      onStrokeChunk,
+      onElementUpdated,
     ],
   );
 
@@ -813,8 +832,10 @@ export function WhiteboardCanvas({
     if (!startPoint) return;
 
     if (tool === "pen" && currentPath.length > 1) {
+      const strokeId = currentStrokeIdRef.current ?? `path-${Date.now()}`;
+      currentStrokeIdRef.current = null;
       const element: DrawingElement = {
-        id: `path-${Date.now()}`,
+        id: strokeId,
         type: "path",
         position: { x: 0, y: 0 },
         size: { width: 0, height: 0 },
@@ -1114,6 +1135,7 @@ export function WhiteboardCanvas({
             screenToCanvas={screenToCanvas}
             onTransform={(updates) => {
               updateElement(el.id, updates);
+              onElementUpdated?.(el.id, el.type, updates);
             }}
           />
         );

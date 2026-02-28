@@ -120,15 +120,21 @@ function WhiteboardContent({ boardId }: { boardId: string }) {
     [dispatch],
   );
 
-  const { isConnected, sendElement, sendDeleteElement, sendCursorThrottled } =
-    useCollabSocket({
-      url: SOCKET_IO_URL,
-      boardId,
-      user: state.currentUser,
-      onOpBroadcast,
-      onSnapshotSync,
-      onPresenceUpdate,
-    });
+  const {
+    isConnected,
+    sendElement,
+    sendElementTransform,
+    sendDeleteElement,
+    sendCursorThrottled,
+    sendStrokeChunk,
+  } = useCollabSocket({
+    url: SOCKET_IO_URL,
+    boardId,
+    user: state.currentUser,
+    onOpBroadcast,
+    onSnapshotSync,
+    onPresenceUpdate,
+  });
 
   // Set connection status
   useEffect(() => {
@@ -305,6 +311,17 @@ function WhiteboardContent({ boardId }: { boardId: string }) {
     ? (id: string, type: import("@/types/whiteboard").DrawingElement["type"]) =>
         sendDeleteElement(id, type)
     : undefined;
+  const handleStrokeChunk = isConnected
+    ? (strokeId: string, points: Array<[number, number]>) =>
+        sendStrokeChunk(strokeId, points)
+    : undefined;
+  const handleElementUpdated = isConnected
+    ? (
+        id: string,
+        type: import("@/types/whiteboard").DrawingElement["type"],
+        updates: Partial<import("@/types/whiteboard").DrawingElement>,
+      ) => sendElementTransform(id, type, updates)
+    : undefined;
 
   useKeyboardShortcuts(shortcuts);
 
@@ -394,6 +411,8 @@ function WhiteboardContent({ boardId }: { boardId: string }) {
             onCursorMove={handleCursorMove}
             onElementAdded={handleElementAdded}
             onElementDeleted={handleElementDeleted}
+            onStrokeChunk={handleStrokeChunk}
+            onElementUpdated={handleElementUpdated}
             className="w-full h-full"
           />
         </div>
