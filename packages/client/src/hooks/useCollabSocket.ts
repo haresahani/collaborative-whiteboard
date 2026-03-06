@@ -15,11 +15,12 @@ import type {
   ErrorPayload,
 } from "@/types/protocol";
 import { PROTOCOL_VERSION } from "@/types/protocol";
-import { elementToOpPayload } from "@/lib/ops";
+import { elementToOpPayload, elementUpdatesToOpPayload } from "@/lib/ops";
 import type { DrawingElement } from "@/types/whiteboard";
 
 const CURSOR_THROTTLE_MS = 50; // ~20 updates/sec
-const STROKE_CHUNK_THROTTLE_MS = 80; // ~12 updates/sec during draw
+const STROKE_CHUNK_THROTTLE_MS = 80; // ~12 updates/sec
+const TRANSFORM_THROTTLE_MS = 100; // ~10 updates/sec during drag during draw
 
 export interface UseCollabSocketOptions {
   url: string;
@@ -39,6 +40,11 @@ export interface UseCollabSocketReturn {
   error: string | null;
   sendOp: (payload: OpPayloadData) => void;
   sendElement: (element: DrawingElement) => void;
+  sendElementTransform: (
+    id: string,
+    elementType: DrawingElement["type"],
+    updates: Partial<DrawingElement>,
+  ) => void;
   sendDeleteElement: (id: string, elementType: DrawingElement["type"]) => void;
   sendCursor: (x: number, y: number) => void;
   sendCursorThrottled: (x: number, y: number) => void;
@@ -63,6 +69,7 @@ export function useCollabSocket({
   const opIdCounterRef = useRef(0);
   const lastCursorSendRef = useRef(0);
   const lastChunkSendRef = useRef(0);
+  const lastTransformSendRef = useRef<Record<string, number>>({});
 
   // Store callbacks in refs to avoid reconnect loop when parent re-renders
   const onOpBroadcastRef = useRef(onOpBroadcast);
@@ -180,6 +187,29 @@ export function useCollabSocket({
     [user, nextOpId, sendOp],
   );
 
+  const sendElementTransform = useCallback(
+    (
+      id: string,
+      elementType: DrawingElement["type"],
+      updates: Partial<DrawingElement>,
+    ) => {
+      if (!user) return;
+      const payload = elementUpdatesToOpPayload(
+        id,
+        elementType,
+        updates,
+        user.id,
+      );
+      if (!payload) return;
+      const now = Date.now();
+      const last = lastTransformSendRef.current[id] ?? 0;
+      if (now - last < TRANSFORM_THROTTLE_MS) return;
+      lastTransformSendRef.current[id] = now;
+      sendOp(payload);
+    },
+    [user, sendOp],
+  );
+
   const sendDeleteElement = useCallback(
     (id: string, elementType: DrawingElement["type"]) => {
       if (!user) return;
@@ -252,6 +282,7 @@ export function useCollabSocket({
     error,
     sendOp,
     sendElement,
+    sendElementTransform,
     sendDeleteElement,
     sendCursor,
     sendCursorThrottled,

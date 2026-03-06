@@ -45,6 +45,19 @@ export function applyOpPayload(payload: OpPayloadData): OpApplyResult | null {
       if (!strokeId) return null;
       return { action: "delete", id: strokeId };
     }
+    case "stroke.transform": {
+      const strokeId = data.strokeId as string;
+      const points = (data.points as number[][])?.map(([x, y]) => ({ x, y }));
+      if (!strokeId || !Array.isArray(points)) return null;
+      return {
+        action: "update",
+        id: strokeId,
+        updates: {
+          data: { points, smooth: data.smooth ?? true },
+          updatedAt: Date.now(),
+        },
+      };
+    }
     case "shape.add": {
       const shapeId = (data.shapeId as string) ?? `shape-${Date.now()}`;
       const shapeType = (data.type as string) ?? "rectangle";
@@ -335,6 +348,50 @@ export function elementToOpPayload(
     default:
       return null;
   }
+}
+
+/**
+ * Build transform op payload for element position/size/rotation updates.
+ */
+export function elementUpdatesToOpPayload(
+  id: string,
+  elementType: DrawingElement["type"],
+  updates: Partial<DrawingElement>,
+  actorId: string,
+): OpPayloadData | null {
+  if (elementType === "path") {
+    const points = (updates.data as { points?: Point[] })?.points;
+    if (!points?.length) return null;
+    const coords = points.map((p) => [p.x, p.y] as [number, number]);
+    const smooth = (updates.data as { smooth?: boolean })?.smooth ?? true;
+    return {
+      type: "stroke.transform",
+      data: { strokeId: id, points: coords, smooth },
+    };
+  }
+  if (elementType === "sticky-note") {
+    const pos = updates.position;
+    if (!pos) return null;
+    return {
+      type: "note.update",
+      data: { noteId: id, x: pos.x, y: pos.y },
+    };
+  }
+  if (["rectangle", "circle", "line", "text"].includes(elementType)) {
+    const data: Record<string, unknown> = { shapeId: id };
+    if (updates.position) {
+      data.x = updates.position.x;
+      data.y = updates.position.y;
+    }
+    if (updates.size) {
+      data.width = updates.size.width;
+      data.height = updates.size.height;
+    }
+    if (updates.rotation !== undefined) data.rotation = updates.rotation;
+    if (Object.keys(data).length <= 1) return null;
+    return { type: "shape.transform", data };
+  }
+  return null;
 }
 
 /**

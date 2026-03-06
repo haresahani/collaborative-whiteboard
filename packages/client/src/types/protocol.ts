@@ -25,7 +25,8 @@ export interface OpPayloadData {
   type:
     | "stroke.add"
     | "stroke.delete"
-    | "stroke.chunk" // Optional: live streaming during draw
+    | "stroke.chunk" // Live streaming during draw
+    | "stroke.transform" // Path move (updated points)
     | "shape.add"
     | "shape.transform"
     | "shape.delete"
