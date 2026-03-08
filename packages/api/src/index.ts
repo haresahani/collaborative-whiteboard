@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 import path from "path";
 import app from "./server";
 import { connectDB } from "./config/db";
-import { promises } from "dns";
 
 dotenv.config({
   path: path.resolve(process.cwd(), "../../env/dev.env"),
