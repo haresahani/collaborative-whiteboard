@@ -1,175 +1,92 @@
-# 📘 Runbook — Collaborative Whiteboard
+# Local Runbook
 
-This runbook is meant for operators, SREs, and contributors to understand **how to run, monitor, and recover** the system in development and production. Keeping a runbook shows maturity and real-world readiness.
+This runbook is for local development and demo readiness. It is not a production operations guide.
 
----
+## Prerequisites
 
-## 🔧 Startup procedures
+- Node.js 20+
+- pnpm 9+
+- MongoDB access for the API package
 
-### Local development
+## Install
 
 ```bash
-# Install deps
 pnpm install
-
-# Start infra (Mongo + Redis)
-docker compose -f infra/docker-compose.yml up -d
-
-# Start API, Socket, Client
-./dev-commands.sh dev
+cp env/.env.example env/dev.env
 ```
 
-### Production (Docker Compose example)
+Update `env/dev.env` before starting the API.
+
+## Start Commands
+
+### Whole repo
 
 ```bash
-# Build images
-docker compose -f infra/docker-compose.yml build
-
-# Start in detached mode
-docker compose -f infra/docker-compose.yml up -d
-
-# View logs
-docker compose logs -f api
+pnpm dev
 ```
 
-### Kubernetes (example)
+This starts every package that has a `dev` script.
+
+### Package-by-package
 
 ```bash
-kubectl apply -f infra/k8s/
-
-# Verify pods
-kubectl get pods -n whiteboard
+pnpm --filter client dev
+pnpm --filter api dev
+pnpm --filter socket dev
+pnpm --filter worker dev
 ```
 
----
+## Expected Behavior
 
-## 📊 Monitoring
+- client starts on `http://localhost:5173`
+- the active whiteboard route is `/board/:id`
+- API starts on the port in `env/dev.env`, currently `1234` by default
+- socket and worker packages currently only print stub startup messages
 
-- **Metrics** (Prometheus/Grafana)
-  - `events_total` (per board, per second)
-  - `socket_connected_users`
-  - `snapshot_duration_seconds`
-  - `oplog_queue_size`
+## Verification Commands
 
-- **Logs**
-  - Structured JSON logs with `boardId`, `userId`, `opId`
-  - Centralized with ELK / Loki
-
-- **Tracing**
-  - OpenTelemetry enabled on API + Socket
-  - Key spans: `board.join`, `op.apply`, `snapshot.write`
-
----
-
-## ⚠️ Common issues & fixes
-
-### MongoDB connection refused
-
-- Check service:
+Use these before calling the repo healthy:
 
 ```bash
-docker compose logs mongo
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm test
 ```
 
-- Validate `MONGO_URL` in `.env`
+## Common Issues
 
-### Redis pub/sub not propagating
+### API fails to start
 
-- Ensure Redis is running:
+Check:
 
-```bash
-docker compose logs redis
-```
+- `env/dev.env` exists
+- `MONGO_URL` is valid
+- MongoDB is reachable
+- `JWT_SECRET` is set
 
-- Check network policies if on k8s.
+### Client shows a blank page
 
-### API returns 401 Unauthorized
+Check:
 
-- Verify JWT secret consistency across API and Socket `.env`
-- Ensure client sends correct `Authorization: Bearer <token>`
+- you opened a valid board route such as `/board/local-demo`
+- the client dev server is actually running on port `5173`
 
-### Socket events not syncing across instances
+### Root `pnpm dev` looks noisy
 
-- Verify Redis pub/sub config.
-- Check that socket servers share the same `REDIS_URL`.
+That is expected for now because it starts client, API, socket, and worker together. Socket and worker are still stubs, so their logs are only scaffolding output.
 
-### High latency (>500ms p99)
+### `pnpm build` recreates generated output
 
-- Inspect metrics: is Mongo slow? Are snapshots too frequent?
-- Scale socket servers: `kubectl scale deployment socket --replicas=4`
+That is expected locally. Generated `dist` and `tsbuildinfo` files should stay out of Git.
 
----
+## Demo Checklist
 
-## 🔄 Recovery procedures
+Before showing the project:
 
-### Restore from snapshot
-
-```bash
-# Identify latest snapshot
-db.snapshots.find({ boardId: ObjectId("...") }).sort({ createdAt: -1 }).limit(1)
-
-# Replay oplog after snapshot
-node scripts/replay-oplog.js --board <boardId> --fromSnapshot <snapshotId>
-```
-
-### Drop and reseed DB (dev only)
-
-```bash
-docker compose exec mongo mongosh --eval 'db.getSiblingDB("whiteboard").dropDatabase()'
-node scripts/seed.js
-```
-
-### Restart all services
-
-```bash
-docker compose down && docker compose up -d
-```
-
----
-
-## 🧪 Testing in production-like environments
-
-- Run **load tests** with k6:
-
-```bash
-k6 run tests/load/socket-load.js
-```
-
-- Observe latency metrics in Grafana.
-- Simulate failover by killing one socket pod: `kubectl delete pod socket-xyz`.
-- Verify clients reconnect and state re-syncs from oplog.
-
----
-
-## 🔐 Security checks
-
-- Rotate JWT secrets periodically.
-- Ensure TLS termination at ingress (Nginx/Envoy).
-- Run `npm audit` weekly or via CI.
-- Check rate limiting logs for anomalies.
-
----
-
-## 🧭 Escalation path
-
-1. Check runbook troubleshooting section.
-2. If unresolved:
-   - Collect logs, metrics, and reproduction steps.
-   - Open GitHub issue with labels: `bug`, `infra`, `urgent`.
-3. For critical incidents (data loss, downtime > 5m):
-   - Notify maintainers in Slack/Discord `#incidents`.
-   - Document post-mortem in `docs/incidents/YYYY-MM-DD.md`.
-
----
-
-## ✅ Runbook checklist for operators
-
-- [ ] Know how to start/stop infra (Docker & k8s).
-- [ ] Understand how to read logs & metrics.
-- [ ] Can restore a board from snapshot + oplog.
-- [ ] Can reseed DB for dev/testing.
-- [ ] Familiar with escalation path.
-
----
-
-**Tip:** In interviews, reference this runbook to show you understand real-world ops, recovery, and monitoring — a big plus for FAANG/MANG interviews.
+1. run `pnpm lint`
+2. run `pnpm typecheck`
+3. run `pnpm build`
+4. run `pnpm test`
+5. start the client and verify the board route loads
+6. if demoing backend work, verify the API starts against a working MongoDB instance

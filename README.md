@@ -1,235 +1,176 @@
 # Collaborative Whiteboard
 
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
-![Tests](https://img.shields.io/badge/tests-jest%20%7C%20vitest-blue)
-![License](https://img.shields.io/badge/license-MIT-blue)
+Collaborative Whiteboard is a pnpm monorepo for a whiteboard product that is currently in the "solid editor plus partial backend" stage.
 
-A production-ready **real-time collaborative whiteboard** built for distributed product teams. Built in a monorepo with pnpm workspaces, it showcases modern front-end UX, type-safe APIs, websocket collaboration, and cloud-native operations tooling—suited for portfolio reviews at FAANG/MNC companies.
+Today, the strongest part of the repo is the client-side whiteboard experience in `packages/client`: drawing, selection, resize, text, erase, zoom/pan, undo/redo, and PNG export all work locally. The backend in `packages/api` already has auth, board, snapshot, and oplog models plus basic REST endpoints. The realtime layer is not finished yet: `packages/socket` and `packages/worker` are still scaffolds, and the new client is not wired to persistence or sockets.
 
----
+This README is intentionally honest about that state. The goal of the project is not to claim a huge system that does not exist yet. The goal is to build one clear, defendable V1 and then grow it.
 
-## Executive Summary
+## Project Story
 
-- **What**: Multiplayer whiteboard with live cursors, drawing tools, authentication, and export pipeline.
-- **Why**: Demonstrates end-to-end architecture—React client, Node/Express API, websocket layer, background workers, and shared TypeScript contracts.
-- **How**: CRDT-inspired data model, Redis-backed fan-out, MongoDB oplog + snapshot persistence, observability via OpenTelemetry + Prometheus.
-- **Impact**: Scales to 100+ concurrent users with <200 ms update latency; resilient deployment via GitHub Actions, Docker, and Kubernetes.
+This project is meant to become an interview-quality collaborative system with a clean product story:
 
-**Quick Links** → [Live Demo](https://demo.collab-whiteboard.app) • [Docs](docs/README.md) • [Architecture](docs/architecture.md) • [Testing Guide](docs/testing-guide.md)
+- a modern whiteboard client
+- an API for auth and board persistence
+- a simple realtime collaboration model
+- explicit tradeoffs and limitations
 
----
+The repo is being shaped for depth, clarity, and credibility rather than inflated architecture claims.
 
-## Table of Contents
+## Current Status
 
-- [Features](#features)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Monorepo Structure](#monorepo-structure)
-- [Getting Started](#getting-started)
-- [Testing & Quality](#testing--quality)
-- [Operations](#operations)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+| Area                    | Status          | Notes                                                                        |
+| ----------------------- | --------------- | ---------------------------------------------------------------------------- |
+| Whiteboard editor UI    | Implemented     | Local whiteboard tools and interactions are the strongest part of the repo.  |
+| Client routing          | Partial         | The active route is `/board/:id`. Old auth and landing pages are not active. |
+| Auth API                | Implemented     | Signup, login, and `GET /api/auth/me` exist in the API package.              |
+| Board API               | Implemented     | Create, list, fetch, delete board, and append operation endpoints exist.     |
+| Persistence from client | Not wired       | The new client does not yet call the API.                                    |
+| Realtime collaboration  | Not implemented | Socket and worker packages are still stubs.                                  |
+| Export pipeline         | Partial         | Client-side PNG export exists. Background export jobs do not.                |
+| Automated tests         | Minimal         | API has a smoke test. Client interaction tests are still missing.            |
 
----
+## V1 Scope
 
-## Features
+The V1 target is intentionally narrow.
 
-**Core Experience**
+Included in V1:
 
-- Real-time drawing (pen, shape, text) with per-user history and undo/redo.
-- Presence indicators, live cursors, and shared board state via Socket.IO.
-- Role-based access (owner, editor, viewer) with token-based authentication.
+- signup and login
+- create a board
+- open a board by URL
+- local whiteboard editing with the current toolset
+- save and reload board state through API persistence
+- 2-user realtime collaboration on a single board
+- a small baseline test suite for auth, board CRUD, editor interactions, and one realtime scenario
 
-**Collaboration & Productivity**
+Explicitly excluded from V1:
 
-- Async export pipeline (PNG/PDF/JSON) processed via background workers.
-- Shared templates, sticky notes, and grouped objects for design sprints.
-- Board versioning with snapshot rollover every 1,000 operations.
+- CRDTs
+- Redis fan-out
+- background workers
+- server-side export jobs
+- advanced ACLs and org/team features
+- mobile-native experiences
+- offline sync
+- observability and infra claims beyond local development readiness
 
-**Production Readiness**
+Detailed scope lives in [docs/v1-scope.md](docs/v1-scope.md).
 
-- End-to-end telemetry (metrics, logs, traces) integrated with Grafana + Jaeger.
-- CI/CD with linting, unit/integration tests, and automated Docker publishing.
-- Configurable rate limiting, schema validation, and input sanitisation.
+## Chosen Collaboration Model
 
-See `docs/` for deeper product and engineering specifications.
+The first collaboration model will be:
 
----
+- one Socket.IO room per board
+- authoritative server ordering with a monotonic sequence number
+- append-only operations stored in MongoDB
+- snapshot plus oplog replay for reload and reconnect
+- last accepted operation wins for conflicting updates to the same element
 
-## Architecture
+This is a simpler and more defensible V1 than claiming CRDTs before they exist. The full decision is documented in [docs/collaboration-model.md](docs/collaboration-model.md).
 
-```
-Browser (React + Vite) ──HTTPS/WebSocket──> Ingress / Load Balancer
-                                 │
-                                 ▼
-                   Application Gateway (Express + Socket.IO)
-                    ├── REST API (Express + MongoDB)
-                    ├── Collab Service (CRDT ops, Redis pub/sub)
-                    ├── Worker Queue (BullMQ, export + snapshot jobs)
-                    └── Shared TypeScript Contracts
-                                 │
-                                 ▼
-                     Observability (OTel → Prometheus/Grafana)
-```
+## Monorepo Packages
 
-- **State Sync**: Client emits operations (`stroke.add`, `cursor.update`), server assigns lamport timestamp and broadcasts through Redis fan-out.
-- **Durability**: Append-only oplog persisted in MongoDB with periodic snapshot compaction.
-- **Scalability**: Stateless API/socket tier; horizontal scaling via Kubernetes + Redis adapter.
-- **Docs**: Full diagrams and sequence flows live in [`docs/architecture.md`](docs/architecture.md) and [`docs/crdt-design.md`](docs/crdt-design.md).
+- `packages/client`: React + Vite whiteboard client. This is the most complete package today.
+- `packages/api`: Express + MongoDB API for auth, boards, snapshots, and oplog persistence.
+- `packages/socket`: reserved for the realtime gateway. Currently a stub.
+- `packages/worker`: reserved for async jobs such as export/snapshot work. Currently a stub.
+- `packages/shared`: shared package for code used by more than one package.
+- `packages/infra-utils`: helper package for repo and infra-adjacent utilities.
 
----
-
-## Tech Stack
-
-| Layer       | Technologies                                       | Notes                                                     |
-| ----------- | -------------------------------------------------- | --------------------------------------------------------- |
-| Frontend    | React 18, TypeScript, Vite, Tailwind CSS, Radix UI | Optimised canvas rendering, hooks-driven state management |
-| Backend API | Node.js, Express, Mongoose, Zod                    | Typed REST endpoints, schema validation                   |
-| Realtime    | Socket.IO, Redis, CRDT ops                         | Reliable delivery + eventual consistency                  |
-| Persistence | MongoDB (oplog + snapshots), Redis, S3             | Durable board data, pub/sub, export storage               |
-| Tooling     | pnpm, Turborepo, ESLint, Prettier, Husky           | Monorepo automation & DX                                  |
-| Testing     | Jest (client), Vitest (API), React Testing Library | Unit/integration coverage with JSDOM env                  |
-| Operations  | Docker, Kubernetes, Helm, GitHub Actions           | Infra-as-code & CI/CD                                     |
-
----
-
-## Monorepo Structure
-
-```
-/                      # Repo root
-├─ .github/workflows/  # CI/CD pipelines
-├─ docs/               # Product, architecture, protocol, testing
-├─ packages/
-│  ├─ client/          # React + Vite SPA
-│  ├─ api/             # Express API (boards, auth, exports)
-│  ├─ socket/          # Socket.IO gateway
-│  ├─ worker/          # BullMQ workers for snapshot/export
-│  ├─ shared/          # Cross-package types & utilities
-│  └─ infra-utils/     # Deployment scripts, health checks
-├─ tests/              # E2E (Playwright) & load scripts (k6)
-├─ scripts/            # Seed, migrations, tooling
-└─ README.md
-```
-
-Each package has independent `package.json`, tests, and ESLint config, orchestrated via pnpm workspaces. Shared contracts (`@shared`) enforce compile-time guarantees across services.
-
----
+Package boundaries are written down in [docs/package-responsibilities.md](docs/package-responsibilities.md).
 
 ## Getting Started
 
 ### Requirements
 
-- Node.js ≥ 20
-- pnpm ≥ 9
-- Docker (optional for local infra: MongoDB, Redis)
-- GitHub CLI (optional) for pulling CI secrets
+- Node.js 20+
+- pnpm 9+
+- MongoDB access for API work
 
-### Clone & Install
+### Install
 
 ```bash
-git clone https://github.com/<your-handle>/collaborative-whiteboard.git
-cd collaborative-whiteboard
 pnpm install
-cp .env.example .env
+cp env/.env.example env/dev.env
 ```
 
-### Local Development
+Update `env/dev.env` with local values before starting the API.
+
+### Run The Repo
+
+Run all packages that expose a `dev` script:
 
 ```bash
-# Start API + Socket + Worker with docker-compose
-docker compose -f infra/docker-compose.yml up --build
-
-# In another terminal: start the web client
-pnpm -w --filter client dev
-
-# Optional: run API locally instead of Docker
-pnpm -w --filter api dev
+pnpm dev
 ```
 
-Visit `http://localhost:3000` for the client UI; API and socket server run on `http://localhost:4000`.
+Useful focused commands:
 
-### Environment Variables
-
-Key configuration lives in `.env` files. See [`docs/runbook.md`](docs/runbook.md) for environment-specific guidance.
-
-```ini
-MONGODB_URI=mongodb://localhost:27017/collab
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=xxxxxx
-VITE_API_URL=http://localhost:4000
-VITE_WS_URL=ws://localhost:4000
+```bash
+pnpm --filter client dev
+pnpm --filter api dev
+pnpm --filter client build
+pnpm --filter client lint
 ```
 
----
+### Expected Local Ports
 
-## Testing & Quality
+- client: `http://localhost:5173`
+- active board route example: `http://localhost:5173/board/local-demo`
+- API: `http://localhost:1234`
+- socket stub: logs as port `3001`
 
-- **Unit & Integration**: `pnpm -w test` (runs Jest for client, Vitest for API)
-- **Client-only**: `pnpm -w --filter client test`
-- **API-only**: `pnpm -w --filter api test`
-- **Coverage**: `pnpm -w --filter client test -- --coverage`
-- **Linting**: `pnpm -w exec eslint . --ext .ts,.tsx`
+### Quality Commands
 
-Test strategy, folder conventions, and troubleshooting tips are detailed in [`docs/testing-guide.md`](docs/testing-guide.md).
+These commands should stay healthy at the repo root:
 
-Quality gates run via Husky pre-commit hooks and GitHub Actions (`lint`, `typecheck`, `test`, `build`).
+```bash
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm test
+```
 
----
+## Repo Standards
 
-## Operations
+The foundation standards for this repo are now documented and should guide all future work:
 
-**CI/CD**
+- engineering conventions: [docs/engineering-conventions.md](docs/engineering-conventions.md)
+- local setup and runbook: [docs/runbook.md](docs/runbook.md)
+- testing expectations: [docs/testing-guide.md](docs/testing-guide.md)
+- architecture baseline: [docs/architecture.md](docs/architecture.md)
+- protocol and sync baseline: [docs/protocol.md](docs/protocol.md)
 
-- GitHub Actions pipeline (see `.github/workflows/ci.yml`) executes lint → typecheck → test → build.
-- Docker images pushed to GHCR; Helm chart deployment via manual approval.
+## Current Limitations
 
-**Observability**
+This repo is not yet a true collaborative product. Important limitations today:
 
-- OpenTelemetry tracing wired into API and socket services.
-- Prometheus metrics: `ops_processed_total`, `latency_ms`, `active_connections`, `snapshot_duration_ms`.
-- Grafana dashboards & Sentry for alerting.
+- the client is mostly local-first and not connected to the backend
+- realtime sync is not implemented
+- socket and worker packages are placeholders
+- API response shapes are partially standardized and need one cleanup pass during V1 work
+- the automated test suite is still too light for a finished product
 
-**Security Controls**
+Those gaps are acceptable right now because they are explicitly acknowledged and planned, not hidden.
 
-- JWT auth with refresh tokens; board-level ACL enforcement.
-- Rate limiting via Redis; Zod validation for inbound payloads.
-- Secrets managed through environment variables & GitHub Actions secrets.
+## Milestone Order
 
----
+The planned delivery order is:
 
-## Roadmap
+1. foundation and documentation
+2. persistence wiring
+3. realtime collaboration
+4. polish and test depth
+5. advanced features
 
-- [ ] Mobile-friendly canvas interactions & PWA support
-- [ ] AI-assisted shape detection and auto-layout
-- [ ] Offline-first mode with local queue replay
-- [ ] Collaborative audio/video rooms
-- [ ] Enhanced analytics dashboard (board usage, heatmaps)
+## Interview Positioning
 
-Limitations and mitigation strategies are tracked in [`docs/runbook.md`](docs/runbook.md) and project issues.
+The best interview story for this repo is:
 
----
+- "I built a strong whiteboard editor first."
+- "I kept the docs honest."
+- "I chose a simple collaboration model for V1."
+- "I prioritized one clear vertical slice over inflated architecture."
 
-## Contributing
-
-We welcome improvements and issue reports.
-
-- Fork & branch from `main` (`feat/<name>` or `fix/<name>`)
-- Run `pnpm run lint && pnpm run test` before PR submission
-- Include screenshots for UI changes and update documentation as needed
-- See [CONTRIBUTING](.github/CONTRIBUTING.md) for coding standards and release process
-
----
-
-## License
-
-MIT © Hare Sahani
-
----
-
-## Contact
-
-**Hare Sahani**  
-[harecareer@gmail.com](mailto:harecareer@gmail.com) · [LinkedIn](https://www.linkedin.com/in/hare-sahani-18239b240/) · [GitHub](https://github.com/haresahani) · [LeetCode](https://leetcode.com/u/haresahani/)
+The interview narrative is captured in [docs/INTERVIEW_NOTES.md](docs/INTERVIEW_NOTES.md).

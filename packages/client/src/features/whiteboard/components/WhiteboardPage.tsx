@@ -89,7 +89,9 @@ export default function WhiteboardPage() {
   }, [handleShare]);
 
   const handleExport = useCallback(() => {
-    const canvas = document.querySelector(".whiteboard-canvas-element");
+    const canvas = document.querySelector<HTMLCanvasElement>(
+      ".whiteboard-canvas-element",
+    );
 
     if (!canvas) {
       pushNotice(
