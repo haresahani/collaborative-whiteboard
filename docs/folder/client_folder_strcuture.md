@@ -118,12 +118,14 @@ client/
 │ │ ├── use-mobile.tsx
 │ │ ├── use-toast.ts
 │ │ ├── useAuth.ts
+| | ├── useCollabSocket.ts
 │ │ ├── useKeyboardShortcuts.ts
 │ │ └── useWebSocket.ts
 │ │
 │ ├── lib/
 │ │ ├── clipboard.ts
 │ │ ├── hit.ts
+| | ├── ops.ts
 │ │ ├── transform.ts
 │ │ └── utils.ts
 │ │
@@ -140,6 +142,7 @@ client/
 │ │
 │ └── types/
 │ ├── auth.ts
+| ├── protocol.ts
 │ └── whiteboard.ts
 │
 ├── tests/
