@@ -6,17 +6,13 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "pnpm --parallel --filter ./packages/* dev",
+    "dev": "pnpm -r --parallel --filter ./packages/* --if-present dev",
     "build": "pnpm --parallel --filter ./packages/* build",
     "typecheck": "pnpm exec tsc --noEmit",
-    "lint": "eslint . --ext .js,.ts,.tsx",
+    "lint": "pnpm -r --filter ./packages/* --if-present lint",
     "format": "prettier --write .",
     "prepare": "husky install",
     "test": "pnpm -r test"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": "eslint --fix",
-    "*.{json,css,md}": "prettier --write"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
