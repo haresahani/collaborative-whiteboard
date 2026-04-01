@@ -104,7 +104,7 @@ export default function TopNavigation({
           <span className="wb-brand-mark" aria-hidden="true">
             <Blend size={18} />
           </span>
-          <span className="wb-brand-name">Collaboard</span>
+          <span className="wb-brand-name">Collaborative</span>
         </div>
 
         <div className="wb-divider" />
