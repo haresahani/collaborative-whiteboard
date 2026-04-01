@@ -26,6 +26,11 @@ export function useKeyboardShortcuts() {
       if (!modKey && !isTyping) {
         const key = e.key.toLowerCase();
 
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setTool("select");
+        }
+
         if (key === "v") {
           e.preventDefault();
           setTool("select");

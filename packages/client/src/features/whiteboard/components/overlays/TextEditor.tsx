@@ -2,18 +2,24 @@
 import { useEffect, useRef } from "react";
 import { useTextEditorStore } from "../../store/textEditorStore";
 import { useBoardStore } from "../../store/boardStore";
+import { useSelectionStore } from "../../store/selectionStore";
 import { useViewportStore } from "../../store/viewportStore";
 import { useToolStore } from "../../store/toolStore";
 import { generateUUID } from "../../../../lib/utils";
+import type { TextElement } from "../../models/element";
 
 export default function TextEditor() {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const { isEditing, elementId, x, y, value, setValue, stopEditing } =
     useTextEditorStore();
+  const elements = useBoardStore((s) => s.elements);
   const addElement = useBoardStore((s) => s.addElement);
   const updateElement = useBoardStore((s) => s.updateElement);
   const { offsetX, offsetY, zoom } = useViewportStore();
   const color = useToolStore((s) => s.color);
+  const fontFamily = useToolStore((s) => s.fontFamily);
+  const fontSize = useToolStore((s) => s.fontSize);
+  const setSelection = useSelectionStore((s) => s.setSelection);
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -26,25 +32,32 @@ export default function TextEditor() {
 
   if (!isEditing) return null;
 
+  const editingCandidate = elementId
+    ? elements.find((element) => element.id === elementId)
+    : null;
+  const editingElement: TextElement | null =
+    editingCandidate?.type === "text" ? editingCandidate : null;
+
   function commitText() {
     if (!value.trim()) {
       stopEditing();
       return;
     }
 
-    const fontSize = 20;
-    const fontFamily = "Virgil";
+    const activeFontSize = editingElement?.fontSize ?? fontSize;
+    const activeFontFamily = editingElement?.fontFamily ?? fontFamily;
+    const activeColor = editingElement?.style.strokeColor ?? color;
 
     // measure multiline text for width/height
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     let width = 0;
-    let height = fontSize;
+    let height = activeFontSize;
 
     if (ctx) {
-      ctx.font = `${fontSize}px ${fontFamily}`;
+      ctx.font = `${activeFontSize}px ${activeFontFamily}`;
       const lines = value.split("\n");
-      const lineHeight = fontSize * 1.2;
+      const lineHeight = activeFontSize * 1.2;
 
       for (const line of lines) {
         const metrics = ctx.measureText(line || " ");
@@ -64,31 +77,34 @@ export default function TextEditor() {
           text: value,
           width,
           height,
-          fontSize,
-          fontFamily,
+          fontSize: activeFontSize,
+          fontFamily: activeFontFamily,
           // keep existing style unless you want editing to recolor
           updatedAt: Date.now(),
         };
       });
+      setSelection([elementId]);
     } else {
+      const id = generateUUID();
       addElement({
-        id: generateUUID(),
+        id,
         type: "text",
         x,
         y,
         text: value,
         width,
         height,
-        fontSize,
-        fontFamily,
+        fontSize: activeFontSize,
+        fontFamily: activeFontFamily,
         style: {
-          strokeColor: color,
+          strokeColor: activeColor,
           strokeWidth: 1,
         },
         zIndex: 0,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      setSelection([id]);
     }
 
     stopEditing();
@@ -123,12 +139,12 @@ export default function TextEditor() {
         left: screenLeft,
         top: screenTop,
         zIndex: 10,
-        fontSize: 20,
-        fontFamily: "Virgil",
+        fontSize: editingElement?.fontSize ?? fontSize,
+        fontFamily: editingElement?.fontFamily ?? fontFamily,
         outline: "none",
         resize: "none",
         overflow: "hidden",
-        color: color,
+        color: editingElement?.style.strokeColor ?? color,
         minWidth: 40,
         minHeight: 20,
       }}

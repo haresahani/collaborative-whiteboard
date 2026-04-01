@@ -24,6 +24,7 @@ export default function BottomToolbar({ onNotify }: BottomToolbarProps) {
   const canUndo = useHistoryStore((state) => state.past.length > 0);
   const canRedo = useHistoryStore((state) => state.future.length > 0);
   const hasSelection = selectedIds.length > 0;
+  const hasElements = elements.length > 0;
 
   const handleDeleteSelection = useCallback(() => {
     if (!hasSelection) return;
@@ -63,6 +64,21 @@ export default function BottomToolbar({ onNotify }: BottomToolbarProps) {
     });
     onNotify("Canvas view reset to fit the current workspace.", "info");
   }, [onNotify]);
+
+  const handleClearBoard = useCallback(() => {
+    if (!hasElements) return;
+
+    const confirmed = window.confirm(
+      `Clear ${elements.length} element${elements.length === 1 ? "" : "s"} from the board?`,
+    );
+
+    if (!confirmed) return;
+
+    useHistoryStore.getState().push(elements);
+    setElements([]);
+    clearSelection();
+    onNotify("Board cleared.", "warning");
+  }, [clearSelection, elements, hasElements, onNotify, setElements]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -167,6 +183,21 @@ export default function BottomToolbar({ onNotify }: BottomToolbarProps) {
           >
             <Trash2 size={16} />
             <span>Delete</span>
+          </button>
+        </>
+      ) : null}
+
+      {hasElements ? (
+        <>
+          <div className="wb-divider wb-divider--vertical wb-desktop-only" />
+          <button
+            type="button"
+            className="wb-bottom-dock__action wb-bottom-dock__action--danger"
+            onClick={handleClearBoard}
+            title="Clear board"
+          >
+            <Trash2 size={16} />
+            <span>Clear Board</span>
           </button>
         </>
       ) : null}

@@ -43,7 +43,9 @@ export function usePointerDraw() {
 
   const tool = useToolStore((s) => s.tool);
   const color = useToolStore((s) => s.color);
+  const fillColor = useToolStore((s) => s.fillColor);
   const width = useToolStore((s) => s.width);
+  const lineStyle = useToolStore((s) => s.lineStyle);
 
   function eraseAtPoint(point: { x: number; y: number }) {
     const radius = getEraserRadius(width);
@@ -148,7 +150,11 @@ export function usePointerDraw() {
     */
 
     if (tool === "pen") {
-      engineRef.current.startStroke(point, color, width);
+      engineRef.current.startStroke(point, {
+        strokeColor: color,
+        strokeWidth: width,
+        lineStyle,
+      });
     }
 
     /*
@@ -167,13 +173,22 @@ export function usePointerDraw() {
     */
 
     if (tool === "rectangle") {
-      engineRef.current.startRectangle(point, color, width);
+      engineRef.current.startRectangle(point, {
+        strokeColor: color,
+        strokeWidth: width,
+        fillColor,
+        lineStyle,
+      });
       return;
     }
 
     //Arrow
     if (tool === "arrow") {
-      engineRef.current.startArrow(point, color, width);
+      engineRef.current.startArrow(point, {
+        strokeColor: color,
+        strokeWidth: width,
+        lineStyle,
+      });
     }
 
     // Text tool - now start editing on pointer UP to avoid immediate blur
@@ -469,6 +484,7 @@ export function usePointerDraw() {
     if (tool === "text" && lastPointRef.current) {
       const point = lastPointRef.current;
       useTextEditorStore.getState().startEditing({ x: point.x, y: point.y });
+      useToolStore.getState().setTool("select");
 
       dragRef.current = false;
       lastPointRef.current = null;
@@ -487,6 +503,8 @@ export function usePointerDraw() {
 
     if (rect) {
       addElement(rect);
+      useSelectionStore.getState().setSelection([rect.id]);
+      useToolStore.getState().setTool("select");
       return;
     }
 
@@ -552,6 +570,8 @@ export function usePointerDraw() {
         };
       }
       useBoardStore.getState().addElement(arrow);
+      useSelectionStore.getState().setSelection([arrow.id]);
+      useToolStore.getState().setTool("select");
     }
 
     //Text

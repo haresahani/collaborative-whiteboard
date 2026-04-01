@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { getSelectionBounds } from "../../engine/geometry/bounds";
 import { useBoardStore } from "../../store/boardStore";
 import { useSelectionStore } from "../../store/selectionStore";
-import SelectionPropertyCards from "./SelectionPropertyCards";
 
 export default function WorkspaceOverlay() {
   const elements = useBoardStore((state) => state.elements);
@@ -44,8 +43,6 @@ export default function WorkspaceOverlay() {
             : `${elements.length} element${elements.length === 1 ? "" : "s"}`}
         </span>
       </div>
-
-      <SelectionPropertyCards />
     </>
   );
 }

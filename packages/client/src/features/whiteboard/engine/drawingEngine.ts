@@ -4,8 +4,13 @@ import type {
   ArrowElement,
   TextElement,
   Point,
+  ElementStyle,
 } from "../models/element";
 import { generateUUID } from "../../../lib/utils";
+
+type StrokeStyleInput = Pick<ElementStyle, "strokeColor" | "strokeWidth" | "lineStyle">;
+type RectangleStyleInput = StrokeStyleInput &
+  Pick<ElementStyle, "fillColor">;
 
 export class DrawingEngine {
   private currentStroke: StrokeElement | null = null;
@@ -19,7 +24,7 @@ export class DrawingEngine {
   ----------------------------------------
   */
 
-  startStroke(point: Point, color: string, width: number) {
+  startStroke(point: Point, style: StrokeStyleInput) {
     this.currentStroke = {
       id: generateUUID(),
 
@@ -31,8 +36,7 @@ export class DrawingEngine {
       points: [point],
 
       style: {
-        strokeColor: color,
-        strokeWidth: width,
+        ...style,
       },
 
       zIndex: 0,
@@ -70,7 +74,7 @@ export class DrawingEngine {
   ----------------------------------------
   */
 
-  startRectangle(point: Point, color: string, width: number) {
+  startRectangle(point: Point, style: RectangleStyleInput) {
     this.currentRectangle = {
       id: generateUUID(),
       type: "rectangle",
@@ -79,8 +83,7 @@ export class DrawingEngine {
       width: 0,
       height: 0,
       style: {
-        strokeColor: color,
-        strokeWidth: width,
+        ...style,
       },
       zIndex: 0,
       createdAt: Date.now(),
@@ -107,7 +110,7 @@ export class DrawingEngine {
   }
 
   // Start Arrow
-  startArrow(point: Point, color: string, width: number) {
+  startArrow(point: Point, style: StrokeStyleInput) {
     this.currentArrow = {
       id: generateUUID(),
       type: "arrow",
@@ -122,8 +125,7 @@ export class DrawingEngine {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       style: {
-        strokeColor: color,
-        strokeWidth: width,
+        ...style,
       },
     };
   }

@@ -1,43 +1,23 @@
-import {
-  AlignCenter,
-  AlignJustify,
-  AlignLeft,
-  AlignRight,
-  Bold,
-  ChevronDown,
-  Italic,
-  List,
-  ListOrdered,
-  Plus,
-  Search,
-  Strikethrough,
-  Underline,
-  X,
-} from "lucide-react";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
+import { ChevronDown, Plus, Trash2, X } from "lucide-react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import { cn } from "../../../../../lib/utils";
+import { getBounds, getSelectionBounds } from "../../../engine/geometry/bounds";
+import type { Element, LineStyle } from "../../../models/element";
 import { useBoardStore } from "../../../store/boardStore";
 import { useHistoryStore } from "../../../store/historyStore";
 import { useSelectionStore } from "../../../store/selectionStore";
 import { useToolStore } from "../../../store/toolStore";
 import {
-  BOARD_ACTION_ITEMS,
+  ALIGNMENT_ACTIONS,
   COLOR_SWATCHES,
-  CORE_SECTION_ITEMS,
   FONT_FAMILY_OPTIONS,
   FONT_SIZE_OPTIONS,
+  FUTURE_TOOL_HINTS,
   LINE_STYLE_OPTIONS,
-  RAIL_TOOLS,
-  SHAPE_MENU_ITEMS,
-  TEXT_ASSET_ITEMS,
+  TOOL_RAIL_ITEMS,
+  TOOL_RAIL_SECTIONS,
   WIDTH_OPTIONS,
-  type LeftToolTile,
+  getToolDefinition,
 } from "./lefttoolData";
 
 interface LeftToolbarProps {
@@ -45,6 +25,107 @@ interface LeftToolbarProps {
   isSurfaceOpen: boolean;
   onClose: () => void;
   onSurfaceOpenChange: (isOpen: boolean) => void;
+}
+
+interface PositionFieldsProps {
+  initialX: number;
+  initialY: number;
+  onCommit: (axis: "x" | "y", value: string) => void;
+}
+
+function PositionFields({
+  initialX,
+  initialY,
+  onCommit,
+}: PositionFieldsProps) {
+  const [draftX, setDraftX] = useState(() => String(Math.round(initialX)));
+  const [draftY, setDraftY] = useState(() => String(Math.round(initialY)));
+
+  return (
+    <div className="wb-lefttool__position-grid">
+      <label className="wb-lefttool__position-field">
+        <span>X</span>
+        <input
+          type="number"
+          value={draftX}
+          onBlur={() => onCommit("x", draftX)}
+          onChange={(event) => setDraftX(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              onCommit("x", draftX);
+            }
+          }}
+        />
+      </label>
+
+      <label className="wb-lefttool__position-field">
+        <span>Y</span>
+        <input
+          type="number"
+          value={draftY}
+          onBlur={() => onCommit("y", draftY)}
+          onChange={(event) => setDraftY(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              onCommit("y", draftY);
+            }
+          }}
+        />
+      </label>
+    </div>
+  );
+}
+
+function translateElement(element: Element, dx: number, dy: number): Element {
+  if (element.type === "stroke") {
+    return {
+      ...element,
+      x: element.x + dx,
+      y: element.y + dy,
+      points: element.points.map((point) => ({
+        x: point.x + dx,
+        y: point.y + dy,
+      })),
+      updatedAt: Date.now(),
+    };
+  }
+
+  if (element.type === "rectangle" || element.type === "text") {
+    return {
+      ...element,
+      x: element.x + dx,
+      y: element.y + dy,
+      updatedAt: Date.now(),
+    };
+  }
+
+  return {
+    ...element,
+    x: element.x + dx,
+    y: element.y + dy,
+    x1: element.x1 + dx,
+    x2: element.x2 + dx,
+    y1: element.y1 + dy,
+    y2: element.y2 + dy,
+    startBinding: undefined,
+    endBinding: undefined,
+    updatedAt: Date.now(),
+  };
+}
+
+function formatSelectionTypes(selectionTypes: string[]) {
+  if (selectionTypes.length === 0) return "No selection";
+  if (selectionTypes.length === 1) {
+    return selectionTypes[0][0]?.toUpperCase() + selectionTypes[0].slice(1);
+  }
+
+  return `${selectionTypes.length} types`;
+}
+
+function linePreviewClassName(lineStyle: LineStyle) {
+  if (lineStyle === "dashed") return "wb-lefttool__line-preview is-dashed";
+  if (lineStyle === "dotted") return "wb-lefttool__line-preview is-dotted";
+  return "wb-lefttool__line-preview";
 }
 
 export default function LeftToolbar({
@@ -57,49 +138,81 @@ export default function LeftToolbar({
   const setTool = useToolStore((state) => state.setTool);
   const color = useToolStore((state) => state.color);
   const setColor = useToolStore((state) => state.setColor);
+  const fillColor = useToolStore((state) => state.fillColor);
+  const setFillColor = useToolStore((state) => state.setFillColor);
   const width = useToolStore((state) => state.width);
   const setWidth = useToolStore((state) => state.setWidth);
+  const lineStyle = useToolStore((state) => state.lineStyle);
+  const setLineStyle = useToolStore((state) => state.setLineStyle);
+  const fontFamily = useToolStore((state) => state.fontFamily);
+  const setFontFamily = useToolStore((state) => state.setFontFamily);
+  const fontSize = useToolStore((state) => state.fontSize);
+  const setFontSize = useToolStore((state) => state.setFontSize);
+
   const elements = useBoardStore((state) => state.elements);
   const setElements = useBoardStore((state) => state.setElements);
-  const undo = useBoardStore((state) => state.undo);
-  const redo = useBoardStore((state) => state.redo);
+
+  const selectedIds = useSelectionStore((state) => state.selectedIds);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
-  const canUndo = useHistoryStore((state) => state.past.length > 0);
-  const canRedo = useHistoryStore((state) => state.future.length > 0);
+  const setSelection = useSelectionStore((state) => state.setSelection);
+
   const pushHistory = useHistoryStore((state) => state.push);
 
-  const shapesMenuRef = useRef<HTMLDivElement | null>(null);
-  const [lineStyle, setLineStyle] = useState("Solid");
-  const [fillColor, setFillColor] = useState("#f5f0e6");
-  const [fontFamily, setFontFamily] = useState("Lato");
-  const [fontSize, setFontSize] = useState("16px");
-  const [textEffect, setTextEffect] = useState("Shadow");
-  const [backgroundColor, setBackgroundColor] = useState("#fff7d8");
-  const [isShapesMenuOpen, setIsShapesMenuOpen] = useState(false);
+  const activeTool = getToolDefinition(tool);
 
-  const widthIndex = Math.max(0, WIDTH_OPTIONS.indexOf(width));
-  const currentLineStylePreview = useMemo(() => {
-    if (lineStyle === "Dashed") return "wb-lefttool__line-preview is-dashed";
-    if (lineStyle === "Dotted") return "wb-lefttool__line-preview is-dotted";
-    return "wb-lefttool__line-preview";
-  }, [lineStyle]);
+  const selectedElements = useMemo(
+    () => elements.filter((element) => selectedIds.includes(element.id)),
+    [elements, selectedIds],
+  );
 
-  useEffect(() => {
-    if (!isShapesMenuOpen) return;
+  const selectionBounds = useMemo(() => {
+    if (selectedElements.length === 0) return null;
+    return getSelectionBounds(selectedElements);
+  }, [selectedElements]);
 
-    function handlePointerDown(event: PointerEvent) {
-      if (
-        shapesMenuRef.current &&
-        event.target instanceof Node &&
-        !shapesMenuRef.current.contains(event.target)
-      ) {
-        setIsShapesMenuOpen(false);
-      }
-    }
+  const selectionTypes = useMemo(
+    () =>
+      Array.from(new Set(selectedElements.map((element) => element.type))).sort(),
+    [selectedElements],
+  );
 
-    window.addEventListener("pointerdown", handlePointerDown);
-    return () => window.removeEventListener("pointerdown", handlePointerDown);
-  }, [isShapesMenuOpen]);
+  const isSelectionInspector =
+    tool === "select" && selectedElements.length > 0 && selectionBounds !== null;
+
+  const selectionColor =
+    selectedElements[0]?.style.strokeColor ?? color;
+  const selectionFillColor =
+    selectedElements.find((element) => element.type === "rectangle")?.style
+      .fillColor ?? fillColor;
+  const selectionWidth =
+    selectedElements[0]?.style.strokeWidth ?? width;
+  const selectionLineStyle =
+    selectedElements[0]?.style.lineStyle ?? lineStyle;
+  const selectionFontFamily =
+    selectedElements[0]?.type === "text"
+      ? selectedElements[0].fontFamily ?? fontFamily
+      : fontFamily;
+  const selectionFontSize =
+    selectedElements[0]?.type === "text"
+      ? selectedElements[0].fontSize
+      : fontSize;
+
+  const selectionSupportsFill =
+    selectedElements.length > 0 &&
+    selectedElements.every((element) => element.type === "rectangle");
+  const selectionSupportsStrokeControls =
+    selectedElements.length > 0 &&
+    selectedElements.every((element) => element.type !== "text");
+  const selectionSupportsTextControls =
+    selectedElements.length > 0 &&
+    selectedElements.every((element) => element.type === "text");
+
+  const currentWidthIndex = Math.max(
+    0,
+    WIDTH_OPTIONS.indexOf(
+      isSelectionInspector ? selectionWidth : width,
+    ),
+  );
 
   function focusToolButton(index: number) {
     const button = document.querySelector<HTMLButtonElement>(
@@ -110,20 +223,19 @@ export default function LeftToolbar({
 
   function handleRailKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const currentIndex = Number(
-      (event.target as HTMLElement | null)?.getAttribute(
-        "data-lefttool-index",
-      ) ?? RAIL_TOOLS.findIndex((item) => item.tool === tool),
+      (event.target as HTMLElement | null)?.getAttribute("data-lefttool-index") ??
+        TOOL_RAIL_ITEMS.findIndex((item) => item.tool === tool),
     );
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      focusToolButton((currentIndex + 1) % RAIL_TOOLS.length);
+      focusToolButton((currentIndex + 1) % TOOL_RAIL_ITEMS.length);
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
       focusToolButton(
-        (currentIndex - 1 + RAIL_TOOLS.length) % RAIL_TOOLS.length,
+        (currentIndex - 1 + TOOL_RAIL_ITEMS.length) % TOOL_RAIL_ITEMS.length,
       );
     }
 
@@ -134,290 +246,624 @@ export default function LeftToolbar({
 
     if (event.key === "End") {
       event.preventDefault();
-      focusToolButton(RAIL_TOOLS.length - 1);
+      focusToolButton(TOOL_RAIL_ITEMS.length - 1);
     }
   }
 
-  function isTileActive(item: LeftToolTile) {
-    if (item.id === "shapes") {
-      return isShapesMenuOpen || item.matches?.includes(tool) === true;
-    }
+  function updateSelectedElements(updater: (element: Element) => Element) {
+    if (selectedIds.length === 0) return;
 
-    if (item.matches) {
-      return item.matches.includes(tool);
-    }
-
-    if (item.tool) {
-      return item.tool === tool;
-    }
-
-    return false;
+    pushHistory(elements);
+    setElements(
+      elements.map((element) =>
+        selectedIds.includes(element.id) ? updater(element) : element,
+      ),
+    );
   }
 
-  function setBoardTool(nextTool: typeof tool) {
-    setTool(nextTool);
-    setIsShapesMenuOpen(false);
+  function alignSelection(mode: "left" | "center" | "right") {
+    if (!selectionBounds) return;
+
+    updateSelectedElements((element) => {
+      const elementBounds = getBounds(element);
+      const currentCenter = elementBounds.x + elementBounds.width / 2;
+      const targetLeft = selectionBounds.minX;
+      const targetCenter =
+        (selectionBounds.minX + selectionBounds.maxX) / 2;
+      const targetRight = selectionBounds.maxX;
+
+      let dx = 0;
+
+      if (mode === "left") {
+        dx = targetLeft - elementBounds.x;
+      } else if (mode === "center") {
+        dx = targetCenter - currentCenter;
+      } else {
+        dx = targetRight - (elementBounds.x + elementBounds.width);
+      }
+
+      return translateElement(element, dx, 0);
+    });
   }
 
-  function handleTileClick(item: LeftToolTile) {
-    if (item.disabled) return;
+  function commitPosition(axis: "x" | "y", rawValue: string) {
+    if (!selectionBounds) return;
 
-    if (item.id === "shapes") {
-      setIsShapesMenuOpen((current) => !current);
-      return;
-    }
+    const nextValue = Number(rawValue);
 
-    if (item.tool) {
-      setBoardTool(item.tool);
-      return;
-    }
+    if (Number.isNaN(nextValue)) return;
 
-    if (item.id === "undo" && canUndo) {
-      undo();
-    }
+    const currentValue = axis === "x" ? selectionBounds.minX : selectionBounds.minY;
 
-    if (item.id === "redo" && canRedo) {
-      redo();
-    }
+    updateSelectedElements((element) =>
+      translateElement(
+        element,
+        axis === "x" ? nextValue - currentValue : 0,
+        axis === "y" ? nextValue - currentValue : 0,
+      ),
+    );
+  }
 
-    if (item.id === "clear" && elements.length > 0) {
-      pushHistory(elements);
-      setElements([]);
-      clearSelection();
-    }
+  function handleDeleteSelection() {
+    if (selectedIds.length === 0) return;
+
+    pushHistory(elements);
+    setElements(
+      elements.filter((element) => !selectedIds.includes(element.id)),
+    );
+    clearSelection();
+  }
+
+  function handleStrokeColorChange(nextColor: string) {
+    setColor(nextColor);
+
+    if (!isSelectionInspector) return;
+
+    updateSelectedElements((element) => ({
+      ...element,
+      style: {
+        ...element.style,
+        strokeColor: nextColor,
+      },
+      updatedAt: Date.now(),
+    }));
+  }
+
+  function handleFillColorChange(nextColor: string) {
+    setFillColor(nextColor);
+
+    if (!isSelectionInspector || !selectionSupportsFill) return;
+
+    updateSelectedElements((element) => {
+      if (element.type !== "rectangle") return element;
+
+      return {
+        ...element,
+        style: {
+          ...element.style,
+          fillColor: nextColor,
+        },
+        updatedAt: Date.now(),
+      };
+    });
+  }
+
+  function handleWidthChange(nextWidth: number) {
+    setWidth(nextWidth);
+
+    if (!isSelectionInspector || !selectionSupportsStrokeControls) return;
+
+    updateSelectedElements((element) => ({
+      ...element,
+      style: {
+        ...element.style,
+        strokeWidth: nextWidth,
+      },
+      updatedAt: Date.now(),
+    }));
+  }
+
+  function handleLineStyleChange(nextLineStyle: LineStyle) {
+    setLineStyle(nextLineStyle);
+
+    if (!isSelectionInspector || !selectionSupportsStrokeControls) return;
+
+    updateSelectedElements((element) => ({
+      ...element,
+      style: {
+        ...element.style,
+        lineStyle: nextLineStyle,
+      },
+      updatedAt: Date.now(),
+    }));
+  }
+
+  function handleFontFamilyChange(nextFontFamily: string) {
+    setFontFamily(nextFontFamily);
+
+    if (!isSelectionInspector || !selectionSupportsTextControls) return;
+
+    updateSelectedElements((element) => {
+      if (element.type !== "text") return element;
+
+      return {
+        ...element,
+        fontFamily: nextFontFamily,
+        updatedAt: Date.now(),
+      };
+    });
+  }
+
+  function handleFontSizeChange(nextFontSize: number) {
+    setFontSize(nextFontSize);
+
+    if (!isSelectionInspector || !selectionSupportsTextControls) return;
+
+    updateSelectedElements((element) => {
+      if (element.type !== "text") return element;
+
+      return {
+        ...element,
+        fontSize: nextFontSize,
+        updatedAt: Date.now(),
+      };
+    });
   }
 
   function handleWidthSliderChange(index: number) {
     const nextWidth = WIDTH_OPTIONS[index];
 
     if (nextWidth) {
-      setWidth(nextWidth);
+      handleWidthChange(nextWidth);
     }
   }
 
-  function renderTile(
-    item: LeftToolTile,
-    variant: "core" | "default" | "compact" = "default",
-  ) {
-    const isDisabled =
-      item.disabled ||
-      (item.id === "undo" && !canUndo) ||
-      (item.id === "redo" && !canRedo) ||
-      (item.id === "clear" && elements.length === 0);
-    const isActive = isTileActive(item);
-
-    return (
-      <button
-        key={item.id}
-        type="button"
-        className={cn(
-          "wb-lefttool__tile",
-          variant === "core" && "wb-lefttool__tile--core",
-          variant === "compact" && "wb-lefttool__tile--compact",
-          isActive && "is-active",
-          isDisabled && "is-disabled",
-        )}
-        onClick={() => handleTileClick(item)}
-        disabled={isDisabled}
-        aria-pressed={item.tool ? isActive : undefined}
-      >
-        <span className="wb-lefttool__tile-icon">
-          <item.Icon size={variant === "compact" ? 20 : 22} />
-        </span>
-        <span className="wb-lefttool__tile-copy">
-          <strong>{item.label}</strong>
-        </span>
-      </button>
-    );
+  function setBoardTool(nextTool: typeof tool) {
+    setTool(nextTool);
+    if (nextTool !== "select") {
+      clearSelection();
+    }
+    onSurfaceOpenChange(true);
   }
 
-  function renderShapesMenu() {
-    if (!isShapesMenuOpen) return null;
-
+  function renderColorField(
+    label: string,
+    value: string,
+    onChange: (value: string) => void,
+  ) {
     return (
-      <div
-        ref={shapesMenuRef}
-        className="wb-lefttool__shape-menu"
-        role="dialog"
-        aria-label="Shape picker"
-      >
-        <div className="wb-lefttool__shape-grid">
-          {SHAPE_MENU_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={cn(
-                "wb-lefttool__shape-button",
-                item.tool === tool && "is-active",
-                item.disabled && "is-disabled",
-              )}
-              onClick={() => item.tool && setBoardTool(item.tool)}
-              disabled={item.disabled}
-              aria-label={item.label}
-            >
-              <item.Icon size={18} />
-            </button>
-          ))}
-        </div>
+      <div className="wb-lefttool__field">
+        <span>{label}</span>
+        <label className="wb-lefttool__color-field">
+          <span
+            className="wb-lefttool__color-preview"
+            style={{ backgroundColor: value }}
+          />
+          <input
+            type="color"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            aria-label={label}
+          />
+        </label>
       </div>
     );
   }
 
-  function renderTextInspector() {
+  function renderPalette() {
+    const activeColor = isSelectionInspector ? selectionColor : color;
+
     return (
-      <div className="wb-lefttool__popover wb-lefttool__popover--text">
-        <div className="wb-lefttool__panel-heading">
-          <span>TEXT STYLE</span>
-          <strong>Typography controls</strong>
+      <section className="wb-lefttool__section wb-lefttool__section--footer">
+        <div className="wb-lefttool__section-head">
+          <div>
+            <h3>Color Palette</h3>
+            <span>Fast presets for the active tool or selection.</span>
+          </div>
         </div>
 
-        <label className="wb-lefttool__field">
-          <span>Font Family</span>
-          <select
-            className="wb-lefttool__select"
-            value={fontFamily}
-            onChange={(event) => setFontFamily(event.target.value)}
-          >
-            {FONT_FAMILY_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="wb-lefttool__field">
-          <span>Search Fonts</span>
-          <div className="wb-lefttool__search">
-            <Search size={14} />
-            <input
-              type="text"
-              placeholder="Search fonts"
-              aria-label="Search fonts"
+        <div className="wb-lefttool__swatches">
+          {COLOR_SWATCHES.map((swatch) => (
+            <button
+              key={swatch}
+              type="button"
+              className={cn(
+                "wb-lefttool__swatch",
+                activeColor === swatch && "is-active",
+              )}
+              style={{ backgroundColor: swatch }}
+              onClick={() => handleStrokeColorChange(swatch)}
+              aria-label={`Use ${swatch} as the stroke color`}
             />
+          ))}
+
+          <label className="wb-lefttool__swatch wb-lefttool__swatch--picker">
+            <Plus size={14} />
+            <input
+              type="color"
+              value={activeColor}
+              onChange={(event) => handleStrokeColorChange(event.target.value)}
+              aria-label="Choose a custom stroke color"
+            />
+          </label>
+        </div>
+      </section>
+    );
+  }
+
+  function renderStrokeControls(options: {
+    showWidth?: boolean;
+    showFill?: boolean;
+    showLineStyle?: boolean;
+    colorValue: string;
+    fillValue: string;
+    widthValue: number;
+    lineStyleValue: LineStyle;
+  }) {
+    return (
+      <section className="wb-lefttool__section">
+        <div className="wb-lefttool__section-head">
+          <div>
+            <h3>Primary Properties</h3>
+            <span>Adjust the controls that affect the next canvas action.</span>
           </div>
-        </label>
+        </div>
+
+        <div className="wb-lefttool__field-grid wb-lefttool__field-grid--style">
+          {renderColorField("Stroke Color", options.colorValue, handleStrokeColorChange)}
+
+          {options.showFill
+            ? renderColorField("Fill Color", options.fillValue, handleFillColorChange)
+            : null}
+
+          {options.showWidth !== false ? (
+            <label className="wb-lefttool__field">
+              <span>Stroke Width</span>
+              <div className="wb-lefttool__thickness">
+                <select
+                  className="wb-lefttool__select"
+                  value={String(options.widthValue)}
+                  onChange={(event) => handleWidthChange(Number(event.target.value))}
+                >
+                  {WIDTH_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}px
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  className="wb-lefttool__range"
+                  type="range"
+                  min={0}
+                  max={WIDTH_OPTIONS.length - 1}
+                  step={1}
+                  value={currentWidthIndex}
+                  onChange={(event) =>
+                    handleWidthSliderChange(Number(event.target.value))
+                  }
+                  aria-label="Stroke width"
+                />
+              </div>
+            </label>
+          ) : null}
+
+          {options.showLineStyle ? (
+            <label className="wb-lefttool__field">
+              <span>Line Style</span>
+              <div className="wb-lefttool__style-select">
+                <select
+                  className="wb-lefttool__select"
+                  value={options.lineStyleValue}
+                  onChange={(event) =>
+                    handleLineStyleChange(event.target.value as LineStyle)
+                  }
+                >
+                  {LINE_STYLE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                <span className={linePreviewClassName(options.lineStyleValue)} />
+              </div>
+            </label>
+          ) : null}
+        </div>
+      </section>
+    );
+  }
+
+  function renderTextControls(fontFamilyValue: string, fontSizeValue: number) {
+    return (
+      <section className="wb-lefttool__section">
+        <div className="wb-lefttool__section-head">
+          <div>
+            <h3>Typography</h3>
+            <span>Set the defaults for inline editing and text rendering.</span>
+          </div>
+        </div>
 
         <div className="wb-lefttool__field-grid wb-lefttool__field-grid--two">
           <label className="wb-lefttool__field">
-            <span>Font Size</span>
+            <span>Font Family</span>
             <select
               className="wb-lefttool__select"
-              value={fontSize}
-              onChange={(event) => setFontSize(event.target.value)}
+              value={fontFamilyValue}
+              onChange={(event) => handleFontFamilyChange(event.target.value)}
             >
-              {FONT_SIZE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+              {FONT_FAMILY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
           </label>
 
-          <div className="wb-lefttool__field">
-            <span>Color</span>
-            <label className="wb-lefttool__color-field">
-              <span
-                className="wb-lefttool__color-preview"
-                style={{ backgroundColor: color }}
-              />
-              <input
-                type="color"
-                value={color}
-                onChange={(event) => setColor(event.target.value)}
-                aria-label="Text color"
-              />
-            </label>
-          </div>
+          <label className="wb-lefttool__field">
+            <span>Font Size</span>
+            <select
+              className="wb-lefttool__select"
+              value={String(fontSizeValue)}
+              onChange={(event) => handleFontSizeChange(Number(event.target.value))}
+            >
+              {FONT_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}px
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
+      </section>
+    );
+  }
 
-        <div className="wb-lefttool__inspector-group">
-          <span>Basic Formatting</span>
+  function renderSelectionInspector() {
+    if (!selectionBounds) return null;
+
+    return (
+      <>
+        <section className="wb-lefttool__section">
+          <div className="wb-lefttool__section-head">
+            <div>
+              <h3>Quick Actions</h3>
+              <span>Selection controls only appear while the select tool is active.</span>
+            </div>
+          </div>
+
+          <div className="wb-lefttool__inspector-group">
+            <span>Alignment</span>
+            <div className="wb-lefttool__mini-actions">
+              {ALIGNMENT_ACTIONS.map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  className="wb-lefttool__mini-button"
+                  onClick={() => alignSelection(action.mode)}
+                  aria-label={action.label}
+                >
+                  <action.Icon size={14} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="wb-lefttool__inspector-group">
+            <span>Position</span>
+            <PositionFields
+              key={`${selectedIds.join(",")}:${Math.round(selectionBounds.minX)}:${Math.round(selectionBounds.minY)}`}
+              initialX={selectionBounds.minX}
+              initialY={selectionBounds.minY}
+              onCommit={commitPosition}
+            />
+          </div>
+
           <div className="wb-lefttool__mini-actions">
             <button
               type="button"
-              className="wb-lefttool__mini-button is-selected"
+              className="wb-lefttool__mini-button"
+              onClick={() => setSelection([])}
             >
-              <Bold size={14} />
+              Clear Selection
             </button>
-            <button type="button" className="wb-lefttool__mini-button">
-              <Italic size={14} />
-            </button>
-            <button type="button" className="wb-lefttool__mini-button">
-              <Underline size={14} />
-            </button>
-            <button type="button" className="wb-lefttool__mini-button">
-              <Strikethrough size={14} />
-            </button>
-          </div>
-        </div>
-
-        <div className="wb-lefttool__inspector-group">
-          <span>Alignment</span>
-          <div className="wb-lefttool__mini-actions">
             <button
               type="button"
-              className="wb-lefttool__mini-button is-selected"
+              className="wb-lefttool__mini-button wb-lefttool__mini-button--danger"
+              onClick={handleDeleteSelection}
             >
-              <AlignLeft size={14} />
-            </button>
-            <button type="button" className="wb-lefttool__mini-button">
-              <AlignCenter size={14} />
-            </button>
-            <button type="button" className="wb-lefttool__mini-button">
-              <AlignRight size={14} />
-            </button>
-            <button type="button" className="wb-lefttool__mini-button">
-              <AlignJustify size={14} />
+              <Trash2 size={14} />
+              Delete
             </button>
           </div>
-        </div>
+        </section>
 
-        <div className="wb-lefttool__inspector-group">
-          <span>List</span>
-          <div className="wb-lefttool__mini-actions">
-            <button type="button" className="wb-lefttool__mini-button">
-              <List size={14} />
-            </button>
-            <button type="button" className="wb-lefttool__mini-button">
-              <ListOrdered size={14} />
-            </button>
+        {renderStrokeControls({
+          showWidth: selectionSupportsStrokeControls,
+          showFill: selectionSupportsFill,
+          showLineStyle: selectionSupportsStrokeControls,
+          colorValue: selectionColor,
+          fillValue: selectionFillColor,
+          widthValue: selectionWidth,
+          lineStyleValue: selectionLineStyle,
+        })}
+
+        {selectionSupportsTextControls
+          ? renderTextControls(selectionFontFamily, selectionFontSize)
+          : null}
+
+        {!selectionSupportsStrokeControls && !selectionSupportsTextControls ? (
+          <section className="wb-lefttool__section">
+            <p className="wb-lefttool__section-note">
+              Mixed selections keep the inspector focused on actions that are safe
+              across different element types.
+            </p>
+          </section>
+        ) : null}
+
+        {renderPalette()}
+      </>
+    );
+  }
+
+  function renderActiveToolInspector() {
+    if (activeTool.inspectorKind === "selection") {
+      return (
+        <>
+          <section className="wb-lefttool__section">
+            <div className="wb-lefttool__section-head">
+              <div>
+                <h3>Selection Mode</h3>
+                <span>Click or marquee objects to inspect them here.</span>
+              </div>
+            </div>
+
+            <ul className="wb-lefttool__supporting-list">
+              <li>Single click to select an element.</li>
+              <li>Drag on empty space to create a marquee.</li>
+              <li>Once selected, position and appearance controls appear here.</li>
+            </ul>
+          </section>
+
+          <section className="wb-lefttool__section">
+            <div className="wb-lefttool__section-head">
+              <div>
+                <h3>Roadmap Notes</h3>
+                <span>Secondary utilities stay out of the core drawing rail.</span>
+              </div>
+            </div>
+
+            <ul className="wb-lefttool__supporting-list">
+              {FUTURE_TOOL_HINTS.map((hint) => (
+                <li key={hint}>{hint}</li>
+              ))}
+            </ul>
+          </section>
+        </>
+      );
+    }
+
+    if (activeTool.inspectorKind === "draw") {
+      return (
+        <>
+          {renderStrokeControls({
+            showFill: false,
+            showLineStyle: true,
+            colorValue: color,
+            fillValue: fillColor,
+            widthValue: width,
+            lineStyleValue: lineStyle,
+          })}
+          {renderPalette()}
+        </>
+      );
+    }
+
+    if (activeTool.inspectorKind === "shape") {
+      return (
+        <>
+          {renderStrokeControls({
+            showFill: true,
+            showLineStyle: true,
+            colorValue: color,
+            fillValue: fillColor,
+            widthValue: width,
+            lineStyleValue: lineStyle,
+          })}
+          {renderPalette()}
+        </>
+      );
+    }
+
+    if (activeTool.inspectorKind === "arrow") {
+      return (
+        <>
+          {renderStrokeControls({
+            showFill: false,
+            showLineStyle: true,
+            colorValue: color,
+            fillValue: fillColor,
+            widthValue: width,
+            lineStyleValue: lineStyle,
+          })}
+          {renderPalette()}
+        </>
+      );
+    }
+
+    if (activeTool.inspectorKind === "text") {
+      return (
+        <>
+          <section className="wb-lefttool__section">
+            <div className="wb-lefttool__section-head">
+              <div>
+                <h3>Primary Properties</h3>
+                <span>Text is created once, edited inline, then returned to select.</span>
+              </div>
+            </div>
+
+            <div className="wb-lefttool__field-grid wb-lefttool__field-grid--two">
+              {renderColorField("Text Color", color, handleStrokeColorChange)}
+            </div>
+          </section>
+
+          {renderTextControls(fontFamily, fontSize)}
+          {renderPalette()}
+        </>
+      );
+    }
+
+    return (
+      <section className="wb-lefttool__section">
+        <div className="wb-lefttool__section-head">
+          <div>
+            <h3>Eraser Size</h3>
+            <span>The eraser remains active so you can scrub multiple elements.</span>
           </div>
         </div>
 
         <div className="wb-lefttool__field-grid wb-lefttool__field-grid--two">
           <label className="wb-lefttool__field">
-            <span>Text Effects</span>
-            <select
-              className="wb-lefttool__select"
-              value={textEffect}
-              onChange={(event) => setTextEffect(event.target.value)}
-            >
-              <option value="Shadow">Text Shadow</option>
-              <option value="Outline">Outline</option>
-              <option value="None">None</option>
-            </select>
-          </label>
+            <span>Radius</span>
+            <div className="wb-lefttool__thickness">
+              <select
+                className="wb-lefttool__select"
+                value={String(width)}
+                onChange={(event) => handleWidthChange(Number(event.target.value))}
+              >
+                {WIDTH_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}px
+                  </option>
+                ))}
+              </select>
 
-          <div className="wb-lefttool__field">
-            <span>Background</span>
-            <label className="wb-lefttool__color-field">
-              <span
-                className="wb-lefttool__color-preview"
-                style={{ backgroundColor: backgroundColor }}
-              />
               <input
-                type="color"
-                value={backgroundColor}
-                onChange={(event) => setBackgroundColor(event.target.value)}
-                aria-label="Text background color"
+                className="wb-lefttool__range"
+                type="range"
+                min={0}
+                max={WIDTH_OPTIONS.length - 1}
+                step={1}
+                value={currentWidthIndex}
+                onChange={(event) =>
+                  handleWidthSliderChange(Number(event.target.value))
+                }
+                aria-label="Eraser size"
               />
-            </label>
-          </div>
+            </div>
+          </label>
         </div>
-      </div>
+      </section>
     );
   }
+
+  const heroTitle = isSelectionInspector
+    ? `${selectedElements.length} selected`
+    : activeTool.label;
+  const heroDescription = isSelectionInspector
+    ? `Editing ${formatSelectionTypes(selectionTypes).toLowerCase()} with contextual controls.`
+    : activeTool.description;
 
   return (
     <aside
@@ -439,228 +885,97 @@ export default function LeftToolbar({
           <X size={16} />
         </button>
 
-        {RAIL_TOOLS.map((item, index) => {
-          const isActive = item.tool === tool;
+        {TOOL_RAIL_SECTIONS.map((section, sectionIndex) => {
+          const startingIndex = TOOL_RAIL_SECTIONS.slice(0, sectionIndex).reduce(
+            (count, currentSection) => count + currentSection.items.length,
+            0,
+          );
 
           return (
-            <button
-              key={item.id}
-              type="button"
-              data-lefttool-index={index}
-              className={cn(
-                "wb-lefttool__rail-button",
-                isActive && "is-active",
-              )}
-              onClick={() => {
-                if (item.tool) {
-                  setBoardTool(item.tool);
-                  onSurfaceOpenChange(true);
-                }
-              }}
-              aria-label={`${item.label} tool`}
-              aria-keyshortcuts={item.shortcut?.toLowerCase()}
-              aria-pressed={isActive}
-            >
-              <item.Icon size={18} />
-            </button>
+            <div key={section.id} className="wb-lefttool__rail-section">
+              {section.items.map((item, itemIndex) => {
+                const isActive = item.tool === tool;
+                const buttonIndex = startingIndex + itemIndex;
+
+                return (
+                  <button
+                    key={item.tool}
+                    type="button"
+                    data-lefttool-index={buttonIndex}
+                    className={cn(
+                      "wb-lefttool__rail-button",
+                      isActive && "is-active",
+                    )}
+                    onClick={() => setBoardTool(item.tool)}
+                    aria-label={`${item.label} tool`}
+                    aria-keyshortcuts={item.shortcut.toLowerCase()}
+                    aria-pressed={isActive}
+                    title={`${item.label} (${item.shortcut})`}
+                  >
+                    <item.Icon size={18} />
+                  </button>
+                );
+              })}
+
+              {sectionIndex < TOOL_RAIL_SECTIONS.length - 1 ? (
+                <div className="wb-lefttool__rail-divider" aria-hidden="true" />
+              ) : null}
+            </div>
           );
         })}
       </div>
 
       {isSurfaceOpen ? (
-        <>
-          <div className="wb-lefttool__surface-wrap">
-            <div className="wb-lefttool__surface">
-              <section className="wb-lefttool__section">
-                <div className="wb-lefttool__section-head">
-                  <h3>Core Tools</h3>
-                </div>
-                <div className="wb-lefttool__tile-grid wb-lefttool__tile-grid--core">
-                  {CORE_SECTION_ITEMS.map((item) => renderTile(item, "core"))}
-                </div>
-              </section>
-
-              <section className="wb-lefttool__section">
-                <div className="wb-lefttool__section-head">
-                  <h3>Shape &amp; Line Styling</h3>
+        <div className="wb-lefttool__surface-wrap">
+          <div className="wb-lefttool__surface">
+            <section className="wb-lefttool__section wb-lefttool__section--hero">
+              <div className="wb-lefttool__surface-head">
+                <div className="wb-lefttool__surface-copy">
+                  <span>{isSelectionInspector ? "CONTEXT INSPECTOR" : "ACTIVE TOOL"}</span>
+                  <strong>{heroTitle}</strong>
+                  <p>{heroDescription}</p>
                 </div>
 
-                <div className="wb-lefttool__field-grid wb-lefttool__field-grid--style">
-                  <div className="wb-lefttool__field">
-                    <span>Fill Color</span>
-                    <label className="wb-lefttool__color-field">
-                      <span
-                        className="wb-lefttool__color-preview"
-                        style={{ backgroundColor: fillColor }}
-                      />
-                      <input
-                        type="color"
-                        value={fillColor}
-                        onChange={(event) => setFillColor(event.target.value)}
-                        aria-label="Primary fill color"
-                      />
-                    </label>
-                  </div>
+                <button
+                  type="button"
+                  className="wb-icon-button wb-icon-button--small"
+                  onClick={() => onSurfaceOpenChange(false)}
+                  aria-label="Collapse inspector"
+                >
+                  <X size={14} />
+                </button>
+              </div>
 
-                  <div className="wb-lefttool__field">
-                    <span>Line Color</span>
-                    <label className="wb-lefttool__color-field">
-                      <span
-                        className="wb-lefttool__color-preview"
-                        style={{ backgroundColor: color }}
-                      />
-                      <input
-                        type="color"
-                        value={color}
-                        onChange={(event) => setColor(event.target.value)}
-                        aria-label="Primary line color"
-                      />
-                    </label>
-                  </div>
+              <div className="wb-inspector__summary wb-lefttool__surface-summary">
+                <span>{activeTool.shortcut}</span>
+                <span>
+                  {isSelectionInspector
+                    ? `${Math.round(selectionBounds.maxX - selectionBounds.minX)} x ${Math.round(selectionBounds.maxY - selectionBounds.minY)}`
+                    : activeTool.placement === "persistent"
+                      ? "Persistent"
+                      : "One-shot"}
+                </span>
+                {isSelectionInspector ? (
+                  <span>{formatSelectionTypes(selectionTypes)}</span>
+                ) : null}
+              </div>
+            </section>
 
-                  <label className="wb-lefttool__field">
-                    <span>Line Thickness</span>
-                    <div className="wb-lefttool__thickness">
-                      <select
-                        className="wb-lefttool__select"
-                        value={String(width)}
-                        onChange={(event) =>
-                          setWidth(Number(event.target.value))
-                        }
-                      >
-                        {WIDTH_OPTIONS.map((option) => (
-                          <option key={option} value={option}>
-                            {option}pt
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        className="wb-lefttool__range"
-                        type="range"
-                        min={0}
-                        max={WIDTH_OPTIONS.length - 1}
-                        step={1}
-                        value={widthIndex}
-                        onChange={(event) =>
-                          handleWidthSliderChange(Number(event.target.value))
-                        }
-                        aria-label="Line thickness slider"
-                      />
-                    </div>
-                  </label>
+            {isSelectionInspector ? renderSelectionInspector() : renderActiveToolInspector()}
 
-                  <label className="wb-lefttool__field">
-                    <span>Line Style</span>
-                    <div className="wb-lefttool__style-select">
-                      <select
-                        className="wb-lefttool__select"
-                        value={lineStyle}
-                        onChange={(event) => setLineStyle(event.target.value)}
-                      >
-                        {LINE_STYLE_OPTIONS.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                      <span className={currentLineStylePreview} />
-                    </div>
-                  </label>
+            <section className="wb-lefttool__section">
+              <div className="wb-lefttool__current-style">
+                <div>
+                  <strong>Board Controls</strong>
+                  <span>Undo, redo, zoom, and clear stay in the bottom dock.</span>
                 </div>
-              </section>
-
-              <section className="wb-lefttool__section">
-                <div className="wb-lefttool__section-head">
-                  <h3>Text &amp; Assets</h3>
-                </div>
-                <div className="wb-lefttool__tile-grid wb-lefttool__tile-grid--assets">
-                  {TEXT_ASSET_ITEMS.map((item) => renderTile(item, "compact"))}
-                </div>
-              </section>
-
-              <section className="wb-lefttool__section">
-                <div className="wb-lefttool__section-head">
-                  <h3>Board Actions</h3>
-                </div>
-                <div className="wb-lefttool__tile-grid wb-lefttool__tile-grid--actions">
-                  {BOARD_ACTION_ITEMS.map((item) =>
-                    renderTile(item, "compact"),
-                  )}
-                </div>
-              </section>
-
-              <section className="wb-lefttool__section wb-lefttool__section--footer">
-                <div className="wb-lefttool__current-style">
-                  <div>
-                    <strong>Active Pen Style</strong>
-                    <span>Current color, width</span>
-                  </div>
-                  <button type="button" className="wb-lefttool__mini-button">
-                    <ChevronDown size={14} />
-                  </button>
-                </div>
-
-                <div className="wb-lefttool__swatches">
-                  {COLOR_SWATCHES.map((swatch) => (
-                    <button
-                      key={swatch}
-                      type="button"
-                      className={cn(
-                        "wb-lefttool__swatch",
-                        color === swatch && "is-active",
-                      )}
-                      style={{ backgroundColor: swatch }}
-                      onClick={() => setColor(swatch)}
-                      aria-label={`Use ${swatch} as the current color`}
-                    />
-                  ))}
-
-                  <label className="wb-lefttool__swatch wb-lefttool__swatch--picker">
-                    <Plus size={14} />
-                    <input
-                      type="color"
-                      value={color}
-                      onChange={(event) => setColor(event.target.value)}
-                      aria-label="Choose a custom palette color"
-                    />
-                  </label>
-                </div>
-
-                <div className="wb-lefttool__palette-actions">
-                  <label className="wb-lefttool__palette-button">
-                    <input
-                      type="color"
-                      value={fillColor}
-                      onChange={(event) => setFillColor(event.target.value)}
-                      aria-label="Add fill color"
-                    />
-                    <span>
-                      <Plus size={14} />
-                      Add Fill Color
-                    </span>
-                  </label>
-
-                  <label className="wb-lefttool__palette-button wb-lefttool__palette-button--ghost">
-                    <input
-                      type="color"
-                      value={color}
-                      onChange={(event) => setColor(event.target.value)}
-                      aria-label="Add line color"
-                    />
-                    <span>
-                      <Plus size={14} />
-                      Add Line Color
-                    </span>
-                  </label>
-                </div>
-              </section>
-            </div>
-
-            {renderShapesMenu()}
+                <span className="wb-lefttool__badge">
+                  <ChevronDown size={14} />
+                </span>
+              </div>
+            </section>
           </div>
-
-          {tool === "text" ? renderTextInspector() : null}
-        </>
+        </div>
       ) : null}
     </aside>
   );

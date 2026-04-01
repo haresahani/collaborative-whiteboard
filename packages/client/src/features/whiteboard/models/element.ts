@@ -1,4 +1,5 @@
 export type ElementType = "stroke" | "rectangle" | "arrow" | "text";
+export type LineStyle = "solid" | "dashed" | "dotted";
 
 export interface Point {
   x: number;
@@ -9,6 +10,7 @@ export interface ElementStyle {
   strokeColor: string;
   strokeWidth: number;
   fillColor?: string;
+  lineStyle?: LineStyle;
 }
 
 export interface BaseElement {

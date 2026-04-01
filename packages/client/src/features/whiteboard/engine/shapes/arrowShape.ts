@@ -1,5 +1,6 @@
 import type { ArrowElement } from "../../models/element";
 import type { Shape } from "./Shape";
+import { applyLineStyle } from "./applyLineStyle";
 
 export const arrowShape: Shape<ArrowElement> = {
   draw(ctx, arrow) {
@@ -15,6 +16,7 @@ export const arrowShape: Shape<ArrowElement> = {
     ctx.lineWidth = style.strokeWidth;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+    applyLineStyle(ctx, style.lineStyle, style.strokeWidth);
 
     // main line
     ctx.beginPath();

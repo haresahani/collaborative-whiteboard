@@ -67,6 +67,7 @@ button {
 .wb-lefttool__select:focus-visible,
 .wb-lefttool__search input:focus-visible,
 .wb-lefttool__range:focus-visible,
+.wb-lefttool__position-field input:focus-visible,
 .wb-lefttool__palette-button input:focus-visible,
 .wb-tool-rail__button:focus-visible,
 .wb-tool-rail__swatch:focus-visible,
@@ -532,6 +533,19 @@ button {
   border-radius: 16px;
 }
 
+.wb-lefttool__rail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wb-lefttool__rail-divider {
+  width: 100%;
+  height: 1px;
+  margin: 2px 0;
+  background: rgba(140, 122, 94, 0.14);
+}
+
 .wb-lefttool__rail-button {
   width: 36px;
   height: 36px;
@@ -564,6 +578,55 @@ button {
   gap: 0;
   border-radius: 18px;
   overflow: hidden;
+}
+
+.wb-lefttool__section--hero {
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(81, 70, 229, 0.12),
+      transparent 44%
+    ),
+    rgba(255, 255, 255, 0.72);
+}
+
+.wb-lefttool__surface-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wb-lefttool__surface-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wb-lefttool__surface-copy span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--wb-text-muted);
+}
+
+.wb-lefttool__surface-copy strong {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--wb-text);
+}
+
+.wb-lefttool__surface-copy p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--wb-text-soft);
+}
+
+.wb-lefttool__surface-summary {
+  margin-top: 14px;
 }
 
 .wb-lefttool__popover {
@@ -914,6 +977,12 @@ button {
   color: var(--wb-accent);
 }
 
+.wb-lefttool__mini-button--danger {
+  border-color: rgba(213, 93, 77, 0.16);
+  background: rgba(213, 93, 77, 0.08);
+  color: var(--wb-danger);
+}
+
 .wb-lefttool__current-style {
   align-items: flex-start;
 }
@@ -969,6 +1038,64 @@ button {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.wb-lefttool__position-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.wb-lefttool__position-field {
+  display: grid;
+  gap: 6px;
+}
+
+.wb-lefttool__position-field span,
+.wb-lefttool__badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--wb-text-soft);
+}
+
+.wb-lefttool__position-field input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 9px 10px;
+  border: 1px solid var(--wb-border);
+  border-radius: 10px;
+  background: var(--wb-surface-muted);
+  color: var(--wb-text);
+  outline: none;
+}
+
+.wb-lefttool__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(140, 122, 94, 0.08);
+}
+
+.wb-lefttool__section-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--wb-text-soft);
+}
+
+.wb-lefttool__supporting-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 10px;
+  color: var(--wb-text-soft);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .wb-right-panel {

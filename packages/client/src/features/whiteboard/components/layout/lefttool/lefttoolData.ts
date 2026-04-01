@@ -1,176 +1,157 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   ArrowRight,
-  Circle,
-  Diamond,
   Eraser,
-  Hand,
-  Hexagon,
-  Highlighter,
-  ImagePlus,
-  Layers3,
   MousePointer2,
-  Octagon,
-  Paperclip,
   Pen,
-  Redo2,
-  Star,
   Square,
-  SquarePen,
-  Trash2,
   Type,
-  Undo2,
 } from "lucide-react";
+import type { LineStyle } from "../../../models/element";
 import type { ToolType } from "../../../store/toolStore";
 
-export type LeftToolTile = {
+export type ToolPlacement = "persistent" | "one-shot";
+export type ToolInspectorKind =
+  | "selection"
+  | "draw"
+  | "shape"
+  | "arrow"
+  | "text"
+  | "eraser";
+
+export interface ToolDefinition {
+  tool: ToolType;
+  label: string;
+  description: string;
+  Icon: LucideIcon;
+  shortcut: string;
+  placement: ToolPlacement;
+  inspectorKind: ToolInspectorKind;
+  supportsFill?: boolean;
+  supportsLineStyle?: boolean;
+  supportsTextControls?: boolean;
+}
+
+export interface RailSection {
+  id: string;
+  items: ToolDefinition[];
+}
+
+export interface AlignmentAction {
   id: string;
   label: string;
-  caption?: string;
   Icon: LucideIcon;
-  tool?: ToolType;
-  matches?: ToolType[];
-  shortcut?: string;
-  disabled?: boolean;
-};
+  mode: "left" | "center" | "right";
+}
 
-export type ShapeMenuItem = {
-  id: string;
-  label: string;
-  Icon: LucideIcon;
-  tool?: ToolType;
-  disabled?: boolean;
-};
-
-export const RAIL_TOOLS: LeftToolTile[] = [
+export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
-    id: "select",
-    label: "Select",
-    caption: "Move and resize",
-    Icon: MousePointer2,
     tool: "select",
+    label: "Select",
+    description: "Move, resize, and inspect elements.",
+    Icon: MousePointer2,
     shortcut: "V",
+    placement: "persistent",
+    inspectorKind: "selection",
   },
   {
-    id: "pen",
-    label: "Pen",
-    caption: "Sketch freely",
-    Icon: Pen,
     tool: "pen",
+    label: "Pen",
+    description: "Draw freeform strokes that stay active while sketching.",
+    Icon: Pen,
     shortcut: "P",
+    placement: "persistent",
+    inspectorKind: "draw",
+    supportsLineStyle: true,
   },
   {
-    id: "rectangle",
-    label: "Rectangle",
-    caption: "Draw boxes",
-    Icon: Square,
-    tool: "rectangle",
-    shortcut: "R",
-  },
-  {
-    id: "arrow",
-    label: "Arrow",
-    caption: "Connect ideas",
-    Icon: ArrowRight,
-    tool: "arrow",
-    shortcut: "A",
-  },
-  {
-    id: "text",
-    label: "Text",
-    caption: "Add labels",
-    Icon: Type,
-    tool: "text",
-    shortcut: "T",
-  },
-  {
-    id: "eraser",
-    label: "Eraser",
-    caption: "Remove touched items",
-    Icon: Eraser,
     tool: "eraser",
+    label: "Eraser",
+    description: "Scrub away elements directly on the canvas.",
+    Icon: Eraser,
     shortcut: "E",
+    placement: "persistent",
+    inspectorKind: "eraser",
   },
-];
-
-export const CORE_SECTION_ITEMS: LeftToolTile[] = [
-  RAIL_TOOLS[0],
   {
-    id: "hand-pan",
-    label: "Hand Pan",
-    caption: "Coming soon",
-    Icon: Hand,
-    disabled: true,
-  },
-  RAIL_TOOLS[1],
-  {
-    id: "highlighter",
-    label: "Highlighter",
-    caption: "Coming soon",
-    Icon: Highlighter,
-    disabled: true,
-  },
-  RAIL_TOOLS[5],
-  {
-    id: "shapes",
-    label: "Shapes",
-    caption: "Rectangle / Arrow",
-    Icon: Square,
     tool: "rectangle",
-    matches: ["rectangle", "arrow"],
+    label: "Shape",
+    description: "Place rectangles, then return to selection.",
+    Icon: Square,
+    shortcut: "R",
+    placement: "one-shot",
+    inspectorKind: "shape",
+    supportsFill: true,
+    supportsLineStyle: true,
+  },
+  {
+    tool: "arrow",
+    label: "Arrow",
+    description: "Connect ideas with a single placement gesture.",
+    Icon: ArrowRight,
+    shortcut: "A",
+    placement: "one-shot",
+    inspectorKind: "arrow",
+    supportsLineStyle: true,
+  },
+  {
+    tool: "text",
+    label: "Text",
+    description: "Drop text, edit it inline, then return to selection.",
+    Icon: Type,
+    shortcut: "T",
+    placement: "one-shot",
+    inspectorKind: "text",
+    supportsTextControls: true,
   },
 ];
 
-export const TEXT_ASSET_ITEMS: LeftToolTile[] = [
-  RAIL_TOOLS[4],
+export const TOOL_RAIL_SECTIONS: RailSection[] = [
   {
-    id: "notes",
-    label: "Notes / Comments",
-    caption: "Coming soon",
-    Icon: SquarePen,
-    disabled: true,
+    id: "core",
+    items: [TOOL_DEFINITIONS[0]],
   },
   {
-    id: "images",
-    label: "Images / Uploads",
-    caption: "Coming soon",
-    Icon: ImagePlus,
-    disabled: true,
+    id: "draw",
+    items: [TOOL_DEFINITIONS[1], TOOL_DEFINITIONS[2]],
   },
   {
-    id: "attachments",
-    label: "Attachments",
-    caption: "Coming soon",
-    Icon: Paperclip,
-    disabled: true,
+    id: "create",
+    items: [TOOL_DEFINITIONS[3], TOOL_DEFINITIONS[4], TOOL_DEFINITIONS[5]],
   },
 ];
 
-export const BOARD_ACTION_ITEMS: LeftToolTile[] = [
+export const TOOL_RAIL_ITEMS = TOOL_RAIL_SECTIONS.flatMap((section) => section.items);
+
+const TOOL_LOOKUP = Object.fromEntries(
+  TOOL_DEFINITIONS.map((definition) => [definition.tool, definition]),
+) as Record<ToolType, ToolDefinition>;
+
+export function getToolDefinition(tool: ToolType) {
+  return TOOL_LOOKUP[tool];
+}
+
+export const ALIGNMENT_ACTIONS: AlignmentAction[] = [
   {
-    id: "undo",
-    label: "Undo",
-    caption: "Last action",
-    Icon: Undo2,
+    id: "align-left",
+    label: "Align left",
+    Icon: AlignLeft,
+    mode: "left",
   },
   {
-    id: "redo",
-    label: "Redo",
-    caption: "Next action",
-    Icon: Redo2,
+    id: "align-center",
+    label: "Align center",
+    Icon: AlignCenter,
+    mode: "center",
   },
   {
-    id: "layers",
-    label: "Layers",
-    caption: "Coming soon",
-    Icon: Layers3,
-    disabled: true,
-  },
-  {
-    id: "clear",
-    label: "Clear",
-    caption: "Wipe canvas",
-    Icon: Trash2,
+    id: "align-right",
+    label: "Align right",
+    Icon: AlignRight,
+    mode: "right",
   },
 ];
 
@@ -186,52 +167,40 @@ export const COLOR_SWATCHES = [
   "#c35ca7",
 ];
 
-export const WIDTH_OPTIONS = [1, 2, 4, 6];
-export const LINE_STYLE_OPTIONS = ["Solid", "Dashed", "Dotted"];
-export const FONT_FAMILY_OPTIONS = [
-  "Lato",
-  "Open Sans",
-  "Times New Roman",
-  "Georgia",
-  "Verdana",
-];
-export const FONT_SIZE_OPTIONS = ["14px", "16px", "20px", "24px", "32px"];
+export const WIDTH_OPTIONS = [1, 2, 4, 6, 8];
 
-export const SHAPE_MENU_ITEMS: ShapeMenuItem[] = [
+export const LINE_STYLE_OPTIONS: Array<{ label: string; value: LineStyle }> = [
+  { label: "Solid", value: "solid" },
+  { label: "Dashed", value: "dashed" },
+  { label: "Dotted", value: "dotted" },
+];
+
+export const FONT_FAMILY_OPTIONS = [
   {
-    id: "shape-rectangle",
-    label: "Rectangle",
-    Icon: Square,
-    tool: "rectangle",
+    label: "Plus Jakarta Sans",
+    value: "\"Plus Jakarta Sans\", sans-serif",
   },
   {
-    id: "shape-circle",
-    label: "Ellipse",
-    Icon: Circle,
-    disabled: true,
+    label: "Georgia",
+    value: "Georgia",
   },
   {
-    id: "shape-diamond",
-    label: "Diamond",
-    Icon: Diamond,
-    disabled: true,
+    label: "Verdana",
+    value: "Verdana",
   },
   {
-    id: "shape-hexagon",
-    label: "Hexagon",
-    Icon: Hexagon,
-    disabled: true,
+    label: "Times New Roman",
+    value: "\"Times New Roman\"",
   },
   {
-    id: "shape-star",
-    label: "Star",
-    Icon: Star,
-    disabled: true,
+    label: "Monospace",
+    value: "monospace",
   },
-  {
-    id: "shape-octagon",
-    label: "Octagon",
-    Icon: Octagon,
-    disabled: true,
-  },
+];
+
+export const FONT_SIZE_OPTIONS = [14, 16, 20, 24, 32, 40];
+
+export const FUTURE_TOOL_HINTS = [
+  "Sticky notes, uploads, and layers can live in secondary panels once those features ship.",
+  "Board actions like clear, undo, and redo should stay outside the drawing inspector.",
 ];
