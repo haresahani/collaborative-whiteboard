@@ -5,7 +5,7 @@ import {
   getMyBoards,
   deleteBoard,
 } from "./board.controller";
-import { appendOperation } from "./oplog.controller";
+import { appendOperation } from "../operations/oplog.controller";
 import { authMiddleware } from "../auth/auth.middleware";
 
 const router: Router = Router();
