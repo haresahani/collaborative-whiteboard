@@ -164,7 +164,6 @@ export const COLOR_SWATCHES = [
   "#2c8fb0",
   "#597ed5",
   "#7c61d4",
-  "#c35ca7",
 ];
 
 export const WIDTH_OPTIONS = [1, 2, 4, 6, 8];

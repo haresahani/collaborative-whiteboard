@@ -1,4 +1,4 @@
-import { ChevronDown, Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { useMemo, useState, type KeyboardEvent } from "react";
 import { cn } from "../../../../../lib/utils";
 import { getBounds, getSelectionBounds } from "../../../engine/geometry/bounds";
@@ -963,17 +963,6 @@ export default function LeftToolbar({
 
             {isSelectionInspector ? renderSelectionInspector() : renderActiveToolInspector()}
 
-            <section className="wb-lefttool__section">
-              <div className="wb-lefttool__current-style">
-                <div>
-                  <strong>Board Controls</strong>
-                  <span>Undo, redo, zoom, and clear stay in the bottom dock.</span>
-                </div>
-                <span className="wb-lefttool__badge">
-                  <ChevronDown size={14} />
-                </span>
-              </div>
-            </section>
           </div>
         </div>
       ) : null}
