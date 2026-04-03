@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { Board } from "./board.model";
-import { Snapshot } from "./snapshot.model";
+import { Snapshot } from "../snapshot/snapshot.model";
 import mongoose from "mongoose";
 
 //createboard
