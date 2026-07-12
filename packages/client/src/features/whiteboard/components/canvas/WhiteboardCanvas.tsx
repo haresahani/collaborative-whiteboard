@@ -2,7 +2,7 @@ import { Eraser } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useBoardStore } from "../../store/boardStore";
 import { renderElements } from "../../engine/renderer";
-import { usePointerDraw } from "../../hooks/usePointerDraw";
+import { useToolSession } from "../../hooks/useToolSession";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useToolStore } from "../../store/toolStore";
 import { useViewportStore } from "../../store/viewportStore";
@@ -13,6 +13,7 @@ import {
   type Handle,
 } from "../../engine/geometry/resizeHandles";
 import { getSelectionBounds } from "../../engine/geometry/bounds";
+import { screenToWorld } from "../../engine/viewport";
 import { ERASER_TRAIL_LIFETIME_MS, useEraserTrail } from "../../tools/eraser";
 import TextEditor from "../overlays/TextEditor";
 
@@ -60,12 +61,12 @@ export default function WhiteboardCanvas({
   }, [resetEraserTrail, tool]);
 
   const {
-    engineRef,
+    getPreview,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
     handleDoubleClick,
-  } = usePointerDraw();
+  } = useToolSession();
 
   /*
   ----------------------------------
@@ -103,20 +104,15 @@ export default function WhiteboardCanvas({
     let animationFrameId: number;
 
     const render = () => {
-      const tempElement =
-        engineRef.current.getCurrentStroke() ||
-        engineRef.current.getCurrentRectangle() ||
-        engineRef.current.getCurrentArrow() ||
-        engineRef.current.getCurrentText();
-
       renderElements(
         ctx,
         elements,
-        tempElement,
+        getPreview(),
         offsetX,
         offsetY,
         zoom,
         selectedIds,
+        useSelectionStore.getState().marquee,
       );
 
       animationFrameId = requestAnimationFrame(render);
@@ -125,7 +121,7 @@ export default function WhiteboardCanvas({
     animationFrameId = requestAnimationFrame(render);
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [elements, engineRef, offsetX, offsetY, zoom, selectedIds]);
+  }, [elements, getPreview, offsetX, offsetY, zoom, selectedIds]);
 
   /*
   ----------------------------------
@@ -175,13 +171,10 @@ export default function WhiteboardCanvas({
   ----------------------------------
   */
   function handleHover(e: React.PointerEvent<HTMLCanvasElement>) {
-    const { offsetX, offsetY, zoom } = useViewportStore.getState();
-
-    const screenX = e.nativeEvent.offsetX;
-    const screenY = e.nativeEvent.offsetY;
-
-    const worldX = (screenX - offsetX) / zoom;
-    const worldY = (screenY - offsetY) / zoom;
+    const { x: worldX, y: worldY } = screenToWorld(
+      { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY },
+      useViewportStore.getState(),
+    );
 
     const elements = useBoardStore.getState().elements;
     const selectedIds = useSelectionStore.getState().selectedIds;
@@ -250,14 +243,14 @@ export default function WhiteboardCanvas({
           handlePointerMove(e);
           handlePan(e);
         }}
-        onPointerUp={() => {
+        onPointerUp={(e) => {
           stopEraserTrail();
-          handlePointerUp();
+          handlePointerUp(e);
         }}
-        onPointerLeave={() => {
+        onPointerLeave={(e) => {
           setEraserCursorPoint(null);
           stopEraserTrail();
-          handlePointerUp();
+          handlePointerUp(e);
         }}
       />
 

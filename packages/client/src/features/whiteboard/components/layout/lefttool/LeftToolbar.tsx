@@ -1,15 +1,23 @@
 import { Plus, Trash2, X } from "lucide-react";
 import { useMemo, useState, type KeyboardEvent } from "react";
 import { cn } from "../../../../../lib/utils";
-import { getBounds, getSelectionBounds } from "../../../engine/geometry/bounds";
-import type { Element, LineStyle } from "../../../models/element";
+import { getSelectionBounds } from "../../../engine/geometry/bounds";
+import {
+  alignElements,
+  deleteElements,
+  setElementStyle,
+  translateElements,
+  type AlignMode,
+  type ElementStylePatch,
+} from "../../../engine/mutations";
+import type { LineStyle } from "../../../models/element";
 import { useBoardStore } from "../../../store/boardStore";
-import { useHistoryStore } from "../../../store/historyStore";
 import { useSelectionStore } from "../../../store/selectionStore";
 import { useToolStore } from "../../../store/toolStore";
 import {
   ALIGNMENT_ACTIONS,
   COLOR_SWATCHES,
+  ERASER_SIZE_OPTIONS,
   FONT_FAMILY_OPTIONS,
   FONT_SIZE_OPTIONS,
   FUTURE_TOOL_HINTS,
@@ -76,43 +84,6 @@ function PositionFields({
   );
 }
 
-function translateElement(element: Element, dx: number, dy: number): Element {
-  if (element.type === "stroke") {
-    return {
-      ...element,
-      x: element.x + dx,
-      y: element.y + dy,
-      points: element.points.map((point) => ({
-        x: point.x + dx,
-        y: point.y + dy,
-      })),
-      updatedAt: Date.now(),
-    };
-  }
-
-  if (element.type === "rectangle" || element.type === "text") {
-    return {
-      ...element,
-      x: element.x + dx,
-      y: element.y + dy,
-      updatedAt: Date.now(),
-    };
-  }
-
-  return {
-    ...element,
-    x: element.x + dx,
-    y: element.y + dy,
-    x1: element.x1 + dx,
-    x2: element.x2 + dx,
-    y1: element.y1 + dy,
-    y2: element.y2 + dy,
-    startBinding: undefined,
-    endBinding: undefined,
-    updatedAt: Date.now(),
-  };
-}
-
 function formatSelectionTypes(selectionTypes: string[]) {
   if (selectionTypes.length === 0) return "No selection";
   if (selectionTypes.length === 1) {
@@ -142,6 +113,8 @@ export default function LeftToolbar({
   const setFillColor = useToolStore((state) => state.setFillColor);
   const width = useToolStore((state) => state.width);
   const setWidth = useToolStore((state) => state.setWidth);
+  const eraserSize = useToolStore((state) => state.eraserSize);
+  const setEraserSize = useToolStore((state) => state.setEraserSize);
   const lineStyle = useToolStore((state) => state.lineStyle);
   const setLineStyle = useToolStore((state) => state.setLineStyle);
   const fontFamily = useToolStore((state) => state.fontFamily);
@@ -150,13 +123,11 @@ export default function LeftToolbar({
   const setFontSize = useToolStore((state) => state.setFontSize);
 
   const elements = useBoardStore((state) => state.elements);
-  const setElements = useBoardStore((state) => state.setElements);
+  const commit = useBoardStore((state) => state.commit);
 
   const selectedIds = useSelectionStore((state) => state.selectedIds);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
   const setSelection = useSelectionStore((state) => state.setSelection);
-
-  const pushHistory = useHistoryStore((state) => state.push);
 
   const activeTool = getToolDefinition(tool);
 
@@ -250,40 +221,19 @@ export default function LeftToolbar({
     }
   }
 
-  function updateSelectedElements(updater: (element: Element) => Element) {
-    if (selectedIds.length === 0) return;
+  function applyStyleToSelection(patch: ElementStylePatch, coalesce = false) {
+    if (!isSelectionInspector) return;
 
-    pushHistory(elements);
-    setElements(
-      elements.map((element) =>
-        selectedIds.includes(element.id) ? updater(element) : element,
-      ),
+    commit(
+      setElementStyle(elements, selectedIds, patch),
+      coalesce
+        ? `style:${Object.keys(patch).join("+")}:${selectedIds.join(",")}`
+        : undefined,
     );
   }
 
-  function alignSelection(mode: "left" | "center" | "right") {
-    if (!selectionBounds) return;
-
-    updateSelectedElements((element) => {
-      const elementBounds = getBounds(element);
-      const currentCenter = elementBounds.x + elementBounds.width / 2;
-      const targetLeft = selectionBounds.minX;
-      const targetCenter =
-        (selectionBounds.minX + selectionBounds.maxX) / 2;
-      const targetRight = selectionBounds.maxX;
-
-      let dx = 0;
-
-      if (mode === "left") {
-        dx = targetLeft - elementBounds.x;
-      } else if (mode === "center") {
-        dx = targetCenter - currentCenter;
-      } else {
-        dx = targetRight - (elementBounds.x + elementBounds.width);
-      }
-
-      return translateElement(element, dx, 0);
-    });
+  function alignSelection(mode: AlignMode) {
+    commit(alignElements(elements, selectedIds, mode));
   }
 
   function commitPosition(axis: "x" | "y", rawValue: string) {
@@ -295,9 +245,10 @@ export default function LeftToolbar({
 
     const currentValue = axis === "x" ? selectionBounds.minX : selectionBounds.minY;
 
-    updateSelectedElements((element) =>
-      translateElement(
-        element,
+    commit(
+      translateElements(
+        elements,
+        selectedIds,
         axis === "x" ? nextValue - currentValue : 0,
         axis === "y" ? nextValue - currentValue : 0,
       ),
@@ -305,109 +256,38 @@ export default function LeftToolbar({
   }
 
   function handleDeleteSelection() {
-    if (selectedIds.length === 0) return;
-
-    pushHistory(elements);
-    setElements(
-      elements.filter((element) => !selectedIds.includes(element.id)),
-    );
+    commit(deleteElements(elements, selectedIds));
     clearSelection();
   }
 
   function handleStrokeColorChange(nextColor: string) {
     setColor(nextColor);
-
-    if (!isSelectionInspector) return;
-
-    updateSelectedElements((element) => ({
-      ...element,
-      style: {
-        ...element.style,
-        strokeColor: nextColor,
-      },
-      updatedAt: Date.now(),
-    }));
+    applyStyleToSelection({ strokeColor: nextColor }, true);
   }
 
   function handleFillColorChange(nextColor: string) {
     setFillColor(nextColor);
-
-    if (!isSelectionInspector || !selectionSupportsFill) return;
-
-    updateSelectedElements((element) => {
-      if (element.type !== "rectangle") return element;
-
-      return {
-        ...element,
-        style: {
-          ...element.style,
-          fillColor: nextColor,
-        },
-        updatedAt: Date.now(),
-      };
-    });
+    applyStyleToSelection({ fillColor: nextColor }, true);
   }
 
   function handleWidthChange(nextWidth: number) {
     setWidth(nextWidth);
-
-    if (!isSelectionInspector || !selectionSupportsStrokeControls) return;
-
-    updateSelectedElements((element) => ({
-      ...element,
-      style: {
-        ...element.style,
-        strokeWidth: nextWidth,
-      },
-      updatedAt: Date.now(),
-    }));
+    applyStyleToSelection({ strokeWidth: nextWidth }, true);
   }
 
   function handleLineStyleChange(nextLineStyle: LineStyle) {
     setLineStyle(nextLineStyle);
-
-    if (!isSelectionInspector || !selectionSupportsStrokeControls) return;
-
-    updateSelectedElements((element) => ({
-      ...element,
-      style: {
-        ...element.style,
-        lineStyle: nextLineStyle,
-      },
-      updatedAt: Date.now(),
-    }));
+    applyStyleToSelection({ lineStyle: nextLineStyle });
   }
 
   function handleFontFamilyChange(nextFontFamily: string) {
     setFontFamily(nextFontFamily);
-
-    if (!isSelectionInspector || !selectionSupportsTextControls) return;
-
-    updateSelectedElements((element) => {
-      if (element.type !== "text") return element;
-
-      return {
-        ...element,
-        fontFamily: nextFontFamily,
-        updatedAt: Date.now(),
-      };
-    });
+    applyStyleToSelection({ fontFamily: nextFontFamily });
   }
 
   function handleFontSizeChange(nextFontSize: number) {
     setFontSize(nextFontSize);
-
-    if (!isSelectionInspector || !selectionSupportsTextControls) return;
-
-    updateSelectedElements((element) => {
-      if (element.type !== "text") return element;
-
-      return {
-        ...element,
-        fontSize: nextFontSize,
-        updatedAt: Date.now(),
-      };
-    });
+    applyStyleToSelection({ fontSize: nextFontSize });
   }
 
   function handleWidthSliderChange(index: number) {
@@ -814,6 +694,11 @@ export default function LeftToolbar({
       );
     }
 
+    const currentEraserIndex = Math.max(
+      0,
+      ERASER_SIZE_OPTIONS.indexOf(eraserSize),
+    );
+
     return (
       <section className="wb-lefttool__section">
         <div className="wb-lefttool__section-head">
@@ -829,10 +714,10 @@ export default function LeftToolbar({
             <div className="wb-lefttool__thickness">
               <select
                 className="wb-lefttool__select"
-                value={String(width)}
-                onChange={(event) => handleWidthChange(Number(event.target.value))}
+                value={String(eraserSize)}
+                onChange={(event) => setEraserSize(Number(event.target.value))}
               >
-                {WIDTH_OPTIONS.map((option) => (
+                {ERASER_SIZE_OPTIONS.map((option) => (
                   <option key={option} value={option}>
                     {option}px
                   </option>
@@ -843,12 +728,13 @@ export default function LeftToolbar({
                 className="wb-lefttool__range"
                 type="range"
                 min={0}
-                max={WIDTH_OPTIONS.length - 1}
+                max={ERASER_SIZE_OPTIONS.length - 1}
                 step={1}
-                value={currentWidthIndex}
-                onChange={(event) =>
-                  handleWidthSliderChange(Number(event.target.value))
-                }
+                value={currentEraserIndex}
+                onChange={(event) => {
+                  const next = ERASER_SIZE_OPTIONS[Number(event.target.value)];
+                  if (next) setEraserSize(next);
+                }}
                 aria-label="Eraser size"
               />
             </div>

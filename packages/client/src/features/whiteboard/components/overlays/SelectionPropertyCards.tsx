@@ -6,53 +6,21 @@ import {
   Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { getBounds, getSelectionBounds } from "../../engine/geometry/bounds";
-import type { Element } from "../../models/element";
+import { getSelectionBounds } from "../../engine/geometry/bounds";
+import {
+  alignElements,
+  deleteElements,
+  setElementStyle,
+  translateElements,
+  type AlignMode,
+} from "../../engine/mutations";
 import { useBoardStore } from "../../store/boardStore";
-import { useHistoryStore } from "../../store/historyStore";
 import { useSelectionStore } from "../../store/selectionStore";
 import { useToolStore } from "../../store/toolStore";
 import { useViewportStore } from "../../store/viewportStore";
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
-}
-
-function translateElement(element: Element, dx: number, dy: number): Element {
-  if (element.type === "stroke") {
-    return {
-      ...element,
-      x: element.x + dx,
-      y: element.y + dy,
-      points: element.points.map((point) => ({
-        x: point.x + dx,
-        y: point.y + dy,
-      })),
-      updatedAt: Date.now(),
-    };
-  }
-
-  if (element.type === "rectangle" || element.type === "text") {
-    return {
-      ...element,
-      x: element.x + dx,
-      y: element.y + dy,
-      updatedAt: Date.now(),
-    };
-  }
-
-  return {
-    ...element,
-    x: element.x + dx,
-    y: element.y + dy,
-    x1: element.x1 + dx,
-    x2: element.x2 + dx,
-    y1: element.y1 + dy,
-    y2: element.y2 + dy,
-    startBinding: undefined,
-    endBinding: undefined,
-    updatedAt: Date.now(),
-  };
 }
 
 interface PositionFieldsProps {
@@ -102,7 +70,7 @@ function PositionFields({ initialX, initialY, onCommit }: PositionFieldsProps) {
 
 export default function SelectionPropertyCards() {
   const elements = useBoardStore((state) => state.elements);
-  const setElements = useBoardStore((state) => state.setElements);
+  const commit = useBoardStore((state) => state.commit);
   const selectedIds = useSelectionStore((state) => state.selectedIds);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
 
@@ -131,42 +99,8 @@ export default function SelectionPropertyCards() {
   if (!selectionBounds) return null;
   const bounds = selectionBounds;
 
-  function updateSelectedElements(updater: (element: Element) => Element) {
-    if (selectedIds.length === 0) return;
-
-    useHistoryStore.getState().push(elements);
-    setElements(
-      elements.map((element) =>
-        selectedIds.includes(element.id) ? updater(element) : element,
-      ),
-    );
-  }
-
-  function translateSelection(dx: number, dy: number) {
-    if (dx === 0 && dy === 0) return;
-    updateSelectedElements((element) => translateElement(element, dx, dy));
-  }
-
-  function alignSelection(mode: "left" | "center" | "right") {
-    updateSelectedElements((element) => {
-      const elementBounds = getBounds(element);
-      const currentCenter = elementBounds.x + elementBounds.width / 2;
-      const targetLeft = bounds.minX;
-      const targetCenter = (bounds.minX + bounds.maxX) / 2;
-      const targetRight = bounds.maxX;
-
-      let dx = 0;
-
-      if (mode === "left") {
-        dx = targetLeft - elementBounds.x;
-      } else if (mode === "center") {
-        dx = targetCenter - currentCenter;
-      } else {
-        dx = targetRight - (elementBounds.x + elementBounds.width);
-      }
-
-      return translateElement(element, dx, 0);
-    });
+  function alignSelection(mode: AlignMode) {
+    commit(alignElements(elements, selectedIds, mode));
   }
 
   function commitPosition(axis: "x" | "y", rawValue: string) {
@@ -177,41 +111,34 @@ export default function SelectionPropertyCards() {
       return;
     }
 
-    translateSelection(
-      axis === "x" ? nextValue - currentValue : 0,
-      axis === "y" ? nextValue - currentValue : 0,
+    commit(
+      translateElements(
+        elements,
+        selectedIds,
+        axis === "x" ? nextValue - currentValue : 0,
+        axis === "y" ? nextValue - currentValue : 0,
+      ),
     );
   }
 
   function updateStrokeColor(nextColor: string) {
     setColor(nextColor);
-    updateSelectedElements((element) => ({
-      ...element,
-      style: {
-        ...element.style,
-        strokeColor: nextColor,
-      },
-      updatedAt: Date.now(),
-    }));
+    commit(
+      setElementStyle(elements, selectedIds, { strokeColor: nextColor }),
+      `style:strokeColor:${selectedIds.join(",")}`,
+    );
   }
 
   function updateStrokeWidth(nextWidth: number) {
     setWidth(nextWidth);
-    updateSelectedElements((element) => ({
-      ...element,
-      style: {
-        ...element.style,
-        strokeWidth: nextWidth,
-      },
-      updatedAt: Date.now(),
-    }));
+    commit(
+      setElementStyle(elements, selectedIds, { strokeWidth: nextWidth }),
+      `style:strokeWidth:${selectedIds.join(",")}`,
+    );
   }
 
   function deleteSelection() {
-    useHistoryStore.getState().push(elements);
-    setElements(
-      elements.filter((element) => !selectedIds.includes(element.id)),
-    );
+    commit(deleteElements(elements, selectedIds));
     clearSelection();
   }
 

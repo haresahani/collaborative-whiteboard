@@ -42,10 +42,6 @@ function hitsBox(point: Point, element: Element, radius: number) {
   );
 }
 
-export function getEraserRadius(width: number) {
-  return Math.max(10, width * 4);
-}
-
 export function elementHitsEraser(
   point: Point,
   element: Element,

@@ -2,7 +2,6 @@ import type { Element } from "../models/element";
 // import { drawSmoothStroke } from "./smoothing";
 import { renderGrid } from "./grid";
 import { getSelectionBounds } from "./geometry/bounds";
-import { useSelectionStore } from "../store/selectionStore";
 import { drawElement } from "./shapes/shapeRegistry";
 
 export function normalizeBox(box: {
@@ -122,6 +121,7 @@ export function renderElements(
   offsetY = 0,
   zoom = 1,
   selectedIds: string[] = [],
+  marquee: { x: number; y: number; width: number; height: number } | null = null,
 ) {
   const canvas = ctx.canvas;
 
@@ -145,7 +145,6 @@ export function renderElements(
 
   drawSelectionBox(ctx, elements, selectedIds);
 
-  const marquee = useSelectionStore.getState().marquee;
   if (marquee) {
     renderMarquee(ctx, marquee);
   }

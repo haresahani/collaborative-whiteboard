@@ -1,15 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import {
+  materializeClipboard,
+  serializeSelection,
+  type ClipboardPayload,
+} from "../engine/clipboard";
 import { useBoardStore } from "../store/boardStore";
+import { useSelectionStore } from "../store/selectionStore";
 import { useToolStore } from "../store/toolStore";
 import { useViewportStore } from "../store/viewportStore";
-import { copyStroke, pasteStroke } from "../../../lib/clipboard";
 
 export function useKeyboardShortcuts() {
-  const undo = useBoardStore((s) => s.undo);
-  const redo = useBoardStore((s) => s.redo);
-  const elements = useBoardStore((s) => s.elements);
-  const addElement = useBoardStore((s) => s.addElement);
-  const setTool = useToolStore((s) => s.setTool);
+  const clipboardRef = useRef<ClipboardPayload | null>(null);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -20,11 +21,14 @@ export function useKeyboardShortcuts() {
           target.tagName === "TEXTAREA" ||
           target.isContentEditable);
 
+      if (isTyping) return;
+
       const isMac = navigator.platform.toUpperCase().includes("MAC");
       const modKey = isMac ? e.metaKey : e.ctrlKey;
+      const key = e.key.toLowerCase();
 
-      if (!modKey && !isTyping) {
-        const key = e.key.toLowerCase();
+      if (!modKey) {
+        const setTool = useToolStore.getState().setTool;
 
         if (e.key === "Escape") {
           e.preventDefault();
@@ -69,47 +73,55 @@ export function useKeyboardShortcuts() {
             zoom: 1,
           });
         }
+
+        return;
       }
 
-      if (!modKey || isTyping) return;
-
-      if (e.key === "z") {
+      if (key === "z") {
         e.preventDefault();
         if (e.shiftKey) {
-          redo();
+          useBoardStore.getState().redo();
         } else {
-          undo();
+          useBoardStore.getState().undo();
         }
       }
 
-      if (e.key === "y") {
+      if (key === "y") {
         e.preventDefault();
-        redo();
+        useBoardStore.getState().redo();
       }
 
-      if (e.key === "c") {
+      if (key === "c") {
         e.preventDefault();
 
-        const lastStroke = [...elements]
-          .reverse()
-          .find((el) => el.type === "stroke");
-        if (lastStroke) {
-          copyStroke(lastStroke);
+        const payload = serializeSelection(
+          useBoardStore.getState().elements,
+          useSelectionStore.getState().selectedIds,
+        );
+
+        if (payload) {
+          clipboardRef.current = payload;
         }
       }
 
-      if (e.key === "v") {
+      if (key === "v") {
         e.preventDefault();
 
-        const stroke = pasteStroke();
-        if (stroke) {
-          addElement(stroke);
-        }
+        const payload = clipboardRef.current;
+        if (!payload) return;
+
+        const clones = materializeClipboard(payload);
+        const elements = useBoardStore.getState().elements;
+
+        useBoardStore.getState().commit([...elements, ...clones]);
+        useSelectionStore
+          .getState()
+          .setSelection(clones.map((clone) => clone.id));
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
 
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo, elements, addElement, setTool]);
+  }, []);
 }

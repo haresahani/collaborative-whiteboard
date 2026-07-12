@@ -1,6 +1,28 @@
 import { getBounds } from "../geometry/bounds";
 import type { Element, ArrowElement } from "../../models/element";
 
+/**
+ * Recompute the endpoints of every bound arrow so they stay attached to
+ * their target elements. Returns the input array unchanged (same reference)
+ * when no arrow moved.
+ */
+export function updateAllArrowBindings(elements: Element[]): Element[] {
+  const elementsMap = new Map<string, Element>(
+    elements.map((el) => [el.id, el]),
+  );
+
+  let changed = false;
+
+  const next = elements.map((el) => {
+    if (el.type !== "arrow") return el;
+    const updated = updateArrowBindings(el, elementsMap);
+    if (updated !== el) changed = true;
+    return updated;
+  });
+
+  return changed ? next : elements;
+}
+
 export function updateArrowBindings(
   arrow: ArrowElement,
   elementsMap: Map<string, Element>,

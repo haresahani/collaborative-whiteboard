@@ -1,7 +1,6 @@
 export {
   elementHitsEraser,
   getElementsTouchedByEraser,
-  getEraserRadius,
 } from "./eraseLogic";
 
 export {

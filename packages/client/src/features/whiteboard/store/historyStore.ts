@@ -1,11 +1,16 @@
 import { create } from "zustand";
 import type { Element } from "../models/element";
 
+export const COALESCE_WINDOW_MS = 1000;
+
 type HistoryState = {
   past: Element[][];
   future: Element[][];
 
-  push: (state: Element[]) => void;
+  lastCoalesceKey: string | null;
+  lastPushAt: number;
+
+  push: (state: Element[], coalesceKey?: string, now?: number) => void;
 
   undo: (current: Element[]) => Element[] | null;
   redo: (current: Element[]) => Element[] | null;
@@ -15,11 +20,31 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   past: [],
   future: [],
 
-  push: (state) =>
+  lastCoalesceKey: null,
+  lastPushAt: 0,
+
+  push: (state, coalesceKey, now = Date.now()) => {
+    const { lastCoalesceKey, lastPushAt } = get();
+
+    const shouldCoalesce =
+      coalesceKey !== undefined &&
+      coalesceKey === lastCoalesceKey &&
+      now - lastPushAt < COALESCE_WINDOW_MS;
+
+    if (shouldCoalesce) {
+      // Same gesture continuing (e.g. a color-picker drag): keep the first
+      // snapshot, just extend the window and drop any redo branch.
+      set({ lastPushAt: now, future: [] });
+      return;
+    }
+
     set((s) => ({
       past: [...s.past, state],
       future: [],
-    })),
+      lastCoalesceKey: coalesceKey ?? null,
+      lastPushAt: now,
+    }));
+  },
 
   undo: (current) => {
     const { past, future } = get();
@@ -31,6 +56,8 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     set({
       past: past.slice(0, past.length - 1),
       future: [current, ...future],
+      lastCoalesceKey: null,
+      lastPushAt: 0,
     });
 
     return previous;
@@ -46,6 +73,8 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     set({
       past: [...past, current],
       future: future.slice(1),
+      lastCoalesceKey: null,
+      lastPushAt: 0,
     });
 
     return next;
