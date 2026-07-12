@@ -168,6 +168,8 @@ export const COLOR_SWATCHES = [
 
 export const WIDTH_OPTIONS = [1, 2, 4, 6, 8];
 
+export const ERASER_SIZE_OPTIONS = [8, 16, 24, 32, 48];
+
 export const LINE_STYLE_OPTIONS: Array<{ label: string; value: LineStyle }> = [
   { label: "Solid", value: "solid" },
   { label: "Dashed", value: "dashed" },

@@ -20,6 +20,8 @@ type ToolState = {
   color: string;
   fillColor: string;
   width: number;
+  /** Eraser radius in world px — independent from stroke width. */
+  eraserSize: number;
   lineStyle: LineStyle;
   fontFamily: string;
   fontSize: number;
@@ -28,6 +30,7 @@ type ToolState = {
   setColor: (color: string) => void;
   setFillColor: (fillColor: string) => void;
   setWidth: (width: number) => void;
+  setEraserSize: (eraserSize: number) => void;
   setLineStyle: (lineStyle: LineStyle) => void;
   setFontFamily: (fontFamily: string) => void;
   setFontSize: (fontSize: number) => void;
@@ -38,6 +41,7 @@ export const useToolStore = create<ToolState>((set) => ({
   color: "#ff0000",
   fillColor: "#fff4c2",
   width: 2,
+  eraserSize: 16,
   lineStyle: "solid",
   fontFamily: "\"Plus Jakarta Sans\", sans-serif",
   fontSize: 20,
@@ -46,6 +50,7 @@ export const useToolStore = create<ToolState>((set) => ({
   setColor: (color) => set({ color }),
   setFillColor: (fillColor) => set({ fillColor }),
   setWidth: (width) => set({ width }),
+  setEraserSize: (eraserSize) => set({ eraserSize }),
   setLineStyle: (lineStyle) => set({ lineStyle }),
   setFontFamily: (fontFamily) => set({ fontFamily }),
   setFontSize: (fontSize) => set({ fontSize }),

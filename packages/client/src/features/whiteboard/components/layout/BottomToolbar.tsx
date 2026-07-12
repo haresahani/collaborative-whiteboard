@@ -1,5 +1,6 @@
 import { Maximize2, Redo2, Trash2, Undo2, ZoomIn, ZoomOut } from "lucide-react";
 import { useCallback, useEffect } from "react";
+import { deleteElements } from "../../engine/mutations";
 import { useBoardStore } from "../../store/boardStore";
 import { useHistoryStore } from "../../store/historyStore";
 import { useSelectionStore } from "../../store/selectionStore";
@@ -11,7 +12,7 @@ interface BottomToolbarProps {
 
 export default function BottomToolbar({ onNotify }: BottomToolbarProps) {
   const elements = useBoardStore((state) => state.elements);
-  const setElements = useBoardStore((state) => state.setElements);
+  const commit = useBoardStore((state) => state.commit);
   const undo = useBoardStore((state) => state.undo);
   const redo = useBoardStore((state) => state.redo);
 
@@ -30,23 +31,13 @@ export default function BottomToolbar({ onNotify }: BottomToolbarProps) {
     if (!hasSelection) return;
 
     const deletedCount = selectedIds.length;
-    useHistoryStore.getState().push(elements);
-    setElements(
-      elements.filter((element) => !selectedIds.includes(element.id)),
-    );
+    commit(deleteElements(elements, selectedIds));
     clearSelection();
     onNotify(
       `${deletedCount} element${deletedCount === 1 ? "" : "s"} removed from the board.`,
       "success",
     );
-  }, [
-    clearSelection,
-    elements,
-    hasSelection,
-    onNotify,
-    selectedIds,
-    setElements,
-  ]);
+  }, [clearSelection, commit, elements, hasSelection, onNotify, selectedIds]);
 
   const handleZoomIn = useCallback(() => {
     zoomAt(window.innerWidth / 2, window.innerHeight / 2, 0.15);
@@ -74,11 +65,10 @@ export default function BottomToolbar({ onNotify }: BottomToolbarProps) {
 
     if (!confirmed) return;
 
-    useHistoryStore.getState().push(elements);
-    setElements([]);
+    commit([]);
     clearSelection();
     onNotify("Board cleared.", "warning");
-  }, [clearSelection, elements, hasElements, onNotify, setElements]);
+  }, [clearSelection, commit, elements.length, hasElements, onNotify]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {

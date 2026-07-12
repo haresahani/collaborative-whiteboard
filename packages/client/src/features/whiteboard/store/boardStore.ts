@@ -5,7 +5,22 @@ import { useHistoryStore } from "./historyStore";
 type BoardState = {
   elements: Element[];
 
+  /**
+   * Replace the board with `elements`, recording the previous state in
+   * history. Pass a `coalesceKey` when rapid successive commits belong to a
+   * single gesture (e.g. dragging inside a color picker) so undo treats them
+   * as one step. Pass `base` when the store already holds live (uncommitted)
+   * frames of a gesture — e.g. a drag rendered via setElements — so the
+   * history snapshot is the pre-gesture state instead of the last frame.
+   */
+  commit: (
+    elements: Element[],
+    coalesceKey?: string,
+    base?: Element[],
+  ) => void;
+
   addElement: (element: Element) => void;
+  /** Replace the board WITHOUT recording history (live drag frames). */
   setElements: (elements: Element[]) => void;
   updateElement: (id: string, updater: (el: Element) => Element) => void;
 
@@ -16,12 +31,23 @@ type BoardState = {
 export const useBoardStore = create<BoardState>((set, get) => ({
   elements: [],
 
+  commit: (elements, coalesceKey, base) => {
+    const current = get().elements;
+    const snapshot = base ?? current;
+
+    // Mutations return the same array reference when nothing changed;
+    // skip those so no-ops never pollute the undo history.
+    if (elements === snapshot) return;
+
+    useHistoryStore.getState().push(snapshot, coalesceKey);
+
+    if (elements !== current) {
+      set({ elements });
+    }
+  },
+
   addElement: (element) => {
-    const elements = [...get().elements, element];
-
-    useHistoryStore.getState().push(get().elements);
-
-    set({ elements });
+    get().commit([...get().elements, element]);
   },
 
   setElements: (elements) => set({ elements }),
@@ -30,9 +56,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const prev = get().elements;
     const next = prev.map((el) => (el.id === id ? updater(el) : el));
 
-    if (next === prev) return;
-    useHistoryStore.getState().push(prev);
-    set({ elements: next });
+    get().commit(next);
   },
 
   undo: () => {
