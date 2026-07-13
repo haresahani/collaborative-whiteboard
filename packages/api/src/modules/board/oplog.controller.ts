@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
 import { Oplog } from "./oplog.model";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { ApiResponse } from "../../utils/ApiResponse";
 
-export const appendOperation = async (req: Request, res: Response) => {
-  try {
+/** POST /api/boards/:id/operations — Append an operation to the board's oplog. */
+export const appendOperation = asyncHandler(
+  async (req: Request, res: Response) => {
     const userId = req.user!.id;
-    // const { boardId } = req.params;
     const boardId = req.params.id;
     const { type, payload, opId } = req.body;
 
@@ -23,16 +25,6 @@ export const appendOperation = async (req: Request, res: Response) => {
       payload,
     });
 
-    res.json({
-      success: true,
-      data: operation,
-    });
-  } catch (error) {
-    console.error("Append operation error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to append operation",
-    });
-  }
-};
+    ApiResponse.success(res, operation);
+  },
+);
