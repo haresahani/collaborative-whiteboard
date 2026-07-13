@@ -6,7 +6,7 @@ import {
   deleteBoard,
   getSnapshot,
 } from "./board.controller";
-import { appendOperation } from "./oplog.controller";
+import { appendOperation } from "../operations/oplog.controller";
 import { authMiddleware } from "../auth/auth.middleware";
 import { validate } from "../../middleware/validate";
 import { createBoardSchema } from "./board.validator";

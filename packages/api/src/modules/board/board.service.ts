@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Board, IBoard } from "./board.model";
-import { Snapshot, ISnapshot } from "./snapshot.model";
-import { Oplog } from "./oplog.model";
+import { Snapshot, ISnapshot } from "../snapshot/snapshot.model";
+import { Oplog } from "../operations/oplog.model";
 import { ApiError } from "../../utils/ApiError";
 import { CreateBoardDto } from "./board.validator";
 

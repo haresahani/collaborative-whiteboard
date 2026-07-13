@@ -22,7 +22,7 @@ vi.mock("../src/modules/board/board.model", () => ({
 }));
 
 // Mock the Snapshot model
-vi.mock("../src/modules/board/snapshot.model", () => ({
+vi.mock("../src/modules/snapshot/snapshot.model", () => ({
   Snapshot: {
     create: vi.fn(),
     findOne: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock("../src/modules/board/snapshot.model", () => ({
 }));
 
 // Mock the Oplog model
-vi.mock("../src/modules/board/oplog.model", () => ({
+vi.mock("../src/modules/operations/oplog.model", () => ({
   Oplog: {
     deleteMany: vi.fn(),
   },
@@ -84,8 +84,8 @@ process.env.JWT_SECRET = "test-secret-key";
 
 // Import mocked modules for per-test control
 import { Board } from "../src/modules/board/board.model";
-import { Snapshot } from "../src/modules/board/snapshot.model";
-import { Oplog } from "../src/modules/board/oplog.model";
+import { Snapshot } from "../src/modules/snapshot/snapshot.model";
+import { Oplog } from "../src/modules/operations/oplog.model";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 
