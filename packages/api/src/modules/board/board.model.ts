@@ -39,6 +39,12 @@ const boardSchema = new Schema<IBoard>(
   {
     timestamps: true,
     versionKey: false,
+    toJSON: {
+      transform(_doc, ret: Record<string, unknown>) {
+        ret.id = ret._id;
+        delete ret._id;
+      },
+    },
   },
 );
 

@@ -46,6 +46,12 @@ const snapshotSchema = new Schema<ISnapshot>(
   {
     timestamps: { createdAt: true, updatedAt: false },
     versionKey: false,
+    toJSON: {
+      transform(_doc, ret: Record<string, unknown>) {
+        ret.id = ret._id;
+        delete ret._id;
+      },
+    },
   },
 );
 

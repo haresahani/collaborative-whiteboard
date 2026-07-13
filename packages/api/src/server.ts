@@ -3,6 +3,7 @@ import assetRoutes from "./modules/asset/asset.routes";
 import authRoutes from "./modules/auth/auth.routes";
 import boardRoutes from "./modules/board/board.routes";
 import { rateLimiter } from "./middleware/rateLimiter";
+import { errorHandler } from "./middleware/errorHandler";
 
 const app: Express = express();
 
@@ -15,5 +16,8 @@ app.use("/api/boards", boardRoutes);
 app.get("/", (req, res) => {
   res.send("Express server is active");
 });
+
+// Centralized error handler — must be registered AFTER all routes
+app.use(errorHandler);
 
 export default app;
