@@ -141,6 +141,7 @@ The foundation standards for this repo are now documented and should guide all f
 - testing expectations: [docs/testing-guide.md](docs/testing-guide.md)
 - architecture baseline: [docs/architecture.md](docs/architecture.md)
 - protocol and sync baseline: [docs/protocol.md](docs/protocol.md)
+- project folder structure: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
 
 ## Current Limitations
 
