@@ -5,6 +5,7 @@ import {
   getMyBoards,
   deleteBoard,
   getSnapshot,
+  getBoardJoinToken,
 } from "./board.controller";
 import { appendOperation } from "../operations/oplog.controller";
 import { authMiddleware } from "../auth/auth.middleware";
@@ -18,6 +19,9 @@ router.post("/", authMiddleware, validate(createBoardSchema), createBoard);
 router.get("/", authMiddleware, getMyBoards);
 router.get("/:id", authMiddleware, getBoard);
 router.delete("/:id", authMiddleware, deleteBoard);
+
+// ── Realtime Join Token ───────────────────────────────────────────────
+router.get("/:id/join-token", authMiddleware, getBoardJoinToken);
 
 // ── Snapshot ──────────────────────────────────────────────────────────
 router.get("/:id/snapshot", authMiddleware, getSnapshot);

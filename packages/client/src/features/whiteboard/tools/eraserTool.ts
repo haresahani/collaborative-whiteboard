@@ -1,11 +1,6 @@
 import type { Point } from "../models/element";
 import { getElementsTouchedByEraser } from "./eraser/eraseLogic";
-import type {
-  ToolContext,
-  ToolEffect,
-  ToolHandler,
-  ToolResult,
-} from "./types";
+import type { ToolContext, ToolEffect, ToolHandler, ToolResult } from "./types";
 
 export interface EraserSession {
   /** True once this gesture has recorded its single history entry. */

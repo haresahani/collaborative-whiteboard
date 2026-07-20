@@ -1,9 +1,13 @@
 import { create } from "zustand";
 import type { Element } from "../models/element";
 import { useHistoryStore } from "./historyStore";
+import { socketService } from "../../../api/ws";
 
 type BoardState = {
+  boardId: string | null;
   elements: Element[];
+
+  setBoardId: (boardId: string) => void;
 
   /**
    * Replace the board with `elements`, recording the previous state in
@@ -13,13 +17,11 @@ type BoardState = {
    * frames of a gesture — e.g. a drag rendered via setElements — so the
    * history snapshot is the pre-gesture state instead of the last frame.
    */
-  commit: (
-    elements: Element[],
-    coalesceKey?: string,
-    base?: Element[],
-  ) => void;
+  commit: (elements: Element[], coalesceKey?: string, base?: Element[]) => void;
 
   addElement: (element: Element) => void;
+  addRemoteElement: (element: Element) => void;
+
   /** Replace the board WITHOUT recording history (live drag frames). */
   setElements: (elements: Element[]) => void;
   updateElement: (id: string, updater: (el: Element) => Element) => void;
@@ -29,7 +31,10 @@ type BoardState = {
 };
 
 export const useBoardStore = create<BoardState>((set, get) => ({
+  boardId: null,
   elements: [],
+
+  setBoardId: (boardId) => set({ boardId }),
 
   commit: (elements, coalesceKey, base) => {
     const current = get().elements;
@@ -43,11 +48,28 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
     if (elements !== current) {
       set({ elements });
+
+      // Identify newly committed strokes to emit to Socket.IO
+      const addedElements = elements.filter(
+        (el) => !snapshot.some((s) => s.id === el.id),
+      );
+      for (const el of addedElements) {
+        if (el.type === "stroke") {
+          socketService.emitStroke(el);
+        }
+      }
     }
   },
 
   addElement: (element) => {
     get().commit([...get().elements, element]);
+  },
+
+  addRemoteElement: (element) => {
+    const exists = get().elements.some((el) => el.id === element.id);
+    if (exists) return;
+
+    set({ elements: [...get().elements, element] });
   },
 
   setElements: (elements) => set({ elements }),

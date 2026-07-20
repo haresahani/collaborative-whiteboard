@@ -1,5 +1,8 @@
-// Entrypoint — Socket.IO server (stub until backend implementation)
-console.log("[socket] Socket server stub — listening on port 3001");
+import { createSocketServer } from "./server";
+import { PORT } from "./config/env";
 
-// Keep process alive; replace with real Socket.IO server during backend work
-setInterval(() => {}, 10_000);
+const { httpServer } = createSocketServer();
+
+httpServer.listen(PORT, () => {
+  console.log(`[socket] Real-time socket server running on port ${PORT}`);
+});

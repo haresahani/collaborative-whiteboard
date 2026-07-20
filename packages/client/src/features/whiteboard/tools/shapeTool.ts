@@ -1,10 +1,6 @@
 import { computeBindingAnchor } from "../engine/bindings/arrowBinding";
 import { findBindableElement } from "../engine/bindings/findBindableElement";
-import type {
-  ArrowElement,
-  Point,
-  RectangleElement,
-} from "../models/element";
+import type { ArrowElement, Point, RectangleElement } from "../models/element";
 import type { ToolHandler } from "./types";
 
 export interface RectangleSession {

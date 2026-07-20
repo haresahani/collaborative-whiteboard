@@ -41,11 +41,7 @@ interface PositionFieldsProps {
   onCommit: (axis: "x" | "y", value: string) => void;
 }
 
-function PositionFields({
-  initialX,
-  initialY,
-  onCommit,
-}: PositionFieldsProps) {
+function PositionFields({ initialX, initialY, onCommit }: PositionFieldsProps) {
   const [draftX, setDraftX] = useState(() => String(Math.round(initialX)));
   const [draftY, setDraftY] = useState(() => String(Math.round(initialY)));
 
@@ -143,25 +139,26 @@ export default function LeftToolbar({
 
   const selectionTypes = useMemo(
     () =>
-      Array.from(new Set(selectedElements.map((element) => element.type))).sort(),
+      Array.from(
+        new Set(selectedElements.map((element) => element.type)),
+      ).sort(),
     [selectedElements],
   );
 
   const isSelectionInspector =
-    tool === "select" && selectedElements.length > 0 && selectionBounds !== null;
+    tool === "select" &&
+    selectedElements.length > 0 &&
+    selectionBounds !== null;
 
-  const selectionColor =
-    selectedElements[0]?.style.strokeColor ?? color;
+  const selectionColor = selectedElements[0]?.style.strokeColor ?? color;
   const selectionFillColor =
     selectedElements.find((element) => element.type === "rectangle")?.style
       .fillColor ?? fillColor;
-  const selectionWidth =
-    selectedElements[0]?.style.strokeWidth ?? width;
-  const selectionLineStyle =
-    selectedElements[0]?.style.lineStyle ?? lineStyle;
+  const selectionWidth = selectedElements[0]?.style.strokeWidth ?? width;
+  const selectionLineStyle = selectedElements[0]?.style.lineStyle ?? lineStyle;
   const selectionFontFamily =
     selectedElements[0]?.type === "text"
-      ? selectedElements[0].fontFamily ?? fontFamily
+      ? (selectedElements[0].fontFamily ?? fontFamily)
       : fontFamily;
   const selectionFontSize =
     selectedElements[0]?.type === "text"
@@ -180,9 +177,7 @@ export default function LeftToolbar({
 
   const currentWidthIndex = Math.max(
     0,
-    WIDTH_OPTIONS.indexOf(
-      isSelectionInspector ? selectionWidth : width,
-    ),
+    WIDTH_OPTIONS.indexOf(isSelectionInspector ? selectionWidth : width),
   );
 
   function focusToolButton(index: number) {
@@ -194,8 +189,9 @@ export default function LeftToolbar({
 
   function handleRailKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const currentIndex = Number(
-      (event.target as HTMLElement | null)?.getAttribute("data-lefttool-index") ??
-        TOOL_RAIL_ITEMS.findIndex((item) => item.tool === tool),
+      (event.target as HTMLElement | null)?.getAttribute(
+        "data-lefttool-index",
+      ) ?? TOOL_RAIL_ITEMS.findIndex((item) => item.tool === tool),
     );
 
     if (event.key === "ArrowDown") {
@@ -243,7 +239,8 @@ export default function LeftToolbar({
 
     if (Number.isNaN(nextValue)) return;
 
-    const currentValue = axis === "x" ? selectionBounds.minX : selectionBounds.minY;
+    const currentValue =
+      axis === "x" ? selectionBounds.minX : selectionBounds.minY;
 
     commit(
       translateElements(
@@ -390,10 +387,18 @@ export default function LeftToolbar({
         </div>
 
         <div className="wb-lefttool__field-grid wb-lefttool__field-grid--style">
-          {renderColorField("Stroke Color", options.colorValue, handleStrokeColorChange)}
+          {renderColorField(
+            "Stroke Color",
+            options.colorValue,
+            handleStrokeColorChange,
+          )}
 
           {options.showFill
-            ? renderColorField("Fill Color", options.fillValue, handleFillColorChange)
+            ? renderColorField(
+                "Fill Color",
+                options.fillValue,
+                handleFillColorChange,
+              )
             : null}
 
           {options.showWidth !== false ? (
@@ -403,7 +408,9 @@ export default function LeftToolbar({
                 <select
                   className="wb-lefttool__select"
                   value={String(options.widthValue)}
-                  onChange={(event) => handleWidthChange(Number(event.target.value))}
+                  onChange={(event) =>
+                    handleWidthChange(Number(event.target.value))
+                  }
                 >
                   {WIDTH_OPTIONS.map((option) => (
                     <option key={option} value={option}>
@@ -446,7 +453,9 @@ export default function LeftToolbar({
                   ))}
                 </select>
 
-                <span className={linePreviewClassName(options.lineStyleValue)} />
+                <span
+                  className={linePreviewClassName(options.lineStyleValue)}
+                />
               </div>
             </label>
           ) : null}
@@ -486,7 +495,9 @@ export default function LeftToolbar({
             <select
               className="wb-lefttool__select"
               value={String(fontSizeValue)}
-              onChange={(event) => handleFontSizeChange(Number(event.target.value))}
+              onChange={(event) =>
+                handleFontSizeChange(Number(event.target.value))
+              }
             >
               {FONT_SIZE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -509,7 +520,9 @@ export default function LeftToolbar({
           <div className="wb-lefttool__section-head">
             <div>
               <h3>Quick Actions</h3>
-              <span>Selection controls only appear while the select tool is active.</span>
+              <span>
+                Selection controls only appear while the select tool is active.
+              </span>
             </div>
           </div>
 
@@ -576,8 +589,8 @@ export default function LeftToolbar({
         {!selectionSupportsStrokeControls && !selectionSupportsTextControls ? (
           <section className="wb-lefttool__section">
             <p className="wb-lefttool__section-note">
-              Mixed selections keep the inspector focused on actions that are safe
-              across different element types.
+              Mixed selections keep the inspector focused on actions that are
+              safe across different element types.
             </p>
           </section>
         ) : null}
@@ -602,7 +615,9 @@ export default function LeftToolbar({
             <ul className="wb-lefttool__supporting-list">
               <li>Single click to select an element.</li>
               <li>Drag on empty space to create a marquee.</li>
-              <li>Once selected, position and appearance controls appear here.</li>
+              <li>
+                Once selected, position and appearance controls appear here.
+              </li>
             </ul>
           </section>
 
@@ -610,7 +625,9 @@ export default function LeftToolbar({
             <div className="wb-lefttool__section-head">
               <div>
                 <h3>Roadmap Notes</h3>
-                <span>Secondary utilities stay out of the core drawing rail.</span>
+                <span>
+                  Secondary utilities stay out of the core drawing rail.
+                </span>
               </div>
             </div>
 
@@ -679,7 +696,9 @@ export default function LeftToolbar({
             <div className="wb-lefttool__section-head">
               <div>
                 <h3>Primary Properties</h3>
-                <span>Text is created once, edited inline, then returned to select.</span>
+                <span>
+                  Text is created once, edited inline, then returned to select.
+                </span>
               </div>
             </div>
 
@@ -704,7 +723,9 @@ export default function LeftToolbar({
         <div className="wb-lefttool__section-head">
           <div>
             <h3>Eraser Size</h3>
-            <span>The eraser remains active so you can scrub multiple elements.</span>
+            <span>
+              The eraser remains active so you can scrub multiple elements.
+            </span>
           </div>
         </div>
 
@@ -772,7 +793,10 @@ export default function LeftToolbar({
         </button>
 
         {TOOL_RAIL_SECTIONS.map((section, sectionIndex) => {
-          const startingIndex = TOOL_RAIL_SECTIONS.slice(0, sectionIndex).reduce(
+          const startingIndex = TOOL_RAIL_SECTIONS.slice(
+            0,
+            sectionIndex,
+          ).reduce(
             (count, currentSection) => count + currentSection.items.length,
             0,
           );
@@ -817,7 +841,9 @@ export default function LeftToolbar({
             <section className="wb-lefttool__section wb-lefttool__section--hero">
               <div className="wb-lefttool__surface-head">
                 <div className="wb-lefttool__surface-copy">
-                  <span>{isSelectionInspector ? "CONTEXT INSPECTOR" : "ACTIVE TOOL"}</span>
+                  <span>
+                    {isSelectionInspector ? "CONTEXT INSPECTOR" : "ACTIVE TOOL"}
+                  </span>
                   <strong>{heroTitle}</strong>
                   <p>{heroDescription}</p>
                 </div>
@@ -847,8 +873,9 @@ export default function LeftToolbar({
               </div>
             </section>
 
-            {isSelectionInspector ? renderSelectionInspector() : renderActiveToolInspector()}
-
+            {isSelectionInspector
+              ? renderSelectionInspector()
+              : renderActiveToolInspector()}
           </div>
         </div>
       ) : null}

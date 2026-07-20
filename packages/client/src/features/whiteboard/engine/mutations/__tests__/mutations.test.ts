@@ -15,7 +15,13 @@ import { translateElements } from "../translateElements";
 
 const NOW = 1_000;
 
-function rect(id: string, x = 0, y = 0, width = 100, height = 50): RectangleElement {
+function rect(
+  id: string,
+  x = 0,
+  y = 0,
+  width = 100,
+  height = 50,
+): RectangleElement {
   return {
     id,
     type: "rectangle",
@@ -172,7 +178,14 @@ describe("resizeElements", () => {
   });
 
   it("flips a rectangle dragged through zero size", () => {
-    const next = resizeElements([rect("r", 0, 0, 30, 30)], ["r"], "e", -50, 0, NOW);
+    const next = resizeElements(
+      [rect("r", 0, 0, 30, 30)],
+      ["r"],
+      "e",
+      -50,
+      0,
+      NOW,
+    );
     const r = next[0] as RectangleElement;
 
     expect(r.width).toBe(20);
@@ -216,7 +229,11 @@ describe("setElementStyle", () => {
     const s = next.find((el) => el.id === "s") as StrokeElement;
     const t = next.find((el) => el.id === "t") as TextElement;
 
-    expect(r.style).toMatchObject({ strokeColor: "#f00", fillColor: "#0f0", strokeWidth: 8 });
+    expect(r.style).toMatchObject({
+      strokeColor: "#f00",
+      fillColor: "#0f0",
+      strokeWidth: 8,
+    });
     expect(s.style).toMatchObject({ strokeColor: "#f00", strokeWidth: 8 });
     expect(s.style.fillColor).toBeUndefined();
     expect(t.style.strokeColor).toBe("#f00");
@@ -301,7 +318,13 @@ describe("duplicateElements", () => {
 
   it("returns the same reference and no ids for an empty selection", () => {
     const elements: Element[] = [rect("r")];
-    const result = duplicateElements(elements, [], { x: 20, y: 20 }, () => "x", NOW);
+    const result = duplicateElements(
+      elements,
+      [],
+      { x: 20, y: 20 },
+      () => "x",
+      NOW,
+    );
 
     expect(result.elements).toBe(elements);
     expect(result.newIds).toEqual([]);
