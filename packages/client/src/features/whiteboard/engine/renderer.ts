@@ -121,7 +121,12 @@ export function renderElements(
   offsetY = 0,
   zoom = 1,
   selectedIds: string[] = [],
-  marquee: { x: number; y: number; width: number; height: number } | null = null,
+  marquee: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null = null,
 ) {
   const canvas = ctx.canvas;
 

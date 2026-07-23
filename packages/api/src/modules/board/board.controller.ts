@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
+import { issueBoardJoinToken } from "shared";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { boardService } from "./board.service";
@@ -52,3 +54,24 @@ export const getSnapshot = asyncHandler(async (req: Request, res: Response) => {
   );
   ApiResponse.success(res, snapshot);
 });
+
+/** GET /api/boards/:id/join-token — Issue a short-lived board join token for socket auth. */
+export const getBoardJoinToken = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const boardId = req.params.id;
+
+    // Verify access if valid Mongo ObjectId; for local/dev boards like "local-board", issue token directly
+    if (mongoose.Types.ObjectId.isValid(boardId)) {
+      await boardService.findById(boardId, userId);
+    }
+
+    const token = issueBoardJoinToken(
+      { userId, boardId },
+      process.env.JWT_SECRET!,
+      "2h",
+    );
+
+    ApiResponse.success(res, { token });
+  },
+);

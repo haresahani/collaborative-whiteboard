@@ -22,14 +22,9 @@ dotenv.config({
 
 export const env = validateEnv(process.env);
 
-export const PORT = Number(process.env.SOCKET_PORT ?? 3001);
-export const CLIENT_ORIGIN =
-  process.env.CLIENT_ORIGIN ?? "http://localhost:5173";
+export const MONGO_URL = process.env.MONGO_URL!;
 
-// TEMPORARY — verify env is actually loading real values, remove after confirming
-console.log("Loaded env:", {
-  JWT_SECRET_length: env.JWT_SECRET.length,
-  NODE_ENV: env.NODE_ENV,
-  PORT,
-  CLIENT_ORIGIN,
-});
+if (!MONGO_URL) {
+  console.error("[worker] MONGO_URL environment variable is required!");
+  process.exit(1);
+}

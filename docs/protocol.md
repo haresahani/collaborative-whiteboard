@@ -23,6 +23,7 @@ The API package currently exposes:
 - `GET /api/boards`
 - `GET /api/boards/:id`
 - `DELETE /api/boards/:id`
+- `GET /api/boards/:id/join-token` (Issues board-scoped short-lived JWT for Socket.IO authentication)
 - `POST /api/boards/:id/operations`
 
 ## Current Response Reality

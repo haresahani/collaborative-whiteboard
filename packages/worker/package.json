@@ -8,7 +8,15 @@
     "dev": "tsx watch src/index.ts",
     "start:dev": "tsx watch src/index.ts",
     "build": "tsc -b",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "bullmq": "^5.41.3",
+    "dotenv": "^17.2.3",
+    "ioredis": "^5.5.0",
+    "mongoose": "^9.2.4",
+    "shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.3.2",
@@ -18,6 +26,7 @@
     "prettier": "^3.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^4.0.8"
   }
 }

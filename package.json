@@ -6,7 +6,9 @@
     "packages/*"
   ],
   "scripts": {
+    "predev": "pnpm --filter shared build",
     "dev": "pnpm -r --parallel --filter ./packages/* --if-present dev",
+    "prestart:dev": "pnpm --filter shared build",
     "start:dev": "pnpm -r --parallel --filter ./packages/* --if-present start:dev",
     "build": "pnpm --parallel --filter ./packages/* build",
     "typecheck": "pnpm exec tsc --noEmit",

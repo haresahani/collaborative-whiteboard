@@ -124,7 +124,9 @@ export const TOOL_RAIL_SECTIONS: RailSection[] = [
   },
 ];
 
-export const TOOL_RAIL_ITEMS = TOOL_RAIL_SECTIONS.flatMap((section) => section.items);
+export const TOOL_RAIL_ITEMS = TOOL_RAIL_SECTIONS.flatMap(
+  (section) => section.items,
+);
 
 const TOOL_LOOKUP = Object.fromEntries(
   TOOL_DEFINITIONS.map((definition) => [definition.tool, definition]),
@@ -179,7 +181,7 @@ export const LINE_STYLE_OPTIONS: Array<{ label: string; value: LineStyle }> = [
 export const FONT_FAMILY_OPTIONS = [
   {
     label: "Plus Jakarta Sans",
-    value: "\"Plus Jakarta Sans\", sans-serif",
+    value: '"Plus Jakarta Sans", sans-serif',
   },
   {
     label: "Georgia",
@@ -191,7 +193,7 @@ export const FONT_FAMILY_OPTIONS = [
   },
   {
     label: "Times New Roman",
-    value: "\"Times New Roman\"",
+    value: '"Times New Roman"',
   },
   {
     label: "Monospace",

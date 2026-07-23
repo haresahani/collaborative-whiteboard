@@ -1,7 +1,4 @@
-export {
-  elementHitsEraser,
-  getElementsTouchedByEraser,
-} from "./eraseLogic";
+export { elementHitsEraser, getElementsTouchedByEraser } from "./eraseLogic";
 
 export {
   ERASER_TRAIL_LIFETIME_MS,

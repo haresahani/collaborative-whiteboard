@@ -13,7 +13,13 @@ import { rectangleTool, textTool } from "../shapeTool";
 import { resolvePointerDown } from "../toolRegistry";
 import type { PointerInput, ToolContext, ToolEffect } from "../types";
 
-function rect(id: string, x = 0, y = 0, width = 100, height = 50): RectangleElement {
+function rect(
+  id: string,
+  x = 0,
+  y = 0,
+  width = 100,
+  height = 50,
+): RectangleElement {
   return {
     id,
     type: "rectangle",
@@ -47,7 +53,11 @@ function makeCtx(overrides: Partial<ToolContext> = {}): ToolContext {
   };
 }
 
-function input(x: number, y: number, opts: Partial<PointerInput> = {}): PointerInput {
+function input(
+  x: number,
+  y: number,
+  opts: Partial<PointerInput> = {},
+): PointerInput {
   return { world: { x, y }, shiftKey: false, buttons: 1, ...opts };
 }
 
@@ -84,7 +94,11 @@ describe("penTool", () => {
     const ctx = makeCtx();
     const down = penTool.onPointerDown(input(1, 1), ctx);
 
-    const move = penTool.onPointerMove(down.session!, input(9, 9, { buttons: 0 }), ctx);
+    const move = penTool.onPointerMove(
+      down.session!,
+      input(9, 9, { buttons: 0 }),
+      ctx,
+    );
 
     expect((move.preview as StrokeElement).points).toHaveLength(1);
   });
@@ -124,7 +138,10 @@ describe("textTool", () => {
 
 describe("moveTool", () => {
   it("declines when nothing is hit", () => {
-    const result = moveTool.onPointerDown(input(500, 500), makeCtx({ elements: [rect("r")] }));
+    const result = moveTool.onPointerDown(
+      input(500, 500),
+      makeCtx({ elements: [rect("r")] }),
+    );
 
     expect(result.session).toBeNull();
   });
@@ -218,7 +235,11 @@ describe("eraserTool", () => {
     expect(effectOfType(down.effects, "setSelection")?.ids).toEqual([]);
 
     const moveCtx = makeCtx({ elements: [b], selectedIds: [] });
-    const move = eraserTool.onPointerMove(down.session!, input(105, 5), moveCtx);
+    const move = eraserTool.onPointerMove(
+      down.session!,
+      input(105, 5),
+      moveCtx,
+    );
 
     expect(effectOfType(move.effects, "commit")).toBeUndefined();
     expect(effectOfType(move.effects, "setElements")?.elements).toEqual([]);

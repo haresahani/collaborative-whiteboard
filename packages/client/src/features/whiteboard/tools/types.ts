@@ -88,6 +88,10 @@ export interface ToolResult<S> {
  */
 export interface ToolHandler<S = unknown> {
   onPointerDown(input: PointerInput, ctx: ToolContext): ToolResult<S>;
-  onPointerMove(session: S, input: PointerInput, ctx: ToolContext): ToolResult<S>;
+  onPointerMove(
+    session: S,
+    input: PointerInput,
+    ctx: ToolContext,
+  ): ToolResult<S>;
   onPointerUp(session: S, input: PointerInput, ctx: ToolContext): ToolResult<S>;
 }

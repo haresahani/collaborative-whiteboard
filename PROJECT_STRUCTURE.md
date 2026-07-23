@@ -83,7 +83,9 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   ├── README.md
 │   │   ├── jest.config.js
 │   │   ├── package.json
+│   │   ├── tsconfig.build.json
 │   │   ├── tsconfig.json
+│   │   ├── tsconfig.test.json
 │   │   └── vitest.config.ts
 │   ├── client/
 │   │   ├── src/
@@ -250,17 +252,22 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   ├── src/
 │   │   │   ├── lib/
 │   │   │   │   └── utils.ts
-│   │   │   └── index.ts
+│   │   │   ├── env.ts
+│   │   │   ├── index.ts
+│   │   │   └── jwt.ts
 │   │   ├── README.md
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   ├── socket/
 │   │   ├── src/
 │   │   │   ├── config/
-│   │   │   │   └── README.md
+│   │   │   │   ├── README.md
+│   │   │   │   └── env.ts
 │   │   │   ├── events/
-│   │   │   │   └── README.md
+│   │   │   │   ├── README.md
+│   │   │   │   └── board.ts
 │   │   │   ├── middleware/
+│   │   │   │   └── auth.ts
 │   │   │   ├── rooms/
 │   │   │   │   └── README.md
 │   │   │   ├── services/
@@ -292,6 +299,7 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   └── README.md
 ├── LICENSE
 ├── MAINTAINING.md
+├── PROJECT_STRUCTURE.md
 ├── README.md
 ├── dev-commands.sh
 ├── eslint.config.js

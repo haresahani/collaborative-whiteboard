@@ -35,7 +35,9 @@ function buildContext(): ToolContext {
 }
 
 function buildInput(
-  e: React.PointerEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>,
+  e:
+    | React.PointerEvent<HTMLCanvasElement>
+    | React.MouseEvent<HTMLCanvasElement>,
 ): PointerInput {
   return {
     world: screenToWorld(
@@ -129,7 +131,11 @@ export function useToolSession() {
 
       apply(
         gesture.handler,
-        gesture.handler.onPointerMove(gesture.session, buildInput(e), buildContext()),
+        gesture.handler.onPointerMove(
+          gesture.session,
+          buildInput(e),
+          buildContext(),
+        ),
       );
     },
     [apply],
@@ -142,7 +148,11 @@ export function useToolSession() {
 
       apply(
         gesture.handler,
-        gesture.handler.onPointerUp(gesture.session, buildInput(e), buildContext()),
+        gesture.handler.onPointerUp(
+          gesture.session,
+          buildInput(e),
+          buildContext(),
+        ),
       );
     },
     [apply],

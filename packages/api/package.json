@@ -20,6 +20,7 @@
     "express-rate-limit": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.4",
+    "shared": "workspace:*",
     "zod": "^3.25.76"
   },
   "devDependencies": {

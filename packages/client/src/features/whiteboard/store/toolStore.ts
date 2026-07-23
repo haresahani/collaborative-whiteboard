@@ -43,7 +43,7 @@ export const useToolStore = create<ToolState>((set) => ({
   width: 2,
   eraserSize: 16,
   lineStyle: "solid",
-  fontFamily: "\"Plus Jakarta Sans\", sans-serif",
+  fontFamily: '"Plus Jakarta Sans", sans-serif',
   fontSize: 20,
 
   setTool: (tool) => set({ tool }),
