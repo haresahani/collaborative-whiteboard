@@ -66,16 +66,23 @@ vi.mock("jsonwebtoken", () => ({
 
 // Mock mongoose for ObjectId validation
 vi.mock("mongoose", async () => {
-  const actual = await vi.importActual("mongoose");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const actual = await vi.importActual<any>("mongoose");
+  const mockedTypes = {
+    ...actual.Types,
+    ObjectId: {
+      ...actual.Types?.ObjectId,
+      isValid: vi.fn(),
+    },
+  };
   return {
     ...actual,
+    models: actual.models || actual.default?.models || {},
+    Types: mockedTypes,
     default: {
-      ...(actual as Record<string, unknown>),
-      Types: {
-        ObjectId: {
-          isValid: vi.fn(),
-        },
-      },
+      ...actual.default,
+      models: actual.default?.models || actual.models || {},
+      Types: mockedTypes,
     },
   };
 });
