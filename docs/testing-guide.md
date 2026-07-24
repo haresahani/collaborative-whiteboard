@@ -4,15 +4,13 @@ This guide describes the current test situation and the minimum quality bar for 
 
 ## Current Reality
 
-The repo does not have deep automated coverage yet.
+The repository's automated test coverage is currently being expanded:
 
-Current state:
+- **API Package**: Fully covered by robust integration tests (50+ test cases) targeting authentication endpoints, board CRUD operations, and health checks (using Vitest and Supertest).
+- **Client Package**: Client interaction tests are still largely missing.
+- **Realtime / Socket**: Tests do not exist yet since full realtime integration is currently in progress.
 
-- API has a smoke test
-- client interaction tests are largely missing
-- realtime tests do not exist yet because realtime is not implemented yet
-
-That is acceptable at this stage only because the gap is explicit and part of the V1 plan.
+This is acceptable at this stage as we incrementally align with the V1 plan.
 
 ## Root Quality Bar
 
