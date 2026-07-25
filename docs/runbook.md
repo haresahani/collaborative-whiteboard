@@ -6,7 +6,7 @@ This runbook is for local development and demo readiness. It is not a production
 
 - Node.js 20+
 - pnpm 9+
-- MongoDB access for the API package
+- MongoDB instance (either local MongoDB running on port 27017 or a MongoDB Atlas connection string configured via MONGO_URL in env/dev.env)
 
 ## Install
 
