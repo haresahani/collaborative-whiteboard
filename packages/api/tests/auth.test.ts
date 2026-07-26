@@ -226,9 +226,10 @@ describe("Auth API Endpoints", () => {
       });
 
       expect(res.status).toBe(201);
-      expect(res.body.token).toBe("mock_jwt_token_abc");
-      expect(res.body.user.email).toBe("new@example.com");
-      expect(res.body.user.displayName).toBe("New User");
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.token).toBe("mock_jwt_token_abc");
+      expect(res.body.data.user.email).toBe("new@example.com");
+      expect(res.body.data.user.displayName).toBe("New User");
     });
   });
 
@@ -301,8 +302,9 @@ describe("Auth API Endpoints", () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.body.token).toBe("mock_jwt_token_abc");
-      expect(res.body.user.email).toBe("test@example.com");
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.token).toBe("mock_jwt_token_abc");
+      expect(res.body.data.user.email).toBe("test@example.com");
     });
   });
 
@@ -369,8 +371,9 @@ describe("Auth API Endpoints", () => {
         .set("Authorization", "Bearer valid-token");
 
       expect(res.status).toBe(200);
-      expect(res.body.email).toBe("me@example.com");
-      expect(res.body.displayName).toBe("Real User");
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.email).toBe("me@example.com");
+      expect(res.body.data.displayName).toBe("Real User");
     });
   });
 });
