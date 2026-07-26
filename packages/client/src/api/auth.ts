@@ -22,8 +22,8 @@ export async function getAuthToken(): Promise<string> {
       throw new Error("Dev guest signup failed");
     }
 
-    const data = await res.json();
-    token = data.token;
+    const json = await res.json();
+    token = json.data.token;
     localStorage.setItem("auth_token", token!);
   }
 
