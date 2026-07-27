@@ -1,6 +1,7 @@
 import { Worker, Job } from "bullmq";
 import { Oplog, type IOp } from "shared";
 import { redisConnection } from "./config/redis";
+import { tryCompact } from "./compaction";
 
 export const oplogWorker = new Worker<IOp>(
   "oplog-queue",
@@ -24,6 +25,9 @@ export const oplogWorker = new Worker<IOp>(
       },
       { upsert: true },
     );
+
+    // Run compaction check asynchronously
+    await tryCompact(boardId);
   },
   {
     connection: redisConnection,

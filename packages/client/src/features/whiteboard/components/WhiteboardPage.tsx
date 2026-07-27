@@ -10,8 +10,7 @@ import RightPanel from "./layout/RightPanel";
 import TopNavigation from "./layout/TopNavigation";
 import WorkspaceOverlay from "./overlays/WorkspaceOverlay";
 import { useBoardStore } from "../store/boardStore";
-import { socketService, type RemoteStrokeData } from "../../../api/ws";
-import type { StrokeElement } from "../models/element";
+import { socketService } from "../../../api/ws";
 
 function sanitizeFileName(value: string) {
   return value
@@ -44,31 +43,7 @@ export default function WhiteboardPage() {
   useEffect(() => {
     useBoardStore.getState().setBoardId(boardId);
 
-    void socketService.connect(
-      boardId,
-      (remoteStrokeData: RemoteStrokeData) => {
-        const firstPt = remoteStrokeData.points[0] || [0, 0];
-        const remoteStroke: StrokeElement = {
-          id: crypto.randomUUID(),
-          type: "stroke",
-          x: firstPt[0],
-          y: firstPt[1],
-          points: remoteStrokeData.points.map(([x, y]: [number, number]) => ({
-            x,
-            y,
-          })),
-          style: {
-            strokeColor: remoteStrokeData.color,
-            strokeWidth: remoteStrokeData.width,
-          },
-          zIndex: 0,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-
-        useBoardStore.getState().addRemoteElement(remoteStroke);
-      },
-    );
+    void socketService.connect(boardId);
 
     return () => {
       socketService.disconnect();

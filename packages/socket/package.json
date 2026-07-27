@@ -8,7 +8,8 @@
     "dev": "tsx watch src/index.ts",
     "start:dev": "tsx watch src/index.ts",
     "build": "tsc -b",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "bullmq": "^5.80.11",
@@ -26,6 +27,7 @@
     "prettier": "^3.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^4.0.8"
   }
 }
