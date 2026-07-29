@@ -6,7 +6,8 @@ This runbook is for local development and demo readiness. It is not a production
 
 - Node.js 20+
 - pnpm 9+
-- MongoDB instance (either local MongoDB running on port 27017 or a MongoDB Atlas connection string configured via MONGO_URL in env/dev.env)
+- MongoDB instance (either local MongoDB running on port 27017 or a MongoDB Atlas connection string configured via `MONGO_URL` in `env/dev.env`)
+- Redis instance (running locally on port 6379, or configured via `REDIS_URL` in `env/dev.env`) for realtime sync and BullMQ background worker queues
 
 ## Install
 
@@ -41,7 +42,8 @@ pnpm --filter worker dev
 - client starts on `http://localhost:5173`
 - the active whiteboard route is `/board/:id`
 - API starts on the port in `env/dev.env`, currently `1234` by default
-- socket and worker packages currently only print stub startup messages
+- socket gateway starts on port `3001` and connects to Redis and MongoDB
+- worker process starts, connects to Redis and MongoDB, and listens for snapshot compaction jobs
 
 ## Verification Commands
 
@@ -72,9 +74,17 @@ Check:
 - you opened a valid board route such as `/board/local-demo`
 - the client dev server is actually running on port `5173`
 
-### Root `pnpm dev` looks noisy
+### Redis connection refused (`ECONNREFUSED 127.0.0.1:6379`)
 
-That is expected for now because it starts client, API, socket, and worker together. Socket and worker are still stubs, so their logs are only scaffolding output.
+The `socket` and `worker` packages require a running Redis server. If you see connection refused logs:
+
+- Ensure Redis is installed and running locally (e.g. via Docker, WSL, or native service).
+- If using a remote or custom Redis instance, define `REDIS_URL=redis://your-redis-host:port` in `env/dev.env`.
+- If you do not have Redis set up yet, you can still develop and test the whiteboard client and REST API locally by running only those packages:
+  ```bash
+  pnpm --filter client dev
+  pnpm --filter api dev
+  ```
 
 ### `pnpm build` recreates generated output
 
