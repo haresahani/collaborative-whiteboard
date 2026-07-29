@@ -15,6 +15,7 @@
     "bullmq": "^5.80.11",
     "dotenv": "^17.2.3",
     "ioredis": "^5.11.1",
+    "mongoose": "^9.2.4",
     "shared": "workspace:*",
     "socket.io": "^4.8.1",
     "zod": "^3.25.76"
