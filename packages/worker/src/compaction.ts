@@ -124,7 +124,7 @@ export async function tryCompact(boardId: string): Promise<void> {
       { boardId, opIndex: newOpIndex },
       {
         $setOnInsert: {
-          boardId: new mongoose.Types.ObjectId(boardId),
+          boardId,
           opIndex: newOpIndex,
           snapshotJson: { strokes, shapes, notes },
           createdAt: new Date(),
@@ -137,13 +137,15 @@ export async function tryCompact(boardId: string): Promise<void> {
       `[worker] Compacted ${contiguousOps.length} ops for board ${boardId} into snapshot at version ${newOpIndex}`,
     );
 
-    // 8. Update board record's lastSnapshotId reference
-    await mongoose.connection
-      .collection("boards")
-      .updateOne(
-        { _id: new mongoose.Types.ObjectId(boardId) },
-        { $set: { lastSnapshotId: newSnapshot._id } },
-      );
+    // 8. Update board record's lastSnapshotId reference (only if it is a valid ObjectId)
+    if (mongoose.Types.ObjectId.isValid(boardId)) {
+      await mongoose.connection
+        .collection("boards")
+        .updateOne(
+          { _id: new mongoose.Types.ObjectId(boardId) },
+          { $set: { lastSnapshotId: newSnapshot._id } },
+        );
+    }
   } catch (err: unknown) {
     if (err && typeof err === "object" && "code" in err && err.code === 11000) {
       console.log(

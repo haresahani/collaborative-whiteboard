@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, Types, Document } from "mongoose";
+import mongoose, { Schema, model, Document } from "mongoose";
 
 export interface ISnapshotJson {
   strokes: Record<string, unknown>[];
@@ -7,7 +7,7 @@ export interface ISnapshotJson {
 }
 
 export interface ISnapshot extends Document {
-  boardId: Types.ObjectId;
+  boardId: string;
   opIndex: number;
   snapshotJson: ISnapshotJson;
   createdAt: Date;
@@ -16,8 +16,7 @@ export interface ISnapshot extends Document {
 const snapshotSchema = new Schema<ISnapshot>(
   {
     boardId: {
-      type: Schema.Types.ObjectId,
-      ref: "Board",
+      type: String,
       required: true,
       index: true,
     },

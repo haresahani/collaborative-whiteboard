@@ -1,1 +1,2 @@
-export { Snapshot, ISnapshot } from "shared";
+export { Snapshot } from "shared";
+export type { ISnapshot } from "shared";

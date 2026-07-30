@@ -1,1 +1,1 @@
-export { applyOperation } from "shared";
+export { applyOperation } from "@shared/oplog";
