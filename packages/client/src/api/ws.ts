@@ -9,7 +9,7 @@ import {
   deserializeSnapshot,
   type SnapshotElementGroups,
 } from "../features/whiteboard/utils/snapshotStorage";
-import { applyOperation, replayOperations, type ISharedElement } from "shared";
+import { applyOperation, replayOperations, type ISharedElement } from "@shared/oplog";
 
 export interface RemoteStrokeData {
   points: [number, number][];

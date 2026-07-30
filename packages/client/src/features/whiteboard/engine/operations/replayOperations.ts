@@ -1,1 +1,1 @@
-export { replayOperations } from "shared";
+export { replayOperations } from "@shared/oplog";
