@@ -128,13 +128,23 @@ export default function WhiteboardCanvas({
   Zoom with mouse wheel
   ----------------------------------
   */
-  function handleWheel(e: React.WheelEvent<HTMLCanvasElement>) {
-    e.preventDefault();
+  // Manually attach a non-passive wheel event listener on the canvas element
+  // to avoid the browser's "Unable to preventDefault inside passive event listener" warning.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const delta = -e.deltaY * 0.001;
+    const handleWheelRaw = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = -e.deltaY * 0.001;
+      zoomAt(e.clientX, e.clientY, delta);
+    };
 
-    zoomAt(e.clientX, e.clientY, delta);
-  }
+    canvas.addEventListener("wheel", handleWheelRaw, { passive: false });
+    return () => {
+      canvas.removeEventListener("wheel", handleWheelRaw);
+    };
+  }, [zoomAt]);
 
   /*
   ----------------------------------
@@ -219,7 +229,6 @@ export default function WhiteboardCanvas({
         ref={canvasRef}
         className="whiteboard-canvas-element"
         style={{ cursor }}
-        onWheel={handleWheel}
         onDoubleClick={handleDoubleClick}
         onPointerDown={(event) => {
           if (tool === "eraser" && event.button === 0) {
