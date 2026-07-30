@@ -252,9 +252,13 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   ├── src/
 │   │   │   ├── lib/
 │   │   │   │   └── utils.ts
+│   │   │   ├── models/
+│   │   │   │   ├── oplog.model.ts
+│   │   │   │   └── snapshot.model.ts
 │   │   │   ├── env.ts
 │   │   │   ├── index.ts
-│   │   │   └── jwt.ts
+│   │   │   ├── jwt.ts
+│   │   │   └── oplog.ts
 │   │   ├── README.md
 │   │   ├── package.json
 │   │   └── tsconfig.json
@@ -262,6 +266,7 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   ├── src/
 │   │   │   ├── config/
 │   │   │   │   ├── README.md
+│   │   │   │   ├── db.ts
 │   │   │   │   └── env.ts
 │   │   │   ├── events/
 │   │   │   │   ├── README.md
@@ -271,19 +276,32 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   ├── rooms/
 │   │   │   │   └── README.md
 │   │   │   ├── services/
-│   │   │   │   └── README.md
+│   │   │   │   ├── README.md
+│   │   │   │   └── oplogQueue.ts
 │   │   │   ├── utils/
-│   │   │   │   └── README.md
+│   │   │   │   ├── README.md
+│   │   │   │   ├── lamport.ts
+│   │   │   │   └── recentOpsBuffer.ts
 │   │   │   ├── index.ts
 │   │   │   └── server.ts
 │   │   ├── tests/
-│   │   │   └── README.md
+│   │   │   ├── README.md
+│   │   │   └── join.test.ts
 │   │   ├── README.md
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   ├── worker/
 │   │   ├── src/
-│   │   │   └── index.ts
+│   │   │   ├── config/
+│   │   │   │   ├── db.ts
+│   │   │   │   ├── env.ts
+│   │   │   │   └── redis.ts
+│   │   │   ├── compaction.ts
+│   │   │   ├── index.ts
+│   │   │   └── oplogWorker.ts
+│   │   ├── tests/
+│   │   │   ├── compaction.test.ts
+│   │   │   └── oplog.test.ts
 │   │   ├── README.md
 │   │   ├── package.json
 │   │   └── tsconfig.json
@@ -319,12 +337,12 @@ This document provides a tree view of the folders and files in the `collaborativ
 - **`env/`**: Environment configuration files (e.g. `dev.env`, `prod.env`).
 - **`infra/`**: Infrastructure configuration (Kubernetes, Prometheus, Grafana dashboards).
 - **`packages/`**: Monorepo packages:
-  - **`api/`**: Auth endpoints, board CRUD, persistence (Prisma/Postgres).
+  - **`api/`**: Express + MongoDB API for auth, boards, snapshots, and oplog persistence.
   - **`client/`**: React/Vite client frontend whiteboard application.
   - **`infra-utils/`**: Database seeding and utility scripts.
-  - **`shared/`**: Shared TypeScript types and validation helpers.
-  - **`socket/`**: Socket.IO collaborative real-time server.
-  - **`worker/`**: Stub package for future background workers.
+  - **`shared/`**: Shared utilities, schemas, and configurations used by multiple packages.
+  - **`socket/`**: Socket.IO collaborative real-time gateway server.
+  - **`worker/`**: BullMQ background worker for oplog persistence deduplication and snapshot compaction.
 - **`scripts/`**: Miscellaneous automation and utility scripts.
 - **`tests/`**: Integration/system tests (chaos, load, e2e tests).
 - **`tools/`**: Tooling scripts and helper configurations.
