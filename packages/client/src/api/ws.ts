@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { io, Socket } from "socket.io-client";
 import { getBoardJoinToken } from "./auth";
 import type {
@@ -10,6 +11,12 @@ import {
   type SnapshotElementGroups,
 } from "../features/whiteboard/utils/snapshotStorage";
 import { applyOperation, replayOperations, type ISharedElement } from "@shared/oplog";
+import {
+  useCollaborationStore,
+  type ChatMessage,
+} from "../features/whiteboard/store/collaborationStore";
+import { getUserAccent } from "@shared/utils/accent";
+import { chatSendSchema } from "@shared/schemas/collab";
 
 export interface RemoteStrokeData {
   points: [number, number][];
@@ -32,9 +39,28 @@ interface AckResponse {
   error?: string;
 }
 
+function decodeJwt(token: string): any {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+    return JSON.parse(jsonPayload);
+  } catch (err) {
+    console.error("[Socket] Failed to decode JWT:", err);
+    return null;
+  }
+}
+
 class SocketService {
   private socket: Socket | null = null;
   private currentBoardId: string | null = null;
+  private myUserId: string | null = null;
+  private heartbeatIntervalId: number | null = null;
 
   async connect(boardId: string) {
     if (this.socket && this.currentBoardId === boardId) {
@@ -42,11 +68,15 @@ class SocketService {
     }
 
     if (this.socket) {
-      this.socket.disconnect();
+      this.disconnect();
     }
 
     try {
       const joinToken = await getBoardJoinToken(boardId);
+      const claims = decodeJwt(joinToken);
+      if (claims) {
+        this.myUserId = claims.userId;
+      }
 
       this.currentBoardId = boardId;
 
@@ -60,6 +90,17 @@ class SocketService {
         console.log(`[Socket] Connected to Socket.IO for board: ${boardId}`);
         // Request the server to load current state and join the board room
         this.socket?.emit("join.board", { boardId });
+
+        // Start periodic presence heartbeat immediately, then every 10 seconds
+        this.socket?.emit("presence.heartbeat");
+        if (this.heartbeatIntervalId !== null) {
+          window.clearInterval(this.heartbeatIntervalId);
+        }
+        this.heartbeatIntervalId = window.setInterval(() => {
+          if (this.socket?.connected) {
+            this.socket.emit("presence.heartbeat");
+          }
+        }, 10000);
       });
 
       // Handle the initial board sync payload (snapshot + oplogs tail)
@@ -118,6 +159,44 @@ class SocketService {
         },
       );
 
+      // --- Presence listeners ---
+      this.socket.on("presence.list", (users: any[]) => {
+        const mapped = users.map((u) => ({
+          userId: u.userId,
+          displayName: u.displayName,
+          accent: getUserAccent(u.userId),
+        }));
+        useCollaborationStore.getState().setActiveUsers(mapped);
+      });
+
+      // --- Cursor listeners ---
+      this.socket.on("cursor.broadcast", (data: any) => {
+        if (data.userId === this.myUserId) return;
+        console.log("[socket] cursor.broadcast received:", {
+          userId: data.userId,
+          displayName: data.displayName,
+          hasPreview: !!data.previewElement,
+          previewElement: data.previewElement,
+        });
+        useCollaborationStore.getState().updateCursor(data.userId, {
+          userId: data.userId,
+          displayName: data.displayName,
+          accent: getUserAccent(data.userId),
+          x: data.x,
+          y: data.y,
+          previewElement: data.previewElement,
+        });
+      });
+
+      // --- Chat listeners ---
+      this.socket.on("chat.history", (messages: any[]) => {
+        useCollaborationStore.getState().setChatMessages(messages);
+      });
+
+      this.socket.on("chat.broadcast", (message: ChatMessage) => {
+        useCollaborationStore.getState().addChatMessage(message);
+      });
+
       this.socket.on("connect_error", (err) => {
         console.error("[Socket] Connection error:", err.message);
       });
@@ -127,11 +206,22 @@ class SocketService {
   }
 
   disconnect() {
+    if (this.heartbeatIntervalId !== null) {
+      window.clearInterval(this.heartbeatIntervalId);
+      this.heartbeatIntervalId = null;
+    }
+
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
       this.currentBoardId = null;
+      this.myUserId = null;
+      useCollaborationStore.getState().clearCursors();
     }
+  }
+
+  getUserId(): string | null {
+    return this.myUserId;
   }
 
   emitStroke(stroke: StrokeElement) {
@@ -159,6 +249,74 @@ class SocketService {
         console.log("[Socket] Stroke commit ack success opId:", ack.opId);
       }
     });
+  }
+
+  // --- Collaboration Emitters ---
+  emitCursor(x: number, y: number, previewElement?: any) {
+    if (!this.socket || !this.socket.connected) return;
+    console.log("[socket] emitting cursor.move:", { x, y, hasPreview: !!previewElement, previewElement });
+    this.socket.emit("cursor.move", { x, y, previewElement });
+  }
+
+  private throttledCursorEmit = this.throttle((x: number, y: number, previewElement?: any) => {
+    this.emitCursor(x, y, previewElement);
+  }, 50);
+
+  sendCursorMove(x: number, y: number, previewElement?: any) {
+    this.throttledCursorEmit(x, y, previewElement);
+  }
+
+  sendChatMessage(message: string): { ok: boolean; error?: string } {
+    if (!this.socket || !this.socket.connected) {
+      return { ok: false, error: "Socket is disconnected" };
+    }
+
+    const parsed = chatSendSchema.safeParse({ message });
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: parsed.error.errors[0]?.message || "Invalid message format",
+      };
+    }
+
+    this.socket.emit("chat.send", { message: parsed.data.message });
+    return { ok: true };
+  }
+
+  emitOp(type: "element.create" | "element.update" | "element.delete", payload: Record<string, unknown>) {
+    if (!this.socket || !this.socket.connected) {
+      console.warn("[Socket] Cannot emit op: socket is disconnected");
+      return;
+    }
+
+    const opId = crypto.randomUUID();
+
+    const payloadWithId = {
+      opId,
+      type,
+      payload,
+    };
+
+    console.log("[Socket] Emitting op.commit:", payloadWithId);
+    this.socket.emit("op.commit", payloadWithId, (ack?: { ok: boolean; error?: string }) => {
+      if (!ack?.ok) {
+        console.error("[Socket] Op commit ack failed:", ack?.error);
+      } else {
+        console.log("[Socket] Op commit ack success:", ack);
+      }
+    });
+  }
+
+  // Self-contained throttle helper to avoid external dependencies/types issues
+  private throttle<T extends (...args: any[]) => void>(fn: T, limit: number): T {
+    let inThrottle = false;
+    return function (this: any, ...args: any[]) {
+      if (!inThrottle) {
+        fn.apply(this, args);
+        inThrottle = true;
+        window.setTimeout(() => (inThrottle = false), limit);
+      }
+    } as unknown as T;
   }
 }
 

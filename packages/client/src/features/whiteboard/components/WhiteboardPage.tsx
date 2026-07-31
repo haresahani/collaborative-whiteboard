@@ -1,4 +1,4 @@
-import { CheckCircle2, Info, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Info, MessageSquare, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { cn } from "../../../lib/utils";
@@ -11,6 +11,8 @@ import TopNavigation from "./layout/TopNavigation";
 import WorkspaceOverlay from "./overlays/WorkspaceOverlay";
 import { useBoardStore } from "../store/boardStore";
 import { socketService } from "../../../api/ws";
+import LiveCursorsOverlay from "./canvas/LiveCursorsOverlay";
+import ChatPanel from "./layout/ChatPanel";
 
 function sanitizeFileName(value: string) {
   return value
@@ -27,7 +29,7 @@ type WhiteboardNotice = {
   message: string;
 };
 
-type ActivePanel = "info" | "settings" | null;
+type ActivePanel = "info" | "settings" | "chat" | null;
 
 export default function WhiteboardPage() {
   const { id } = useParams<{ id: string }>();
@@ -131,6 +133,7 @@ export default function WhiteboardPage() {
     <div className="whiteboard-shell">
       <WhiteboardCanvas onCanvasInteract={handleCanvasInteract} />
       <WorkspaceOverlay />
+      <LiveCursorsOverlay />
 
       <TopNavigation
         boardId={boardId}
@@ -161,6 +164,20 @@ export default function WhiteboardPage() {
         </button>
       ) : null}
 
+      {activePanel !== "chat" ? (
+        <button
+          type="button"
+          className="wb-board-chat-trigger"
+          onClick={() => setActivePanel("chat")}
+          aria-controls="board-chat-panel"
+          aria-expanded="false"
+          aria-label="Open board chat"
+          title="Board chat"
+        >
+          <MessageSquare size={16} />
+        </button>
+      ) : null}
+
       <button
         type="button"
         className={cn(
@@ -185,6 +202,11 @@ export default function WhiteboardPage() {
         boardId={boardId}
         boardName={boardName}
         isOpen={activePanel === "info"}
+        onClose={() => setActivePanel(null)}
+      />
+
+      <ChatPanel
+        isOpen={activePanel === "chat"}
         onClose={() => setActivePanel(null)}
       />
 

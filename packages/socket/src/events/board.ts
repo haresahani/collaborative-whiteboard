@@ -1,10 +1,19 @@
 // packages/socket/src/events/board.ts
 import type { Server, Socket } from "socket.io";
 import { z } from "zod";
-import { OpSchema, type IOp, Oplog, Snapshot } from "shared";
+import {
+  OpSchema,
+  type IOp,
+  Oplog,
+  Snapshot,
+  cursorMoveSchema,
+  chatSendSchema,
+} from "shared";
 import { enqueueOp } from "../services/oplogQueue";
 import { getNextLamport } from "../utils/lamport";
 import { pushRecentOp, getRecentOps } from "../utils/recentOpsBuffer";
+import { PresenceService } from "../services/presence";
+import { Chat } from "../models/chat";
 
 const StrokeCommitSchema = z.object({
   opId: z.string().uuid(),
@@ -36,13 +45,16 @@ function roomName(boardId: string): string {
 }
 
 export function registerBoardHandlers(io: Server, socket: Socket) {
-  const { userId, boardId } = socket.data as {
+  const { userId, boardId, displayName } = socket.data as {
     userId: string;
     boardId: string;
+    displayName: string;
   };
 
   void socket.join(roomName(boardId));
-  console.log(`[socket] user ${userId} joined room ${roomName(boardId)}`);
+  console.log(
+    `[socket] user ${userId} (${displayName}) joined room ${roomName(boardId)}`,
+  );
 
   // join.board handler: fetches snapshot + oplogs tail and sends board.init
   socket.on("join.board", async (data: { boardId: string }) => {
@@ -112,6 +124,28 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         },
         oplogs: mergedOps,
       });
+
+      try {
+        await PresenceService.updatePresence(
+          boardId,
+          userId,
+          displayName,
+          socket.id,
+        );
+        const activeUsers = await PresenceService.getActiveUsers(boardId);
+        io.to(roomName(boardId)).emit("presence.list", activeUsers);
+
+        const chatHistory = await Chat.find({ boardId })
+          .sort({ createdAt: -1 })
+          .limit(100)
+          .lean();
+        socket.emit("chat.history", chatHistory.reverse());
+      } catch (presenceErr) {
+        console.error(
+          `[socket] join.board presence/chat init failed:`,
+          presenceErr,
+        );
+      }
 
       console.log(
         `[socket] join.board success: user=${userId} board=${boardId} snapshotVersion=${snapshotVersion} opsCount=${mergedOps.length}`,
@@ -230,9 +264,117 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     }
   });
 
-  socket.on("disconnect", (reason) => {
+  socket.on("presence.heartbeat", async () => {
+    try {
+      await PresenceService.updatePresence(
+        boardId,
+        userId,
+        displayName,
+        socket.id,
+      );
+      const activeUsers = await PresenceService.getActiveUsers(boardId);
+      io.to(roomName(boardId)).emit("presence.list", activeUsers);
+    } catch (err) {
+      console.error("[socket] Failed to process presence heartbeat:", err);
+    }
+  });
+
+  socket.on("cursor.move", (raw: unknown) => {
+    try {
+      // Rate limit: max 50 events/sec per socket
+      const now = Date.now();
+      socket.data.lastCursorTime = socket.data.lastCursorTime || 0;
+      if (now - socket.data.lastCursorTime < 20) {
+        return;
+      }
+      socket.data.lastCursorTime = now;
+
+      const parsed = cursorMoveSchema.safeParse(raw);
+      if (!parsed.success) {
+        console.error(
+          "[socket] cursorMoveSchema validation failed:",
+          parsed.error.format(),
+        );
+        return;
+      }
+
+      const { x, y, previewElement } = parsed.data;
+      console.log(
+        `[socket] cursor.move relay: user=${userId} (${displayName}) x=${x} y=${y} hasPreview=${!!previewElement}`,
+      );
+
+      // Broadcast to other clients only
+      socket.to(roomName(boardId)).emit("cursor.broadcast", {
+        userId,
+        displayName,
+        x,
+        y,
+        previewElement,
+      });
+    } catch (err) {
+      console.error("[socket] Cursor move error:", err);
+    }
+  });
+
+  socket.on("chat.send", async (raw: unknown) => {
+    try {
+      // Rate limit: max 2 messages/sec per socket
+      const now = Date.now();
+      socket.data.lastChatTime = socket.data.lastChatTime || 0;
+      if (now - socket.data.lastChatTime < 500) {
+        socket.emit("protocol:error", {
+          code: "RATE_LIMIT_EXCEEDED",
+          message: "You are sending messages too fast",
+        });
+        return;
+      }
+      socket.data.lastChatTime = now;
+
+      const parsed = chatSendSchema.safeParse(raw);
+      if (!parsed.success) {
+        socket.emit("protocol:error", {
+          code: "INVALID_PAYLOAD",
+          message: parsed.error.errors[0]?.message || "Invalid chat message",
+        });
+        return;
+      }
+
+      const { message } = parsed.data;
+
+      const chatMessage = await Chat.create({
+        boardId,
+        userId,
+        displayName,
+        message,
+        createdAt: new Date(),
+      });
+
+      // Emit to all clients (including sender) to ensure authoritative ID and time
+      io.to(roomName(boardId)).emit("chat.broadcast", chatMessage);
+    } catch (err) {
+      console.error("[socket] Chat send error:", err);
+      socket.emit("protocol:error", {
+        code: "SERVER_ERROR",
+        message: "Failed to persist chat message",
+      });
+    }
+  });
+
+  socket.on("disconnect", async (reason) => {
     console.log(
-      `[socket] user ${userId} disconnected from board ${boardId}: ${reason}`,
+      `[socket] user ${userId} (${displayName}) disconnected from board ${boardId}: ${reason}`,
     );
+    try {
+      await PresenceService.removePresence(
+        boardId,
+        userId,
+        displayName,
+        socket.id,
+      );
+      const activeUsers = await PresenceService.getActiveUsers(boardId);
+      io.to(roomName(boardId)).emit("presence.list", activeUsers);
+    } catch (err) {
+      console.error("[socket] Failed to remove presence on disconnect:", err);
+    }
   });
 }

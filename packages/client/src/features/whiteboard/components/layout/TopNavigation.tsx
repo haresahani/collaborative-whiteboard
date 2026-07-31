@@ -8,9 +8,9 @@ import {
   Share2,
 } from "lucide-react";
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
-import { COLLABORATORS } from "./uiData";
+import { useCollaborationStore } from "../../store/collaborationStore";
 
-type NavigationPanel = "info" | "settings" | null;
+type NavigationPanel = "info" | "settings" | "chat" | null;
 
 interface TopNavigationProps {
   boardId: string;
@@ -33,6 +33,7 @@ export default function TopNavigation({
   onToggleSettings,
   onToggleTools,
 }: TopNavigationProps) {
+  const activeUsers = useCollaborationStore((state) => state.activeUsers);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isCollaboratorsOpen, setIsCollaboratorsOpen] = useState(false);
   const [draftName, setDraftName] = useState(boardName);
@@ -149,7 +150,7 @@ export default function TopNavigation({
             aria-haspopup="dialog"
           >
             <span className="wb-presence-pill__dot" />
-            Active players ({COLLABORATORS.length})
+            Active players ({activeUsers.length})
             <ChevronDown size={14} aria-hidden="true" />
           </button>
 
@@ -162,12 +163,12 @@ export default function TopNavigation({
             >
               <div className="wb-collaborators-menu__header">
                 <strong>Collaborators</strong>
-                <span>{COLLABORATORS.length} online</span>
+                <span>{activeUsers.length} online</span>
               </div>
 
               <div className="wb-collaborator-list">
-                {COLLABORATORS.map((collaborator) => (
-                  <div key={collaborator.id} className="wb-collaborator-row">
+                {activeUsers.map((collaborator) => (
+                  <div key={collaborator.userId} className="wb-collaborator-row">
                     <span
                       className="wb-collaborator-avatar"
                       style={
@@ -176,19 +177,19 @@ export default function TopNavigation({
                         } as CSSProperties
                       }
                     >
-                      {collaborator.initials}
+                      {collaborator.displayName.slice(0, 2).toUpperCase()}
                     </span>
 
                     <div className="wb-collaborator-meta">
-                      <strong>{collaborator.name}</strong>
+                      <strong>{collaborator.displayName}</strong>
                       <span>
-                        {collaborator.role} - {collaborator.status}
+                        Collaborator - Active now
                       </span>
                     </div>
 
                     <span className="wb-online-pill">
                       <span className="wb-online-pill__dot" />
-                      {collaborator.isOnline ? "Online" : "Away"}
+                      Online
                     </span>
                   </div>
                 ))}

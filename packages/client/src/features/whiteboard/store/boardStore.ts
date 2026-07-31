@@ -48,15 +48,45 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
     if (elements !== current) {
       set({ elements });
+    }
 
-      // Identify newly committed strokes to emit to Socket.IO
-      const addedElements = elements.filter(
-        (el) => !snapshot.some((s) => s.id === el.id),
-      );
-      for (const el of addedElements) {
-        if (el.type === "stroke") {
-          socketService.emitStroke(el);
+    // Identify newly committed elements to emit to Socket.IO
+    const addedElements = elements.filter(
+      (el) => !snapshot.some((s) => s.id === el.id),
+    );
+    for (const el of addedElements) {
+      if (el.type === "stroke") {
+        socketService.emitStroke(el);
+      } else {
+        socketService.emitOp("element.create", { element: el as unknown as Record<string, unknown> });
+      }
+    }
+
+    // Identify deleted elements to emit to Socket.IO
+    const deletedElements = snapshot.filter(
+      (s) => !elements.some((el) => el.id === s.id),
+    );
+    for (const el of deletedElements) {
+      socketService.emitOp("element.delete", { id: el.id });
+    }
+
+    // Identify updated elements to emit to Socket.IO
+    const updatedElements = elements.filter((el) => {
+      const prev = snapshot.find((s) => s.id === el.id);
+      return prev && (prev.updatedAt !== el.updatedAt || JSON.stringify(prev) !== JSON.stringify(el));
+    });
+    for (const el of updatedElements) {
+      const prev = snapshot.find((s) => s.id === el.id)!;
+      const updates: Record<string, unknown> = {};
+      const elRec = el as unknown as Record<string, unknown>;
+      const prevRec = prev as unknown as Record<string, unknown>;
+      for (const key of Object.keys(el)) {
+        if (JSON.stringify(elRec[key]) !== JSON.stringify(prevRec[key])) {
+          updates[key] = elRec[key];
         }
+      }
+      if (Object.keys(updates).length > 0) {
+        socketService.emitOp("element.update", { id: el.id, updates });
       }
     }
   },

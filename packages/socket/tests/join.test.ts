@@ -36,6 +36,31 @@ vi.mock("bullmq", () => {
   };
 });
 
+vi.mock("../src/services/presence", () => {
+  return {
+    PresenceService: {
+      updatePresence: vi.fn().mockResolvedValue(undefined),
+      removePresence: vi.fn().mockResolvedValue(undefined),
+      getActiveUsers: vi.fn().mockResolvedValue([]),
+      getPresenceKey: vi.fn().mockReturnValue("mock-presence-key"),
+    },
+  };
+});
+
+vi.mock("../src/models/chat", () => {
+  return {
+    Chat: {
+      find: vi.fn().mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          limit: vi.fn().mockReturnValue({
+            lean: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      }),
+    },
+  };
+});
+
 // Mock shared models
 vi.mock("shared", async () => {
   const actual = await vi.importActual<any>("shared");
@@ -77,7 +102,11 @@ describe("Socket Server Join Flow Tests", () => {
       }),
     };
 
-    mockIo = {};
+    mockIo = {
+      to: vi.fn().mockReturnValue({
+        emit: vi.fn(),
+      }),
+    };
 
     registerBoardHandlers(mockIo, mockSocket);
   });

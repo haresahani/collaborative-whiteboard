@@ -1,6 +1,7 @@
 import { Eraser } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useBoardStore } from "../../store/boardStore";
+import { useCollaborationStore } from "../../store/collaborationStore";
 import { renderElements } from "../../engine/renderer";
 import { useToolSession } from "../../hooks/useToolSession";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
@@ -16,6 +17,7 @@ import { getSelectionBounds } from "../../engine/geometry/bounds";
 import { screenToWorld } from "../../engine/viewport";
 import { ERASER_TRAIL_LIFETIME_MS, useEraserTrail } from "../../tools/eraser";
 import TextEditor from "../overlays/TextEditor";
+import { socketService } from "../../../../api/ws";
 
 interface WhiteboardCanvasProps {
   onCanvasInteract?: () => void;
@@ -104,6 +106,10 @@ export default function WhiteboardCanvas({
     let animationFrameId: number;
 
     const render = () => {
+      const otherPreviews = Object.values(useCollaborationStore.getState().cursors)
+        .map((c) => c.previewElement)
+        .filter(Boolean);
+
       renderElements(
         ctx,
         elements,
@@ -113,6 +119,7 @@ export default function WhiteboardCanvas({
         zoom,
         selectedIds,
         useSelectionStore.getState().marquee,
+        otherPreviews,
       );
 
       animationFrameId = requestAnimationFrame(render);
@@ -251,6 +258,13 @@ export default function WhiteboardCanvas({
           handleHover(e);
           handlePointerMove(e);
           handlePan(e);
+
+          // Emit world coordinates of cursor to other board users
+          const { x: worldX, y: worldY } = screenToWorld(
+            { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY },
+            useViewportStore.getState(),
+          );
+          socketService.sendCursorMove(worldX, worldY, getPreview());
         }}
         onPointerUp={(e) => {
           stopEraserTrail();

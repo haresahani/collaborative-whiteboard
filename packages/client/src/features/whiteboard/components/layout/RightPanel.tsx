@@ -6,7 +6,8 @@ import { usePanelFocus } from "../../hooks/usePanelFocus";
 import { useBoardStore } from "../../store/boardStore";
 import { useSelectionStore } from "../../store/selectionStore";
 import { useViewportStore } from "../../store/viewportStore";
-import { ACTIVITY_FEED, COLLABORATORS } from "./uiData";
+import { useCollaborationStore } from "../../store/collaborationStore";
+import { ACTIVITY_FEED } from "./uiData";
 
 interface RightPanelProps {
   boardId: string;
@@ -43,6 +44,7 @@ export default function RightPanel({
   onClose,
 }: RightPanelProps) {
   const closeButtonRef = usePanelFocus(isOpen);
+  const activeUsers = useCollaborationStore((state) => state.activeUsers);
   const elements = useBoardStore((state) => state.elements);
   const selectedIds = useSelectionStore((state) => state.selectedIds);
   const zoom = useViewportStore((state) => state.zoom);
@@ -202,8 +204,8 @@ export default function RightPanel({
               </div>
 
               <div className="wb-collaborator-list">
-                {COLLABORATORS.map((collaborator) => (
-                  <div key={collaborator.id} className="wb-collaborator-row">
+                {activeUsers.map((collaborator) => (
+                  <div key={collaborator.userId} className="wb-collaborator-row">
                     <span
                       className="wb-collaborator-avatar"
                       style={
@@ -212,17 +214,17 @@ export default function RightPanel({
                         } as CSSProperties
                       }
                     >
-                      {collaborator.initials}
+                      {collaborator.displayName.slice(0, 2).toUpperCase()}
                     </span>
 
                     <div className="wb-collaborator-meta">
-                      <strong>{collaborator.name}</strong>
-                      <span>{collaborator.role}</span>
+                      <strong>{collaborator.displayName}</strong>
+                      <span>Collaborator</span>
                     </div>
 
                     <span className="wb-online-pill">
                       <span className="wb-online-pill__dot" />
-                      {collaborator.isOnline ? "Online" : "Away"}
+                      Online
                     </span>
                   </div>
                 ))}
