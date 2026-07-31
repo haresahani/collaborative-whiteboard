@@ -112,10 +112,12 @@ export default function WhiteboardCanvas({
         .map((c) => c.previewElement)
         .filter(Boolean) as Element[];
 
-      const allErasedIds = new Set(
-        Object.values(useCollaborationStore.getState().cursors)
+      const localErasedIds = getErasedIds();
+      const allErasedIds = new Set([
+        ...localErasedIds,
+        ...Object.values(useCollaborationStore.getState().cursors)
           .flatMap((c) => c.erasedIds || [])
-      );
+      ]);
 
       const visibleElements = allErasedIds.size > 0
         ? elements.filter((el) => !allErasedIds.has(el.id))
@@ -139,7 +141,7 @@ export default function WhiteboardCanvas({
     animationFrameId = requestAnimationFrame(render);
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [elements, getPreview, offsetX, offsetY, zoom, selectedIds]);
+  }, [elements, getPreview, getErasedIds, offsetX, offsetY, zoom, selectedIds]);
 
   /*
   ----------------------------------

@@ -230,21 +230,18 @@ describe("eraserTool", () => {
     const downCtx = makeCtx({ elements: [a, b], selectedIds: ["a"] });
     const down = eraserTool.onPointerDown(input(5, 5), downCtx);
 
-    const firstErase = effectOfType(down.effects, "setElements");
-    expect(firstErase?.elements.map((el: Element) => el.id)).toEqual(["b"]);
-    expect(effectOfType(down.effects, "setSelection")?.ids).toEqual([]);
+    expect(down.effects).toEqual([]);
     expect(down.session?.baseElements).toEqual([a, b]);
     expect(down.session?.currentElements.map((el: Element) => el.id)).toEqual(["b"]);
 
-    const moveCtx = makeCtx({ elements: [b], selectedIds: [] });
+    const moveCtx = makeCtx({ elements: [a, b], selectedIds: ["a"] });
     const move = eraserTool.onPointerMove(
       down.session!,
       input(105, 5),
       moveCtx,
     );
 
-    expect(effectOfType(move.effects, "commit")).toBeUndefined();
-    expect(effectOfType(move.effects, "setElements")?.elements).toEqual([]);
+    expect(move.effects).toEqual([]);
     expect(move.session?.currentElements).toEqual([]);
 
     const up = eraserTool.onPointerUp(move.session!, input(105, 5), moveCtx);
@@ -252,6 +249,9 @@ describe("eraserTool", () => {
     expect(commitEffect).toBeDefined();
     expect(commitEffect?.elements).toEqual([]);
     expect(commitEffect?.base).toEqual([a, b]);
+
+    const selectionEffect = effectOfType(up.effects, "setSelection");
+    expect(selectionEffect?.ids).toEqual([]);
   });
 
   it("keeps the session alive over empty space without effects", () => {

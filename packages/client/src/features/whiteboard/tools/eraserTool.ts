@@ -17,18 +17,9 @@ export const eraserTool: ToolHandler<EraserSession> = {
     const touchedIds = new Set(touched.map((el) => el.id));
     const next = ctx.elements.filter((el) => !touchedIds.has(el.id));
 
-    const effects: ToolEffect[] = [];
-    if (next.length !== ctx.elements.length) {
-      effects.push({ type: "setElements", elements: next });
-      const remaining = ctx.selectedIds.filter((id) => !touchedIds.has(id));
-      if (remaining.length !== ctx.selectedIds.length) {
-        effects.push({ type: "setSelection", ids: remaining });
-      }
-    }
-
     return {
       session: { baseElements: ctx.elements, currentElements: next },
-      effects,
+      effects: [],
     };
   },
 
@@ -46,28 +37,35 @@ export const eraserTool: ToolHandler<EraserSession> = {
     const touchedIds = new Set(touched.map((el) => el.id));
     const next = session.currentElements.filter((el) => !touchedIds.has(el.id));
 
-    const effects: ToolEffect[] = [{ type: "setElements", elements: next }];
-    const remaining = ctx.selectedIds.filter((id) => !touchedIds.has(id));
-    if (remaining.length !== ctx.selectedIds.length) {
-      effects.push({ type: "setSelection", ids: remaining });
-    }
-
     return {
       session: { ...session, currentElements: next },
-      effects,
+      effects: [],
     };
   },
 
-  onPointerUp(session) {
+  onPointerUp(session, _input, ctx) {
+    const touchedIds = new Set(
+      session.baseElements
+        .filter((el) => !session.currentElements.some((c) => c.id === el.id))
+        .map((el) => el.id)
+    );
+    const nextSelection = ctx.selectedIds.filter((id) => !touchedIds.has(id));
+
+    const effects: ToolEffect[] = [
+      {
+        type: "commit",
+        elements: session.currentElements,
+        base: session.baseElements,
+      },
+    ];
+
+    if (nextSelection.length !== ctx.selectedIds.length) {
+      effects.push({ type: "setSelection", ids: nextSelection });
+    }
+
     return {
       session: null,
-      effects: [
-        {
-          type: "commit",
-          elements: session.currentElements,
-          base: session.baseElements,
-        },
-      ],
+      effects,
     };
   },
 };
