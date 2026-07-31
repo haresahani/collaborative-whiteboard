@@ -98,6 +98,8 @@ class SocketService {
         },
       });
 
+      this.isConnecting = false;
+
       this.socket.on("connect", () => {
         console.log(`[Socket] Connected to Socket.IO for board: ${boardId}`);
         // Request the server to load current state and join the board room
@@ -217,6 +219,8 @@ class SocketService {
         console.error("[Socket] Connection error:", err.message);
       });
     } catch (err) {
+      this.isConnecting = false;
+      this.currentBoardId = null;
       console.error("[Socket] Failed to connect:", err);
     }
   }
@@ -289,7 +293,8 @@ class SocketService {
       return { ok: false, error: "Socket is disconnected" };
     }
 
-    const parsed = chatSendSchema.safeParse({ message });
+    const messageId = crypto.randomUUID();
+    const parsed = chatSendSchema.safeParse({ message, messageId });
     if (!parsed.success) {
       return {
         ok: false,
@@ -297,7 +302,10 @@ class SocketService {
       };
     }
 
-    this.socket.emit("chat.send", { message: parsed.data.message });
+    this.socket.emit("chat.send", {
+      message: parsed.data.message,
+      messageId: parsed.data.messageId,
+    });
     return { ok: true };
   }
 
