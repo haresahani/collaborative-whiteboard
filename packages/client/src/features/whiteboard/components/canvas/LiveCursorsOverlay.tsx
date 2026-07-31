@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MousePointer2 } from "lucide-react";
+import { MousePointer2, Eraser } from "lucide-react";
 import { useCollaborationStore } from "../../store/collaborationStore";
 import { useViewportStore } from "../../store/viewportStore";
 import { worldToScreen } from "../../engine/viewport";
@@ -48,12 +48,21 @@ export default function LiveCursorsOverlay() {
               color: cursor.accent,
             }}
           >
-            <MousePointer2
-              className="wb-live-cursor__icon"
-              style={{
-                fill: cursor.accent,
-              }}
-            />
+            {cursor.tool === "eraser" ? (
+              <Eraser
+                className="wb-live-cursor__icon"
+                style={{
+                  fill: cursor.accent,
+                }}
+              />
+            ) : (
+              <MousePointer2
+                className="wb-live-cursor__icon"
+                style={{
+                  fill: cursor.accent,
+                }}
+              />
+            )}
             <span
               className="wb-live-cursor__badge"
               style={{

@@ -178,6 +178,7 @@ class SocketService {
           hasPreview: !!data.previewElement,
           previewElement: data.previewElement,
           erasedCount: data.erasedIds?.length || 0,
+          tool: data.tool,
         });
         useCollaborationStore.getState().updateCursor(data.userId, {
           userId: data.userId,
@@ -187,6 +188,7 @@ class SocketService {
           y: data.y,
           previewElement: data.previewElement,
           erasedIds: data.erasedIds,
+          tool: data.tool,
         });
       });
 
@@ -254,18 +256,18 @@ class SocketService {
   }
 
   // --- Collaboration Emitters ---
-  emitCursor(x: number, y: number, previewElement?: any, erasedIds?: string[]) {
+  emitCursor(x: number, y: number, previewElement?: any, erasedIds?: string[], tool?: string) {
     if (!this.socket || !this.socket.connected) return;
-    console.log("[socket] emitting cursor.move:", { x, y, hasPreview: !!previewElement, previewElement, erasedCount: erasedIds?.length || 0 });
-    this.socket.emit("cursor.move", { x, y, previewElement, erasedIds });
+    console.log("[socket] emitting cursor.move:", { x, y, hasPreview: !!previewElement, previewElement, erasedCount: erasedIds?.length || 0, tool });
+    this.socket.emit("cursor.move", { x, y, previewElement, erasedIds, tool });
   }
 
-  private throttledCursorEmit = this.throttle((x: number, y: number, previewElement?: any, erasedIds?: string[]) => {
-    this.emitCursor(x, y, previewElement, erasedIds);
+  private throttledCursorEmit = this.throttle((x: number, y: number, previewElement?: any, erasedIds?: string[], tool?: string) => {
+    this.emitCursor(x, y, previewElement, erasedIds, tool);
   }, 50);
 
-  sendCursorMove(x: number, y: number, previewElement?: any, erasedIds?: string[]) {
-    this.throttledCursorEmit(x, y, previewElement, erasedIds);
+  sendCursorMove(x: number, y: number, previewElement?: any, erasedIds?: string[], tool?: string) {
+    this.throttledCursorEmit(x, y, previewElement, erasedIds, tool);
   }
 
   sendChatMessage(message: string): { ok: boolean; error?: string } {

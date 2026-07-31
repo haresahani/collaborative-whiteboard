@@ -16,6 +16,7 @@ export interface CursorPosition {
   updatedAt: number;
   previewElement?: Element | null; // board-relative in-progress preview element
   erasedIds?: string[]; // board-relative in-progress erased element IDs
+  tool?: string; // current active tool type
 }
 
 export interface ChatMessage {

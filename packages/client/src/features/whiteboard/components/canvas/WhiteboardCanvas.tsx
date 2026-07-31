@@ -275,7 +275,7 @@ export default function WhiteboardCanvas({
             { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY },
             useViewportStore.getState(),
           );
-          socketService.sendCursorMove(worldX, worldY, getPreview(), getErasedIds());
+          socketService.sendCursorMove(worldX, worldY, getPreview(), getErasedIds(), tool);
         }}
         onPointerUp={(e) => {
           stopEraserTrail();

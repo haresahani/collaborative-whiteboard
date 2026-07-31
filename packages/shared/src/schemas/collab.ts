@@ -5,6 +5,7 @@ export const cursorMoveSchema = z.object({
   y: z.number({ required_error: "y coordinate is required" }),
   previewElement: z.any().optional(),
   erasedIds: z.array(z.string()).optional(),
+  tool: z.string().optional(),
 });
 
 export const chatSendSchema = z.object({
