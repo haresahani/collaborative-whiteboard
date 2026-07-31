@@ -289,7 +289,8 @@ class SocketService {
       return { ok: false, error: "Socket is disconnected" };
     }
 
-    const parsed = chatSendSchema.safeParse({ message });
+    const messageId = crypto.randomUUID();
+    const parsed = chatSendSchema.safeParse({ message, messageId });
     if (!parsed.success) {
       return {
         ok: false,
@@ -297,7 +298,10 @@ class SocketService {
       };
     }
 
-    this.socket.emit("chat.send", { message: parsed.data.message });
+    this.socket.emit("chat.send", {
+      message: parsed.data.message,
+      messageId: parsed.data.messageId,
+    });
     return { ok: true };
   }
 

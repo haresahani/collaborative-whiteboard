@@ -16,6 +16,7 @@ export const chatSendSchema = z.object({
     .refine((val) => val.length <= 2000, {
       message: "Message must be 2000 characters or fewer",
     }),
+  messageId: z.string().uuid().optional(),
 });
 
 export type CursorMove = z.infer<typeof cursorMoveSchema>;

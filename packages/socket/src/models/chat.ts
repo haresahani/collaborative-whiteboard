@@ -5,6 +5,7 @@ export interface IChat extends Document {
   userId: string;
   displayName: string;
   message: string;
+  messageId?: string;
   createdAt: Date;
 }
 
@@ -25,6 +26,11 @@ const chatSchema = new Schema<IChat>(
     message: {
       type: String,
       required: true,
+    },
+    messageId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
     createdAt: {
       type: Date,

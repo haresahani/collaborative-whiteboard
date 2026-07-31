@@ -341,15 +341,28 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         return;
       }
 
-      const { message } = parsed.data;
+      const { message, messageId } = parsed.data;
 
-      const chatMessage = await Chat.create({
-        boardId,
-        userId,
-        displayName,
-        message,
-        createdAt: new Date(),
-      });
+      let chatMessage;
+      try {
+        chatMessage = await Chat.create({
+          boardId,
+          userId,
+          displayName,
+          message,
+          messageId,
+          createdAt: new Date(),
+        });
+      } catch (err: unknown) {
+        const error = err as { code?: number };
+        if (error && error.code === 11000) {
+          console.warn(
+            `[socket] Duplicate chat message ignored: messageId=${messageId}`,
+          );
+          return;
+        }
+        throw err;
+      }
 
       // Emit to all clients (including sender) to ensure authoritative ID and time
       io.to(roomName(boardId)).emit("chat.broadcast", chatMessage);
