@@ -103,6 +103,7 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │   └── whiteboard/
 │   │   │   │       ├── components/
 │   │   │   │       │   ├── canvas/
+│   │   │   │       │   │   ├── LiveCursorsOverlay.tsx
 │   │   │   │       │   │   └── WhiteboardCanvas.tsx
 │   │   │   │       │   ├── layout/
 │   │   │   │       │   │   ├── lefttool/
@@ -111,6 +112,7 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │       │   │   │   └── lefttoolData.ts
 │   │   │   │       │   │   ├── BoardSettingsPanel.tsx
 │   │   │   │       │   │   ├── BottomToolbar.tsx
+│   │   │   │       │   │   ├── ChatPanel.tsx
 │   │   │   │       │   │   ├── RightPanel.tsx
 │   │   │   │       │   │   ├── TopNavigation.tsx
 │   │   │   │       │   │   └── uiData.ts
@@ -183,6 +185,7 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │       │   ├── __tests__/
 │   │   │   │       │   │   └── historyStore.test.ts
 │   │   │   │       │   ├── boardStore.ts
+│   │   │   │       │   ├── collaborationStore.ts
 │   │   │   │       │   ├── historyStore.ts
 │   │   │   │       │   ├── selectionStore.ts
 │   │   │   │       │   ├── textEditorStore.ts
@@ -255,6 +258,10 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   ├── models/
 │   │   │   │   ├── oplog.model.ts
 │   │   │   │   └── snapshot.model.ts
+│   │   │   ├── schemas/
+│   │   │   │   └── collab.ts
+│   │   │   ├── utils/
+│   │   │   │   └── accent.ts
 │   │   │   ├── env.ts
 │   │   │   ├── index.ts
 │   │   │   ├── jwt.ts
@@ -273,11 +280,14 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │   └── board.ts
 │   │   │   ├── middleware/
 │   │   │   │   └── auth.ts
+│   │   │   ├── models/
+│   │   │   │   └── chat.ts
 │   │   │   ├── rooms/
 │   │   │   │   └── README.md
 │   │   │   ├── services/
 │   │   │   │   ├── README.md
-│   │   │   │   └── oplogQueue.ts
+│   │   │   │   ├── oplogQueue.ts
+│   │   │   │   └── presence.ts
 │   │   │   ├── utils/
 │   │   │   │   ├── README.md
 │   │   │   │   ├── lamport.ts
@@ -286,7 +296,8 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   └── server.ts
 │   │   ├── tests/
 │   │   │   ├── README.md
-│   │   │   └── join.test.ts
+│   │   │   ├── join.test.ts
+│   │   │   └── presence.test.ts
 │   │   ├── README.md
 │   │   ├── package.json
 │   │   └── tsconfig.json
