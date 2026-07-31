@@ -11,10 +11,14 @@ export function authMiddleware(socket: Socket, next: (err?: Error) => void) {
       return next(new Error("UNAUTHENTICATED: no token provided"));
     }
 
-    const { userId, boardId } = verifyBoardJoinToken(token, env.JWT_SECRET);
+    const { userId, boardId, displayName } = verifyBoardJoinToken(
+      token,
+      env.JWT_SECRET,
+    );
 
     socket.data.userId = userId;
     socket.data.boardId = boardId;
+    socket.data.displayName = displayName;
 
     next();
   } catch {

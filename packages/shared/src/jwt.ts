@@ -11,6 +11,7 @@ export interface UserTokenPayload {
 export interface BoardJoinTokenPayload {
   userId: string;
   boardId: string;
+  displayName: string;
 }
 
 export function issueUserToken(
@@ -52,5 +53,9 @@ export function verifyBoardJoinToken(
   const decoded = jwt.verify(token, secret, {
     audience: BOARD_JOIN_AUDIENCE,
   }) as jwt.JwtPayload & BoardJoinTokenPayload;
-  return { userId: decoded.userId, boardId: decoded.boardId };
+  return {
+    userId: decoded.userId,
+    boardId: decoded.boardId,
+    displayName: decoded.displayName,
+  };
 }

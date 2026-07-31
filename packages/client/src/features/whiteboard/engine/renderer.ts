@@ -127,6 +127,7 @@ export function renderElements(
     width: number;
     height: number;
   } | null = null,
+  otherTempElements: Element[] = [],
 ) {
   const canvas = ctx.canvas;
 
@@ -143,9 +144,14 @@ export function renderElements(
     drawElement(ctx, element, selected);
   }
 
-  // Renderer temporary element
+  // Renderer temporary element (local user preview)
   if (tempElement) {
     drawElement(ctx, tempElement, false);
+  }
+
+  // Render temporary elements from remote collaborators (live preview)
+  for (const remoteTemp of otherTempElements) {
+    drawElement(ctx, remoteTemp, false);
   }
 
   drawSelectionBox(ctx, elements, selectedIds);

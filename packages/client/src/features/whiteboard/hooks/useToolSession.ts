@@ -8,6 +8,7 @@ import { useTextEditorStore } from "../store/textEditorStore";
 import { useToolStore } from "../store/toolStore";
 import { useViewportStore } from "../store/viewportStore";
 import { resolveDoubleClick, resolvePointerDown } from "../tools/toolRegistry";
+import { eraserTool, type EraserSession } from "../tools/eraserTool";
 import type {
   PointerInput,
   ToolContext,
@@ -173,8 +174,22 @@ export function useToolSession() {
     [],
   );
 
+  const getErasedIds = useCallback(() => {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.handler !== eraserTool) return [];
+
+    const session = gesture.session as EraserSession;
+    if (!session || !session.baseElements || !session.currentElements) return [];
+
+    const touchedIds = new Set(session.currentElements.map((el) => el.id));
+    return session.baseElements
+      .filter((el) => !touchedIds.has(el.id))
+      .map((el) => el.id);
+  }, []);
+
   return {
     getPreview,
+    getErasedIds,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
