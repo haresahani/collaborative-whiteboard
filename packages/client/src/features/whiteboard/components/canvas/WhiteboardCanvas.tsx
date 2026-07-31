@@ -18,6 +18,7 @@ import { screenToWorld } from "../../engine/viewport";
 import { ERASER_TRAIL_LIFETIME_MS, useEraserTrail } from "../../tools/eraser";
 import TextEditor from "../overlays/TextEditor";
 import { socketService } from "../../../../api/ws";
+import type { Element } from "../../models/element";
 
 interface WhiteboardCanvasProps {
   onCanvasInteract?: () => void;
@@ -64,6 +65,7 @@ export default function WhiteboardCanvas({
 
   const {
     getPreview,
+    getErasedIds,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
@@ -108,11 +110,20 @@ export default function WhiteboardCanvas({
     const render = () => {
       const otherPreviews = Object.values(useCollaborationStore.getState().cursors)
         .map((c) => c.previewElement)
-        .filter(Boolean);
+        .filter(Boolean) as Element[];
+
+      const allErasedIds = new Set(
+        Object.values(useCollaborationStore.getState().cursors)
+          .flatMap((c) => c.erasedIds || [])
+      );
+
+      const visibleElements = allErasedIds.size > 0
+        ? elements.filter((el) => !allErasedIds.has(el.id))
+        : elements;
 
       renderElements(
         ctx,
-        elements,
+        visibleElements,
         getPreview(),
         offsetX,
         offsetY,
@@ -264,7 +275,7 @@ export default function WhiteboardCanvas({
             { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY },
             useViewportStore.getState(),
           );
-          socketService.sendCursorMove(worldX, worldY, getPreview());
+          socketService.sendCursorMove(worldX, worldY, getPreview(), getErasedIds());
         }}
         onPointerUp={(e) => {
           stopEraserTrail();

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { Element } from "../models/element";
 
 export interface ActiveUser {
   userId: string;
@@ -13,7 +14,8 @@ export interface CursorPosition {
   x: number; // board-relative world X
   y: number; // board-relative world Y
   updatedAt: number;
-  previewElement?: Record<string, unknown> | null; // board-relative in-progress preview element
+  previewElement?: Element | null; // board-relative in-progress preview element
+  erasedIds?: string[]; // board-relative in-progress erased element IDs
 }
 
 export interface ChatMessage {

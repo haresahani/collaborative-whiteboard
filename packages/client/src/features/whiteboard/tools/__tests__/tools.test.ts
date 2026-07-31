@@ -223,16 +223,18 @@ describe("marqueeTool", () => {
 });
 
 describe("eraserTool", () => {
-  it("commits history on the first hit only, then emits live frames", () => {
+  it("uses a session and commits history on pointerUp", () => {
     const a = rect("a", 0, 0, 10, 10);
     const b = rect("b", 100, 0, 10, 10);
 
     const downCtx = makeCtx({ elements: [a, b], selectedIds: ["a"] });
     const down = eraserTool.onPointerDown(input(5, 5), downCtx);
 
-    const firstErase = effectOfType(down.effects, "commit");
+    const firstErase = effectOfType(down.effects, "setElements");
     expect(firstErase?.elements.map((el: Element) => el.id)).toEqual(["b"]);
     expect(effectOfType(down.effects, "setSelection")?.ids).toEqual([]);
+    expect(down.session?.baseElements).toEqual([a, b]);
+    expect(down.session?.currentElements.map((el: Element) => el.id)).toEqual(["b"]);
 
     const moveCtx = makeCtx({ elements: [b], selectedIds: [] });
     const move = eraserTool.onPointerMove(
@@ -243,15 +245,24 @@ describe("eraserTool", () => {
 
     expect(effectOfType(move.effects, "commit")).toBeUndefined();
     expect(effectOfType(move.effects, "setElements")?.elements).toEqual([]);
+    expect(move.session?.currentElements).toEqual([]);
+
+    const up = eraserTool.onPointerUp(move.session!, input(105, 5), moveCtx);
+    const commitEffect = effectOfType(up.effects, "commit");
+    expect(commitEffect).toBeDefined();
+    expect(commitEffect?.elements).toEqual([]);
+    expect(commitEffect?.base).toEqual([a, b]);
   });
 
   it("keeps the session alive over empty space without effects", () => {
-    const ctx = makeCtx({ elements: [rect("a", 500, 500)] });
+    const a = rect("a", 500, 500);
+    const ctx = makeCtx({ elements: [a] });
 
     const down = eraserTool.onPointerDown(input(5, 5), ctx);
 
-    expect(down.session).toEqual({ committed: false });
-    expect(down.effects).toBeUndefined();
+    expect(down.session?.baseElements).toEqual([a]);
+    expect(down.session?.currentElements).toEqual([a]);
+    expect(down.effects).toEqual([]);
   });
 });
 

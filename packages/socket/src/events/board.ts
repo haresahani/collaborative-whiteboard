@@ -298,9 +298,9 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         return;
       }
 
-      const { x, y, previewElement } = parsed.data;
+      const { x, y, previewElement, erasedIds } = parsed.data;
       console.log(
-        `[socket] cursor.move relay: user=${userId} (${displayName}) x=${x} y=${y} hasPreview=${!!previewElement}`,
+        `[socket] cursor.move relay: user=${userId} (${displayName}) x=${x} y=${y} hasPreview=${!!previewElement} erasedCount=${erasedIds?.length || 0}`,
       );
 
       // Broadcast to other clients only
@@ -310,6 +310,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         x,
         y,
         previewElement,
+        erasedIds,
       });
     } catch (err) {
       console.error("[socket] Cursor move error:", err);

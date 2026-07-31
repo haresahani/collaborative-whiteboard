@@ -177,6 +177,7 @@ class SocketService {
           displayName: data.displayName,
           hasPreview: !!data.previewElement,
           previewElement: data.previewElement,
+          erasedCount: data.erasedIds?.length || 0,
         });
         useCollaborationStore.getState().updateCursor(data.userId, {
           userId: data.userId,
@@ -185,6 +186,7 @@ class SocketService {
           x: data.x,
           y: data.y,
           previewElement: data.previewElement,
+          erasedIds: data.erasedIds,
         });
       });
 
@@ -252,18 +254,18 @@ class SocketService {
   }
 
   // --- Collaboration Emitters ---
-  emitCursor(x: number, y: number, previewElement?: any) {
+  emitCursor(x: number, y: number, previewElement?: any, erasedIds?: string[]) {
     if (!this.socket || !this.socket.connected) return;
-    console.log("[socket] emitting cursor.move:", { x, y, hasPreview: !!previewElement, previewElement });
-    this.socket.emit("cursor.move", { x, y, previewElement });
+    console.log("[socket] emitting cursor.move:", { x, y, hasPreview: !!previewElement, previewElement, erasedCount: erasedIds?.length || 0 });
+    this.socket.emit("cursor.move", { x, y, previewElement, erasedIds });
   }
 
-  private throttledCursorEmit = this.throttle((x: number, y: number, previewElement?: any) => {
-    this.emitCursor(x, y, previewElement);
+  private throttledCursorEmit = this.throttle((x: number, y: number, previewElement?: any, erasedIds?: string[]) => {
+    this.emitCursor(x, y, previewElement, erasedIds);
   }, 50);
 
-  sendCursorMove(x: number, y: number, previewElement?: any) {
-    this.throttledCursorEmit(x, y, previewElement);
+  sendCursorMove(x: number, y: number, previewElement?: any, erasedIds?: string[]) {
+    this.throttledCursorEmit(x, y, previewElement, erasedIds);
   }
 
   sendChatMessage(message: string): { ok: boolean; error?: string } {
