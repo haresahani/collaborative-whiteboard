@@ -61,11 +61,19 @@ class SocketService {
   private currentBoardId: string | null = null;
   private myUserId: string | null = null;
   private heartbeatIntervalId: number | null = null;
+  private isConnecting = false;
 
   async connect(boardId: string) {
     if (this.socket && this.currentBoardId === boardId) {
       return;
     }
+
+    if (this.isConnecting && this.currentBoardId === boardId) {
+      return;
+    }
+
+    this.isConnecting = true;
+    this.currentBoardId = boardId;
 
     if (this.socket) {
       this.disconnect();
@@ -73,12 +81,16 @@ class SocketService {
 
     try {
       const joinToken = await getBoardJoinToken(boardId);
+      
+      // Abort if disconnect() was called during token retrieval
+      if (!this.isConnecting || this.currentBoardId !== boardId) {
+        return;
+      }
+
       const claims = decodeJwt(joinToken);
       if (claims) {
         this.myUserId = claims.userId;
       }
-
-      this.currentBoardId = boardId;
 
       this.socket = io({
         auth: {
@@ -210,6 +222,10 @@ class SocketService {
   }
 
   disconnect() {
+    this.isConnecting = false;
+    this.currentBoardId = null;
+    this.myUserId = null;
+
     if (this.heartbeatIntervalId !== null) {
       window.clearInterval(this.heartbeatIntervalId);
       this.heartbeatIntervalId = null;
@@ -218,8 +234,6 @@ class SocketService {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
-      this.currentBoardId = null;
-      this.myUserId = null;
       useCollaborationStore.getState().clearCursors();
     }
   }
