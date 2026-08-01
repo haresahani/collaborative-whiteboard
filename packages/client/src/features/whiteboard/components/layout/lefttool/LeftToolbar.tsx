@@ -167,7 +167,9 @@ export default function LeftToolbar({
 
   const selectionSupportsFill =
     selectedElements.length > 0 &&
-    selectedElements.every((element) => element.type === "rectangle");
+    selectedElements.every((element) =>
+      ["rectangle", "ellipse", "path", "sticky"].includes(element.type),
+    );
   const selectionSupportsStrokeControls =
     selectedElements.length > 0 &&
     selectedElements.every((element) => element.type !== "text");

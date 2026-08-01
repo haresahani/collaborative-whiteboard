@@ -1,4 +1,3 @@
-// packages/socket/src/events/board.ts
 import type { Server, Socket } from "socket.io";
 import { z } from "zod";
 import {
@@ -375,11 +374,46 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     }
   });
 
+  socket.on(
+    "yjs.update",
+    async (data: { update: unknown }, ack?: (res: { ok: boolean }) => void) => {
+      try {
+        const nextLamport = await getNextLamport(boardId);
+        const op: IOp = {
+          opId: crypto.randomUUID(),
+          boardId,
+          type: "sticky.textUpdate",
+          payload: { update: data.update },
+          actorId: userId,
+          lamport: nextLamport,
+          createdAt: new Date().toISOString(),
+        };
+
+        pushRecentOp(boardId, op);
+        socket
+          .to(roomName(boardId))
+          .emit("yjs.update", { update: data.update });
+        await enqueueOp(op);
+        void ack?.({ ok: true });
+      } catch (err) {
+        console.error("[socket] yjs.update handler error:", err);
+        void ack?.({ ok: false });
+      }
+    },
+  );
+
+  socket.on("yjs.awareness", (data: { update: unknown }) => {
+    socket.to(roomName(boardId)).emit("yjs.awareness", { update: data.update });
+  });
+
   socket.on("disconnect", async (reason) => {
     console.log(
       `[socket] user ${userId} (${displayName}) disconnected from board ${boardId}: ${reason}`,
     );
     try {
+      socket
+        .to(roomName(boardId))
+        .emit("yjs.awareness.remove", { userId, socketId: socket.id });
       await PresenceService.removePresence(
         boardId,
         userId,

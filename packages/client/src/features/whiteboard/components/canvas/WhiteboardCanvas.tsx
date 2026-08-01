@@ -17,6 +17,8 @@ import { getSelectionBounds } from "../../engine/geometry/bounds";
 import { screenToWorld } from "../../engine/viewport";
 import { ERASER_TRAIL_LIFETIME_MS, useEraserTrail } from "../../tools/eraser";
 import TextEditor from "../overlays/TextEditor";
+import StickyTextEditor from "../overlays/StickyTextEditor";
+import { useStickyEditorStore } from "../../store/stickyEditorStore";
 import { socketService } from "../../../../api/ws";
 import type { Element } from "../../models/element";
 
@@ -33,6 +35,9 @@ export default function WhiteboardCanvas({
 
   const elements = useBoardStore((s) => s.elements);
   const tool = useToolStore((s) => s.tool);
+
+  const activeSticky = useStickyEditorStore((s) => s.activeSticky);
+  const stopStickyEditing = useStickyEditorStore((s) => s.stopEditing);
 
   const offsetX = useViewportStore((s) => s.offsetX);
   const offsetY = useViewportStore((s) => s.offsetY);
@@ -108,20 +113,24 @@ export default function WhiteboardCanvas({
     let animationFrameId: number;
 
     const render = () => {
-      const otherPreviews = Object.values(useCollaborationStore.getState().cursors)
+      const otherPreviews = Object.values(
+        useCollaborationStore.getState().cursors,
+      )
         .map((c) => c.previewElement)
         .filter(Boolean) as Element[];
 
       const localErasedIds = getErasedIds();
       const allErasedIds = new Set([
         ...localErasedIds,
-        ...Object.values(useCollaborationStore.getState().cursors)
-          .flatMap((c) => c.erasedIds || [])
+        ...Object.values(useCollaborationStore.getState().cursors).flatMap(
+          (c) => c.erasedIds || [],
+        ),
       ]);
 
-      const visibleElements = allErasedIds.size > 0
-        ? elements.filter((el) => !allErasedIds.has(el.id))
-        : elements;
+      const visibleElements =
+        allErasedIds.size > 0
+          ? elements.filter((el) => !allErasedIds.has(el.id))
+          : elements;
 
       renderElements(
         ctx,
@@ -277,7 +286,13 @@ export default function WhiteboardCanvas({
             { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY },
             useViewportStore.getState(),
           );
-          socketService.sendCursorMove(worldX, worldY, getPreview(), getErasedIds(), tool);
+          socketService.sendCursorMove(
+            worldX,
+            worldY,
+            getPreview(),
+            getErasedIds(),
+            tool,
+          );
         }}
         onPointerUp={(e) => {
           stopEraserTrail();
@@ -333,6 +348,14 @@ export default function WhiteboardCanvas({
       ) : null}
 
       <TextEditor />
+      {activeSticky ? (
+        <StickyTextEditor
+          sticky={activeSticky}
+          zoom={zoom}
+          pan={{ x: offsetX, y: offsetY }}
+          onClose={stopStickyEditing}
+        />
+      ) : null}
     </div>
   );
 }

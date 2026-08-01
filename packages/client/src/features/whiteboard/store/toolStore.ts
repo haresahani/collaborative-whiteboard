@@ -6,10 +6,20 @@ export type ToolType =
   | "eraser"
   | "select"
   | "rectangle"
+  | "ellipse"
+  | "path"
+  | "sticky"
   | "arrow"
   | "text";
 
-export const ONE_SHOT_TOOLS = ["rectangle", "arrow", "text"] as const;
+export const ONE_SHOT_TOOLS = [
+  "rectangle",
+  "ellipse",
+  "path",
+  "sticky",
+  "arrow",
+  "text",
+] as const;
 
 export function isOneShotTool(tool: ToolType) {
   return (ONE_SHOT_TOOLS as readonly ToolType[]).includes(tool);

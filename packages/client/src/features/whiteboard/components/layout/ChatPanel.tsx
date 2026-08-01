@@ -82,7 +82,10 @@ export default function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
             <div ref={listRef} className="wb-chat-messages">
               {messages.length === 0 ? (
                 <div className="wb-chat-empty">
-                  <MessageSquare size={32} style={{ opacity: 0.3, marginBottom: "8px" }} />
+                  <MessageSquare
+                    size={32}
+                    style={{ opacity: 0.3, marginBottom: "8px" }}
+                  />
                   <p>No messages yet. Start the conversation!</p>
                 </div>
               ) : (
@@ -132,7 +135,9 @@ export default function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
             </div>
 
             <div className="wb-chat-input-container">
-              {errorText ? <div className="wb-chat-error">{errorText}</div> : null}
+              {errorText ? (
+                <div className="wb-chat-error">{errorText}</div>
+              ) : null}
               <div className="wb-chat-input-row">
                 <input
                   type="text"

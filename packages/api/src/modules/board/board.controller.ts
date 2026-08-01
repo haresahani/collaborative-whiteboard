@@ -81,3 +81,10 @@ export const getBoardJoinToken = asyncHandler(
     ApiResponse.success(res, { token });
   },
 );
+
+/** GET /api/boards/:id/yjs-state — Fetch merged Yjs state for initial sticky note CRDT sync. */
+export const getYjsState = asyncHandler(async (req: Request, res: Response) => {
+  const yjsBuffer = await boardService.getYjsState(req.params.id, req.user!.id);
+  res.setHeader("Content-Type", "application/octet-stream");
+  res.send(yjsBuffer);
+});

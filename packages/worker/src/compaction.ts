@@ -1,6 +1,9 @@
 import {
   Oplog,
   Snapshot,
+  YjsUpdate,
+  YjsSnapshot,
+  mergeYjsUpdates,
   type IOp,
   applyOperation,
   type ISharedElement,
@@ -10,6 +13,61 @@ import mongoose from "mongoose";
 
 const DEFAULT_THRESHOLD_OPS = 10;
 const DEFAULT_THRESHOLD_TIME_MS = 60 * 1000;
+
+export async function tryCompactYjs(boardId: string): Promise<void> {
+  const lockKey = `compact-yjs:${boardId}`;
+  const lockAcquired = await redisConnection.set(
+    lockKey,
+    "1",
+    "PX",
+    5000,
+    "NX",
+  );
+  if (!lockAcquired) return;
+
+  try {
+    const uncompacted = await YjsUpdate.find({ boardId })
+      .sort({ lamport: 1 })
+      .exec();
+    if (uncompacted.length < 10) return;
+
+    const snapshotDoc = await YjsSnapshot.findOne({ boardId }).exec();
+    const updateBuffers: Uint8Array[] = [];
+
+    if (snapshotDoc && snapshotDoc.snapshot) {
+      updateBuffers.push(new Uint8Array(snapshotDoc.snapshot));
+    }
+    for (const u of uncompacted) {
+      if (u.update) {
+        updateBuffers.push(new Uint8Array(u.update));
+      }
+    }
+
+    const merged = mergeYjsUpdates(updateBuffers);
+
+    await YjsSnapshot.findOneAndUpdate(
+      { boardId },
+      {
+        $set: {
+          snapshot: Buffer.from(merged),
+          updatedAt: new Date(),
+        },
+      },
+      { upsert: true },
+    );
+
+    const mergedIds = uncompacted.map((u) => u._id);
+    await YjsUpdate.deleteMany({ _id: { $in: mergedIds } });
+
+    console.log(
+      `[worker] Compacted ${uncompacted.length} Yjs updates for board ${boardId}`,
+    );
+  } catch (err) {
+    console.error(`[worker] Yjs compaction failed for board ${boardId}:`, err);
+  } finally {
+    await redisConnection.del(lockKey);
+  }
+}
 
 export async function tryCompact(boardId: string): Promise<void> {
   const lockKey = `compact:${boardId}`;

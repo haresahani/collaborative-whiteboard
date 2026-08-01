@@ -4,10 +4,13 @@ import {
   AlignLeft,
   AlignRight,
   ArrowRight,
+  Circle,
   Eraser,
   MousePointer2,
   Pen,
+  Spline,
   Square,
+  StickyNote,
   Type,
 } from "lucide-react";
 import type { LineStyle } from "../../../models/element";
@@ -78,7 +81,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     tool: "rectangle",
-    label: "Shape",
+    label: "Rectangle",
     description: "Place rectangles, then return to selection.",
     Icon: Square,
     shortcut: "R",
@@ -86,6 +89,38 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inspectorKind: "shape",
     supportsFill: true,
     supportsLineStyle: true,
+  },
+  {
+    tool: "ellipse",
+    label: "Ellipse",
+    description: "Place circles/ellipses, then return to selection.",
+    Icon: Circle,
+    shortcut: "O",
+    placement: "one-shot",
+    inspectorKind: "shape",
+    supportsFill: true,
+    supportsLineStyle: true,
+  },
+  {
+    tool: "path",
+    label: "Path",
+    description: "Draw path shapes, then return to selection.",
+    Icon: Spline,
+    shortcut: "L",
+    placement: "one-shot",
+    inspectorKind: "shape",
+    supportsFill: true,
+    supportsLineStyle: true,
+  },
+  {
+    tool: "sticky",
+    label: "Sticky Note",
+    description: "Place a sticky note with CRDT text sync.",
+    Icon: StickyNote,
+    shortcut: "N",
+    placement: "one-shot",
+    inspectorKind: "shape",
+    supportsFill: true,
   },
   {
     tool: "arrow",
@@ -120,7 +155,14 @@ export const TOOL_RAIL_SECTIONS: RailSection[] = [
   },
   {
     id: "create",
-    items: [TOOL_DEFINITIONS[3], TOOL_DEFINITIONS[4], TOOL_DEFINITIONS[5]],
+    items: [
+      TOOL_DEFINITIONS[3],
+      TOOL_DEFINITIONS[4],
+      TOOL_DEFINITIONS[5],
+      TOOL_DEFINITIONS[6],
+      TOOL_DEFINITIONS[7],
+      TOOL_DEFINITIONS[8],
+    ],
   },
 ];
 

@@ -1,6 +1,13 @@
 import { computeBindingAnchor } from "../engine/bindings/arrowBinding";
 import { findBindableElement } from "../engine/bindings/findBindableElement";
-import type { ArrowElement, Point, RectangleElement } from "../models/element";
+import type {
+  ArrowElement,
+  EllipseElement,
+  PathElement,
+  Point,
+  RectangleElement,
+  StickyElement,
+} from "../models/element";
 import type { ToolHandler } from "./types";
 
 export interface RectangleSession {
@@ -50,6 +57,173 @@ export const rectangleTool: ToolHandler<RectangleSession> = {
       effects: [
         { type: "commit", elements: [...ctx.elements, session.rectangle] },
         { type: "setSelection", ids: [session.rectangle.id] },
+        { type: "switchTool", tool: "select" },
+      ],
+    };
+  },
+};
+
+export interface EllipseSession {
+  ellipse: EllipseElement;
+}
+
+export const ellipseTool: ToolHandler<EllipseSession> = {
+  onPointerDown(input, ctx) {
+    const now = ctx.now();
+
+    const ellipse: EllipseElement = {
+      id: ctx.newId(),
+      type: "ellipse",
+      x: input.world.x,
+      y: input.world.y,
+      width: 0,
+      height: 0,
+      style: {
+        strokeColor: ctx.style.color,
+        strokeWidth: ctx.style.width,
+        fillColor: ctx.style.fillColor,
+        lineStyle: ctx.style.lineStyle,
+      },
+      zIndex: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    return { session: { ellipse }, preview: ellipse };
+  },
+
+  onPointerMove(session, input, ctx) {
+    const ellipse: EllipseElement = {
+      ...session.ellipse,
+      width: input.world.x - session.ellipse.x,
+      height: input.world.y - session.ellipse.y,
+      updatedAt: ctx.now(),
+    };
+
+    return { session: { ellipse }, preview: ellipse };
+  },
+
+  onPointerUp(session, _input, ctx) {
+    return {
+      session: null,
+      preview: null,
+      effects: [
+        { type: "commit", elements: [...ctx.elements, session.ellipse] },
+        { type: "setSelection", ids: [session.ellipse.id] },
+        { type: "switchTool", tool: "select" },
+      ],
+    };
+  },
+};
+
+export interface PathSession {
+  path: PathElement;
+}
+
+export const pathTool: ToolHandler<PathSession> = {
+  onPointerDown(input, ctx) {
+    const now = ctx.now();
+
+    const path: PathElement = {
+      id: ctx.newId(),
+      type: "path",
+      x: input.world.x,
+      y: input.world.y,
+      width: 0,
+      height: 0,
+      points: [{ x: input.world.x, y: input.world.y }],
+      style: {
+        strokeColor: ctx.style.color,
+        strokeWidth: ctx.style.width,
+        fillColor: ctx.style.fillColor,
+        lineStyle: ctx.style.lineStyle,
+      },
+      zIndex: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    return { session: { path }, preview: path };
+  },
+
+  onPointerMove(session, input, ctx) {
+    const points = [
+      ...session.path.points,
+      { x: input.world.x, y: input.world.y },
+    ];
+    const path: PathElement = {
+      ...session.path,
+      points,
+      updatedAt: ctx.now(),
+    };
+
+    return { session: { path }, preview: path };
+  },
+
+  onPointerUp(session, _input, ctx) {
+    return {
+      session: null,
+      preview: null,
+      effects: [
+        { type: "commit", elements: [...ctx.elements, session.path] },
+        { type: "setSelection", ids: [session.path.id] },
+        { type: "switchTool", tool: "select" },
+      ],
+    };
+  },
+};
+
+export interface StickySession {
+  sticky: StickyElement;
+}
+
+export const stickyTool: ToolHandler<StickySession> = {
+  onPointerDown(input, ctx) {
+    const now = ctx.now();
+    const defaultSize = 160;
+
+    const sticky: StickyElement = {
+      id: ctx.newId(),
+      type: "sticky",
+      x: input.world.x,
+      y: input.world.y,
+      width: defaultSize,
+      height: defaultSize,
+      color: ctx.style.fillColor || "#fff4c2",
+      text: "",
+      style: {
+        strokeColor: ctx.style.color || "#000000",
+        strokeWidth: 1,
+        fillColor: ctx.style.fillColor || "#fff4c2",
+      },
+      zIndex: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    return { session: { sticky }, preview: sticky };
+  },
+
+  onPointerMove(session, input, ctx) {
+    const width = Math.max(80, input.world.x - session.sticky.x);
+    const height = Math.max(80, input.world.y - session.sticky.y);
+    const sticky: StickyElement = {
+      ...session.sticky,
+      width,
+      height,
+      updatedAt: ctx.now(),
+    };
+
+    return { session: { sticky }, preview: sticky };
+  },
+
+  onPointerUp(session, _input, ctx) {
+    return {
+      session: null,
+      preview: null,
+      effects: [
+        { type: "commit", elements: [...ctx.elements, session.sticky] },
+        { type: "setSelection", ids: [session.sticky.id] },
         { type: "switchTool", tool: "select" },
       ],
     };

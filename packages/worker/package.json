@@ -16,7 +16,9 @@
     "dotenv": "^17.2.3",
     "ioredis": "^5.5.0",
     "mongoose": "^9.2.4",
-    "shared": "workspace:*"
+    "shared": "workspace:*",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.31"
   },
   "devDependencies": {
     "@types/node": "^25.3.2",

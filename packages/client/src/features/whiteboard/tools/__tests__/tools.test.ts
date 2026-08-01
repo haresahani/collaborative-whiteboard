@@ -232,7 +232,9 @@ describe("eraserTool", () => {
 
     expect(down.effects).toEqual([]);
     expect(down.session?.baseElements).toEqual([a, b]);
-    expect(down.session?.currentElements.map((el: Element) => el.id)).toEqual(["b"]);
+    expect(down.session?.currentElements.map((el: Element) => el.id)).toEqual([
+      "b",
+    ]);
 
     const moveCtx = makeCtx({ elements: [a, b], selectedIds: ["a"] });
     const move = eraserTool.onPointerMove(
