@@ -58,7 +58,9 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       if (el.type === "stroke") {
         socketService.emitStroke(el);
       } else {
-        socketService.emitOp("element.create", { element: el as unknown as Record<string, unknown> });
+        socketService.emitOp("element.create", {
+          element: el as unknown as Record<string, unknown>,
+        });
       }
     }
 
@@ -73,7 +75,11 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     // Identify updated elements to emit to Socket.IO
     const updatedElements = elements.filter((el) => {
       const prev = snapshot.find((s) => s.id === el.id);
-      return prev && (prev.updatedAt !== el.updatedAt || JSON.stringify(prev) !== JSON.stringify(el));
+      return (
+        prev &&
+        (prev.updatedAt !== el.updatedAt ||
+          JSON.stringify(prev) !== JSON.stringify(el))
+      );
     });
     for (const el of updatedElements) {
       const prev = snapshot.find((s) => s.id === el.id)!;

@@ -1,10 +1,18 @@
 import { z } from "zod";
+import {
+  compareLamportClientId,
+  filterUpdatesForGroup,
+  getTouchedFieldGroups,
+  type GroupClock,
+  type ILastUpdateState,
+} from "./utils/lww";
 
 export const OpTypeSchema = z.enum([
   "stroke.commit",
   "element.create",
   "element.update",
   "element.delete",
+  "sticky.textUpdate",
 ]);
 
 export const OpSchema = z.object({
@@ -22,6 +30,7 @@ export type IOp = z.infer<typeof OpSchema>;
 export interface ISharedElement {
   id: string;
   type: string;
+  lastUpdate?: ILastUpdateState;
   [key: string]: unknown;
 }
 
@@ -34,6 +43,11 @@ export function applyOperation(
   op: IOp,
 ): ISharedElement[] {
   const opId = op.opId;
+
+  if (op.type === "sticky.textUpdate") {
+    // Text updates are managed by Yjs CRDT and handled out-of-band for canvas elements
+    return elements;
+  }
 
   if (op.type === "stroke.commit") {
     // Prevent duplicate strokes (idempotency)
@@ -81,18 +95,43 @@ export function applyOperation(
 
   if (op.type === "element.update") {
     const id = (op.payload.id || op.payload.elementId) as string | undefined;
-    const updates = op.payload.updates as Partial<ISharedElement> | undefined;
+    const updates = op.payload.updates as Record<string, unknown> | undefined;
     if (!id || !updates) return elements;
 
+    const incomingClock: GroupClock = {
+      lamport: op.lamport,
+      clientId: op.actorId,
+    };
+
+    const touchedGroups = getTouchedFieldGroups(updates);
+
     return elements.map((el) => {
-      if (el.id === id) {
-        return {
-          ...el,
-          ...updates,
-          updatedAt: new Date(op.createdAt).getTime(),
-        };
+      if (el.id !== id) return el;
+
+      const lastUpdate: ILastUpdateState = { ...(el.lastUpdate || {}) };
+      let updatedElement: ISharedElement = { ...el };
+      let updatedAnyGroup = false;
+
+      for (const group of touchedGroups) {
+        const existingClock = lastUpdate[group];
+        const groupWins =
+          !existingClock ||
+          compareLamportClientId(incomingClock, existingClock) >= 0;
+
+        if (groupWins) {
+          const groupUpdates = filterUpdatesForGroup(updates, group);
+          updatedElement = { ...updatedElement, ...groupUpdates };
+          lastUpdate[group] = incomingClock;
+          updatedAnyGroup = true;
+        }
       }
-      return el;
+
+      if (updatedAnyGroup) {
+        updatedElement.lastUpdate = lastUpdate;
+        updatedElement.updatedAt = new Date(op.createdAt).getTime();
+      }
+
+      return updatedElement;
     });
   }
 

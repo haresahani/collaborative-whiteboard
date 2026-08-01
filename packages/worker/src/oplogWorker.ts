@@ -1,13 +1,38 @@
 import { Worker, Job } from "bullmq";
-import { Oplog, type IOp } from "shared";
+import { Oplog, YjsUpdate, type IOp } from "shared";
 import { redisConnection } from "./config/redis";
-import { tryCompact } from "./compaction";
+import { tryCompact, tryCompactYjs } from "./compaction";
 
 export const oplogWorker = new Worker<IOp>(
   "oplog-queue",
   async (job: Job<IOp>) => {
     const op = job.data;
     const { opId, boardId } = op;
+
+    if (op.type === "sticky.textUpdate") {
+      const rawUpdate = op.payload.update;
+      const buffer =
+        typeof rawUpdate === "string"
+          ? Buffer.from(rawUpdate, "base64")
+          : Buffer.from(rawUpdate as number[]);
+
+      await YjsUpdate.updateOne(
+        { boardId, opId },
+        {
+          $setOnInsert: {
+            boardId,
+            opId,
+            update: buffer,
+            lamport: op.lamport,
+            createdAt: new Date(op.createdAt),
+          },
+        },
+        { upsert: true },
+      );
+
+      await tryCompactYjs(boardId);
+      return;
+    }
 
     // Idempotent upsert using compound uniqueness on (boardId, opId)
     await Oplog.updateOne(

@@ -5,7 +5,14 @@ import { marqueeTool } from "./marqueeTool";
 import { moveTool } from "./moveTool";
 import { penTool } from "./penTool";
 import { resizeTool } from "./resizeTool";
-import { arrowTool, rectangleTool, textTool } from "./shapeTool";
+import {
+  arrowTool,
+  ellipseTool,
+  pathTool,
+  rectangleTool,
+  stickyTool,
+  textTool,
+} from "./shapeTool";
 import type {
   PointerInput,
   ToolContext,
@@ -24,6 +31,9 @@ const POINTER_DOWN_CANDIDATES: Record<ToolType, ToolHandler<never>[]> = {
   pen: [penTool] as ToolHandler<never>[],
   eraser: [eraserTool] as ToolHandler<never>[],
   rectangle: [rectangleTool] as ToolHandler<never>[],
+  ellipse: [ellipseTool] as ToolHandler<never>[],
+  path: [pathTool] as ToolHandler<never>[],
+  sticky: [stickyTool] as ToolHandler<never>[],
   arrow: [arrowTool] as ToolHandler<never>[],
   text: [textTool] as ToolHandler<never>[],
 };
@@ -50,7 +60,7 @@ export function resolvePointerDown(
 }
 
 /**
- * Double-click with the select tool starts inline editing of a text element.
+ * Double-click with the select tool starts inline editing of a text or sticky element.
  * Pure: returns effects for the host to dispatch, or null when nothing was
  * hit.
  */
@@ -65,19 +75,33 @@ export function resolveDoubleClick(
     .reverse()
     .find((el) => hitTestElement(input.world.x, input.world.y, el));
 
-  if (hit?.type !== "text") return null;
+  if (!hit) return null;
 
-  return {
-    session: null,
-    effects: [
-      { type: "setSelection", ids: [hit.id] },
-      {
-        type: "openTextEditor",
-        elementId: hit.id,
-        x: hit.x,
-        y: hit.y,
-        initial: hit.text,
-      },
-    ],
-  };
+  if (hit.type === "sticky") {
+    return {
+      session: null,
+      effects: [
+        { type: "setSelection", ids: [hit.id] },
+        { type: "openStickyEditor", sticky: hit },
+      ],
+    };
+  }
+
+  if (hit.type === "text") {
+    return {
+      session: null,
+      effects: [
+        { type: "setSelection", ids: [hit.id] },
+        {
+          type: "openTextEditor",
+          elementId: hit.id,
+          x: hit.x,
+          y: hit.y,
+          initial: hit.text,
+        },
+      ],
+    };
+  }
+
+  return null;
 }

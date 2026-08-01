@@ -7,11 +7,13 @@
   "types": "src/index.ts",
   "scripts": {
     "build": "tsc -b",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.4",
+    "yjs": "^13.6.23",
     "zod": "^3.25.76"
   },
   "devDependencies": {

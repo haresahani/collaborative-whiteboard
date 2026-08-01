@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { YjsSnapshot, YjsUpdate, mergeYjsUpdates } from "shared";
 import { Board, IBoard } from "./board.model";
 import { Snapshot, ISnapshot } from "../snapshot/snapshot.model";
 import { Oplog } from "../operations/oplog.model";
@@ -161,6 +162,29 @@ class BoardService {
     }
 
     return snapshot as ISnapshot;
+  }
+
+  async getYjsState(boardId: string, userId: string): Promise<Buffer> {
+    if (mongoose.Types.ObjectId.isValid(boardId)) {
+      await this.findById(boardId, userId);
+    }
+    const [snapshotDoc, updates] = await Promise.all([
+      YjsSnapshot.findOne({ boardId }).lean(),
+      YjsUpdate.find({ boardId }).sort({ lamport: 1 }).lean(),
+    ]);
+
+    const updateBuffers: Uint8Array[] = [];
+    if (snapshotDoc && snapshotDoc.snapshot) {
+      updateBuffers.push(new Uint8Array(snapshotDoc.snapshot));
+    }
+    for (const u of updates) {
+      if (u.update) {
+        updateBuffers.push(new Uint8Array(u.update));
+      }
+    }
+
+    const merged = mergeYjsUpdates(updateBuffers);
+    return Buffer.from(merged);
   }
 }
 

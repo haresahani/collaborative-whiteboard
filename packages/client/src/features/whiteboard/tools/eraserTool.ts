@@ -47,7 +47,7 @@ export const eraserTool: ToolHandler<EraserSession> = {
     const touchedIds = new Set(
       session.baseElements
         .filter((el) => !session.currentElements.some((c) => c.id === el.id))
-        .map((el) => el.id)
+        .map((el) => el.id),
     );
     const nextSelection = ctx.selectedIds.filter((id) => !touchedIds.has(id));
 

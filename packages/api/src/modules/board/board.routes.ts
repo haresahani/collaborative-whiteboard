@@ -6,6 +6,7 @@ import {
   deleteBoard,
   getSnapshot,
   getBoardJoinToken,
+  getYjsState,
 } from "./board.controller";
 import { appendOperation } from "../operations/oplog.controller";
 import { authMiddleware } from "../auth/auth.middleware";
@@ -14,19 +15,20 @@ import { createBoardSchema } from "./board.validator";
 
 const router: Router = Router();
 
-// ── Board CRUD ────────────────────────────────────────────────────────
+// Board CRUD
 router.post("/", authMiddleware, validate(createBoardSchema), createBoard);
 router.get("/", authMiddleware, getMyBoards);
 router.get("/:id", authMiddleware, getBoard);
 router.delete("/:id", authMiddleware, deleteBoard);
 
-// ── Realtime Join Token ───────────────────────────────────────────────
+// Realtime Join Token
 router.get("/:id/join-token", authMiddleware, getBoardJoinToken);
 
-// ── Snapshot ──────────────────────────────────────────────────────────
+// Snapshot & Yjs State
 router.get("/:id/snapshot", authMiddleware, getSnapshot);
+router.get("/:id/yjs-state", authMiddleware, getYjsState);
 
-// ── Operations (oplog) ────────────────────────────────────────────────
+// Operations (oplog)
 router.post("/:id/operations", authMiddleware, appendOperation);
 
 export default router;

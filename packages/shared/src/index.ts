@@ -3,5 +3,8 @@ export * from "./jwt";
 export * from "./oplog";
 export * from "./models/oplog.model";
 export * from "./models/snapshot.model";
+export * from "./models/yjs.model";
 export * from "./utils/accent";
 export * from "./schemas/collab";
+export * from "./utils/lww";
+export * from "./utils/yjsPersistence";

@@ -168,7 +168,10 @@ export default function TopNavigation({
 
               <div className="wb-collaborator-list">
                 {activeUsers.map((collaborator) => (
-                  <div key={collaborator.userId} className="wb-collaborator-row">
+                  <div
+                    key={collaborator.userId}
+                    className="wb-collaborator-row"
+                  >
                     <span
                       className="wb-collaborator-avatar"
                       style={
@@ -182,9 +185,7 @@ export default function TopNavigation({
 
                     <div className="wb-collaborator-meta">
                       <strong>{collaborator.displayName}</strong>
-                      <span>
-                        Collaborator - Active now
-                      </span>
+                      <span>Collaborator - Active now</span>
                     </div>
 
                     <span className="wb-online-pill">

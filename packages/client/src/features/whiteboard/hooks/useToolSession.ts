@@ -5,6 +5,7 @@ import type { Element } from "../models/element";
 import { useBoardStore } from "../store/boardStore";
 import { useSelectionStore } from "../store/selectionStore";
 import { useTextEditorStore } from "../store/textEditorStore";
+import { useStickyEditorStore } from "../store/stickyEditorStore";
 import { useToolStore } from "../store/toolStore";
 import { useViewportStore } from "../store/viewportStore";
 import { resolveDoubleClick, resolvePointerDown } from "../tools/toolRegistry";
@@ -77,6 +78,9 @@ function runEffects(effects: ToolEffect[]) {
           elementId: effect.elementId,
           initial: effect.initial,
         });
+        break;
+      case "openStickyEditor":
+        useStickyEditorStore.getState().startEditing(effect.sticky);
         break;
       case "switchTool":
         useToolStore.getState().setTool(effect.tool);
@@ -179,7 +183,8 @@ export function useToolSession() {
     if (!gesture || gesture.handler !== eraserTool) return [];
 
     const session = gesture.session as EraserSession;
-    if (!session || !session.baseElements || !session.currentElements) return [];
+    if (!session || !session.baseElements || !session.currentElements)
+      return [];
 
     const touchedIds = new Set(session.currentElements.map((el) => el.id));
     return session.baseElements

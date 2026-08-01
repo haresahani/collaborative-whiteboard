@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { io, Socket } from "socket.io-client";
-import { getBoardJoinToken } from "./auth";
+import { getAuthToken, getBoardJoinToken } from "./auth";
+import { yjsService } from "../features/whiteboard/services/yjsService";
 import type {
   Element,
   StrokeElement,
@@ -10,7 +11,11 @@ import {
   deserializeSnapshot,
   type SnapshotElementGroups,
 } from "../features/whiteboard/utils/snapshotStorage";
-import { applyOperation, replayOperations, type ISharedElement } from "@shared/oplog";
+import {
+  applyOperation,
+  replayOperations,
+  type ISharedElement,
+} from "@shared/oplog";
 import {
   useCollaborationStore,
   type ChatMessage,
@@ -81,7 +86,7 @@ class SocketService {
 
     try {
       const joinToken = await getBoardJoinToken(boardId);
-      
+
       // Abort if disconnect() was called during token retrieval
       if (!this.isConnecting || this.currentBoardId !== boardId) {
         return;
@@ -120,7 +125,7 @@ class SocketService {
       // Handle the initial board sync payload (snapshot + oplogs tail)
       this.socket.on(
         "board.init",
-        (data: {
+        async (data: {
           snapshot?: { snapshotJson?: SnapshotElementGroups };
           oplogs: unknown[];
         }) => {
@@ -133,6 +138,22 @@ class SocketService {
             data.oplogs as unknown as import("shared").IOp[],
           ) as unknown as Element[];
           useBoardStore.getState().setElements(finalElements);
+
+          // Fetch initial Yjs state for sticky notes
+          try {
+            const authToken = await getAuthToken();
+            const yjsRes = await fetch(`/api/boards/${boardId}/yjs-state`, {
+              headers: { Authorization: `Bearer ${authToken}` },
+            });
+            if (yjsRes.ok) {
+              const arrayBuffer = await yjsRes.arrayBuffer();
+              yjsService.initBoard(boardId, new Uint8Array(arrayBuffer));
+            } else {
+              yjsService.initBoard(boardId);
+            }
+          } catch {
+            yjsService.initBoard(boardId);
+          }
         },
       );
 
@@ -145,6 +166,33 @@ class SocketService {
           op as import("shared").IOp,
         ) as unknown as Element[];
         useBoardStore.getState().setElements(newElements);
+      });
+
+      // Handle Yjs updates & awareness broadcasts
+      this.socket.on("yjs.update", (data: { update: unknown }) => {
+        if (!data?.update) return;
+        const raw = data.update;
+        const arr = new Uint8Array(
+          Array.isArray(raw)
+            ? (raw as number[])
+            : typeof raw === "string"
+              ? Uint8Array.from(atob(raw), (c) => c.charCodeAt(0))
+              : (raw as ArrayBuffer),
+        );
+        yjsService.applyRemoteUpdate(arr);
+      });
+
+      this.socket.on("yjs.awareness", (data: { update: unknown }) => {
+        if (!data?.update) return;
+        const raw = data.update;
+        const arr = new Uint8Array(
+          Array.isArray(raw)
+            ? (raw as number[])
+            : typeof raw === "string"
+              ? Uint8Array.from(atob(raw), (c) => c.charCodeAt(0))
+              : (raw as ArrayBuffer),
+        );
+        yjsService.applyRemoteAwareness(arr);
       });
 
       // Handle legacy/specific stroke commits (mapping to standard op for the reducer)
@@ -246,6 +294,16 @@ class SocketService {
     return this.myUserId;
   }
 
+  emitYjsUpdate(boardId: string, update: Uint8Array) {
+    if (!this.socket || !this.socket.connected) return;
+    this.socket.emit("yjs.update", { boardId, update: Array.from(update) });
+  }
+
+  emitYjsAwareness(boardId: string, update: Uint8Array) {
+    if (!this.socket || !this.socket.connected) return;
+    this.socket.emit("yjs.awareness", { boardId, update: Array.from(update) });
+  }
+
   emitStroke(stroke: StrokeElement) {
     if (!this.socket || !this.socket.connected) {
       console.warn("[Socket] Cannot emit stroke: socket is disconnected");
@@ -274,17 +332,45 @@ class SocketService {
   }
 
   // --- Collaboration Emitters ---
-  emitCursor(x: number, y: number, previewElement?: any, erasedIds?: string[], tool?: string) {
+  emitCursor(
+    x: number,
+    y: number,
+    previewElement?: any,
+    erasedIds?: string[],
+    tool?: string,
+  ) {
     if (!this.socket || !this.socket.connected) return;
-    console.log("[socket] emitting cursor.move:", { x, y, hasPreview: !!previewElement, previewElement, erasedCount: erasedIds?.length || 0, tool });
+    console.log("[socket] emitting cursor.move:", {
+      x,
+      y,
+      hasPreview: !!previewElement,
+      previewElement,
+      erasedCount: erasedIds?.length || 0,
+      tool,
+    });
     this.socket.emit("cursor.move", { x, y, previewElement, erasedIds, tool });
   }
 
-  private throttledCursorEmit = this.throttle((x: number, y: number, previewElement?: any, erasedIds?: string[], tool?: string) => {
-    this.emitCursor(x, y, previewElement, erasedIds, tool);
-  }, 50);
+  private throttledCursorEmit = this.throttle(
+    (
+      x: number,
+      y: number,
+      previewElement?: any,
+      erasedIds?: string[],
+      tool?: string,
+    ) => {
+      this.emitCursor(x, y, previewElement, erasedIds, tool);
+    },
+    50,
+  );
 
-  sendCursorMove(x: number, y: number, previewElement?: any, erasedIds?: string[], tool?: string) {
+  sendCursorMove(
+    x: number,
+    y: number,
+    previewElement?: any,
+    erasedIds?: string[],
+    tool?: string,
+  ) {
     this.throttledCursorEmit(x, y, previewElement, erasedIds, tool);
   }
 
@@ -309,7 +395,10 @@ class SocketService {
     return { ok: true };
   }
 
-  emitOp(type: "element.create" | "element.update" | "element.delete", payload: Record<string, unknown>) {
+  emitOp(
+    type: "element.create" | "element.update" | "element.delete",
+    payload: Record<string, unknown>,
+  ) {
     if (!this.socket || !this.socket.connected) {
       console.warn("[Socket] Cannot emit op: socket is disconnected");
       return;
@@ -324,17 +413,24 @@ class SocketService {
     };
 
     console.log("[Socket] Emitting op.commit:", payloadWithId);
-    this.socket.emit("op.commit", payloadWithId, (ack?: { ok: boolean; error?: string }) => {
-      if (!ack?.ok) {
-        console.error("[Socket] Op commit ack failed:", ack?.error);
-      } else {
-        console.log("[Socket] Op commit ack success:", ack);
-      }
-    });
+    this.socket.emit(
+      "op.commit",
+      payloadWithId,
+      (ack?: { ok: boolean; error?: string }) => {
+        if (!ack?.ok) {
+          console.error("[Socket] Op commit ack failed:", ack?.error);
+        } else {
+          console.log("[Socket] Op commit ack success:", ack);
+        }
+      },
+    );
   }
 
   // Self-contained throttle helper to avoid external dependencies/types issues
-  private throttle<T extends (...args: any[]) => void>(fn: T, limit: number): T {
+  private throttle<T extends (...args: any[]) => void>(
+    fn: T,
+    limit: number,
+  ): T {
     let inThrottle = false;
     return function (this: any, ...args: any[]) {
       if (!inThrottle) {

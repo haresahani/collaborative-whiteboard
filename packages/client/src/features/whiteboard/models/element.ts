@@ -1,4 +1,14 @@
-export type ElementType = "stroke" | "rectangle" | "arrow" | "text";
+import type { ILastUpdateState } from "@shared/utils/lww";
+
+export type ElementType =
+  | "stroke"
+  | "rectangle"
+  | "ellipse"
+  | "path"
+  | "sticky"
+  | "arrow"
+  | "text";
+
 export type LineStyle = "solid" | "dashed" | "dotted";
 
 export interface Point {
@@ -26,6 +36,7 @@ export interface BaseElement {
   createdAt: number;
   updatedAt: number;
 
+  lastUpdate?: ILastUpdateState;
   deleted?: boolean;
 }
 
@@ -42,6 +53,37 @@ export interface RectangleElement extends BaseElement {
 
   width: number;
   height: number;
+
+  style: ElementStyle;
+}
+
+export interface EllipseElement extends BaseElement {
+  type: "ellipse";
+
+  width: number;
+  height: number;
+
+  style: ElementStyle;
+}
+
+export interface PathElement extends BaseElement {
+  type: "path";
+
+  width: number;
+  height: number;
+  points: Point[];
+
+  style: ElementStyle;
+}
+
+export interface StickyElement extends BaseElement {
+  type: "sticky";
+
+  width: number;
+  height: number;
+
+  color: string;
+  text?: string;
 
   style: ElementStyle;
 }
@@ -85,5 +127,8 @@ export interface TextElement extends BaseElement {
 export type Element =
   | StrokeElement
   | RectangleElement
+  | EllipseElement
+  | PathElement
+  | StickyElement
   | ArrowElement
   | TextElement;

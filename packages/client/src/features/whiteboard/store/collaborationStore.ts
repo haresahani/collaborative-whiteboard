@@ -34,7 +34,10 @@ type CollaborationState = {
   chatMessages: ChatMessage[];
 
   setActiveUsers: (users: ActiveUser[]) => void;
-  updateCursor: (userId: string, data: Omit<CursorPosition, "updatedAt">) => void;
+  updateCursor: (
+    userId: string,
+    data: Omit<CursorPosition, "updatedAt">,
+  ) => void;
   removeCursor: (userId: string) => void;
   clearCursors: () => void;
   setChatMessages: (messages: ChatMessage[]) => void;
