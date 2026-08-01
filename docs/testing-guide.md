@@ -8,9 +8,7 @@ The repository's automated test coverage is currently being expanded:
 
 - **API Package**: Fully covered by robust integration tests (50+ test cases) targeting authentication endpoints, board CRUD operations, and health checks (using Vitest and Supertest).
 - **Client Package**: Client interaction tests are still largely missing.
-- **Realtime / Socket**: Tests do not exist yet since full realtime integration is currently in progress.
-
-This is acceptable at this stage as we incrementally align with the V1 plan.
+- **Realtime / Socket / Worker**: Covered by unit and integration tests targeting Socket.IO room join authorization, oplog queue scheduling, and BullMQ-backed snapshot compaction and logical time order checks.
 
 ## Root Quality Bar
 
