@@ -44,11 +44,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     // skip those so no-ops never pollute the undo history.
     if (elements === snapshot) return;
 
-    useHistoryStore.getState().push(snapshot, coalesceKey);
-
-    if (elements !== current) {
-      set({ elements });
-    }
+    const historyOps: import("./historyStore").HistoryOpEntry[] = [];
 
     // Identify newly committed elements to emit to Socket.IO
     const addedElements = elements.filter(
@@ -57,9 +53,19 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     for (const el of addedElements) {
       if (el.type === "stroke") {
         socketService.emitStroke(el);
+        historyOps.push({
+          targetOpId: el.id,
+          targetOpType: "stroke.commit",
+          tombstoneId: el.id,
+        });
       } else {
         socketService.emitOp("element.create", {
           element: el as unknown as Record<string, unknown>,
+        });
+        historyOps.push({
+          targetOpId: el.id,
+          targetOpType: "element.create",
+          tombstoneId: el.id,
         });
       }
     }
@@ -70,6 +76,14 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     );
     for (const el of deletedElements) {
       socketService.emitOp("element.delete", { id: el.id });
+      historyOps.push({
+        targetOpId: el.id,
+        targetOpType: "element.delete",
+        tombstoneId: el.id,
+        inversePayload: {
+          restoredElement: el as unknown as Record<string, unknown>,
+        },
+      });
     }
 
     // Identify updated elements to emit to Socket.IO
@@ -84,16 +98,34 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     for (const el of updatedElements) {
       const prev = snapshot.find((s) => s.id === el.id)!;
       const updates: Record<string, unknown> = {};
+      const prevUpdates: Record<string, unknown> = {};
       const elRec = el as unknown as Record<string, unknown>;
       const prevRec = prev as unknown as Record<string, unknown>;
       for (const key of Object.keys(el)) {
         if (JSON.stringify(elRec[key]) !== JSON.stringify(prevRec[key])) {
           updates[key] = elRec[key];
+          prevUpdates[key] = prevRec[key];
         }
       }
       if (Object.keys(updates).length > 0) {
         socketService.emitOp("element.update", { id: el.id, updates });
+        historyOps.push({
+          targetOpId: el.id,
+          targetOpType: "element.update",
+          tombstoneId: el.id,
+          inversePayload: {
+            inverseUpdates: prevUpdates,
+          },
+        });
       }
+    }
+
+    useHistoryStore
+      .getState()
+      .push(snapshot, coalesceKey, undefined, historyOps);
+
+    if (elements !== current) {
+      set({ elements });
     }
   },
 
@@ -121,8 +153,31 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const current = get().elements;
 
     const previous = useHistoryStore.getState().undo(current);
+    const action = useHistoryStore.getState().lastUndoAction;
 
-    if (previous) {
+    if (action && action.length > 0) {
+      let updated = current as unknown as import("@shared/oplog").ISharedElement[];
+      for (const entry of action) {
+        const payload = {
+          targetOpId: entry.targetOpId,
+          targetOpType: entry.targetOpType,
+          tombstoneId: entry.tombstoneId,
+          inversePayload: entry.inversePayload as Record<string, unknown>,
+        };
+        socketService.emitOp("op.undo", payload);
+        const undoOp: import("@shared/oplog").IOp = {
+          opId: crypto.randomUUID(),
+          boardId: get().boardId || "",
+          type: "op.undo",
+          payload,
+          actorId: socketService.getUserId() || "local",
+          lamport: 0,
+          createdAt: new Date().toISOString(),
+        };
+        updated = import("@shared/oplog").applyOperation(updated, undoOp);
+      }
+      set({ elements: updated as unknown as Element[] });
+    } else if (previous) {
       set({ elements: previous });
     }
   },
@@ -131,8 +186,30 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const current = get().elements;
 
     const next = useHistoryStore.getState().redo(current);
+    const action = useHistoryStore.getState().lastRedoAction;
 
-    if (next) {
+    if (action && action.length > 0) {
+      let updated = current as unknown as import("@shared/oplog").ISharedElement[];
+      for (const entry of action) {
+        const payload = {
+          targetOpId: entry.targetOpId,
+          targetOpType: entry.targetOpType,
+          tombstoneId: entry.tombstoneId,
+        };
+        socketService.emitOp("op.redo", payload);
+        const redoOp: import("@shared/oplog").IOp = {
+          opId: crypto.randomUUID(),
+          boardId: get().boardId || "",
+          type: "op.redo",
+          payload,
+          actorId: socketService.getUserId() || "local",
+          lamport: 0,
+          createdAt: new Date().toISOString(),
+        };
+        updated = import("@shared/oplog").applyOperation(updated, redoOp);
+      }
+      set({ elements: updated as unknown as Element[] });
+    } else if (next) {
       set({ elements: next });
     }
   },

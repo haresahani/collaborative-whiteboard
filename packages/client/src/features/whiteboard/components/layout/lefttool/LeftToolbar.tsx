@@ -128,7 +128,12 @@ export default function LeftToolbar({
   const activeTool = getToolDefinition(tool);
 
   const selectedElements = useMemo(
-    () => elements.filter((element) => selectedIds.includes(element.id)),
+    () =>
+      elements.filter(
+        (element) =>
+          !(element as Record<string, unknown>).tombstoned &&
+          selectedIds.includes(element.id),
+      ),
     [elements, selectedIds],
   );
 

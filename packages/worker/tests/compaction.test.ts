@@ -186,4 +186,63 @@ describe("Worker Compaction Tests", () => {
       { $set: { lastSnapshotId: "new-snapshot-id" } },
     );
   });
+
+  it("should compact an oplog containing op.undo into a snapshot preserving soft-deleted tombstone state [FIX 5]", async () => {
+    (Snapshot.findOne as any).mockReturnValue({
+      sort: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(null),
+      }),
+    });
+
+    const mockOplogs = [
+      {
+        opId: "op-create-x",
+        boardId,
+        type: "element.create",
+        payload: { element: { id: "rect-x", type: "rectangle", x: 10, y: 10 } },
+        actorId: "user-1",
+        lamport: 1,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        opId: "op-undo-x",
+        boardId,
+        type: "op.undo",
+        payload: { targetOpId: "op-create-x", tombstoneId: "rect-x" },
+        actorId: "user-1",
+        lamport: 2,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
+    (Oplog.find as any).mockReturnValue({
+      sort: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockOplogs),
+      }),
+    });
+
+    (Snapshot.findOneAndUpdate as any).mockResolvedValue({
+      _id: "snapshot-undo-id",
+      opIndex: 2,
+    });
+
+    await tryCompact(boardId);
+
+    expect(Snapshot.findOneAndUpdate).toHaveBeenCalledWith(
+      { boardId, opIndex: 2 },
+      expect.objectContaining({
+        $setOnInsert: expect.objectContaining({
+          snapshotJson: expect.objectContaining({
+            shapes: [
+              expect.objectContaining({
+                id: "rect-x",
+                tombstoned: true,
+              }),
+            ],
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
+  });
 });

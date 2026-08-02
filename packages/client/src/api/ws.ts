@@ -396,7 +396,7 @@ class SocketService {
   }
 
   emitOp(
-    type: "element.create" | "element.update" | "element.delete",
+    type: "element.create" | "element.update" | "element.delete" | "op.undo" | "op.redo",
     payload: Record<string, unknown>,
   ) {
     if (!this.socket || !this.socket.connected) {

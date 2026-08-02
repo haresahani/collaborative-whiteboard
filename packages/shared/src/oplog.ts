@@ -13,6 +13,8 @@ export const OpTypeSchema = z.enum([
   "element.update",
   "element.delete",
   "sticky.textUpdate",
+  "op.undo",
+  "op.redo",
 ]);
 
 export const OpSchema = z.object({
@@ -30,6 +32,7 @@ export type IOp = z.infer<typeof OpSchema>;
 export interface ISharedElement {
   id: string;
   type: string;
+  tombstoned?: boolean;
   lastUpdate?: ILastUpdateState;
   [key: string]: unknown;
 }
@@ -52,7 +55,11 @@ export function applyOperation(
   if (op.type === "stroke.commit") {
     // Prevent duplicate strokes (idempotency)
     const exists = elements.some((el) => el.id === opId);
-    if (exists) return elements;
+    if (exists) {
+      return elements.map((el) =>
+        el.id === opId ? { ...el, tombstoned: false } : el,
+      );
+    }
 
     const strokeData = op.payload.stroke as
       | {
@@ -77,6 +84,7 @@ export function applyOperation(
         strokeWidth: strokeData.width,
       },
       zIndex: 0,
+      tombstoned: false,
       createdAt: new Date(op.createdAt).getTime(),
       updatedAt: new Date(op.createdAt).getTime(),
     };
@@ -88,9 +96,13 @@ export function applyOperation(
     if (!el || !el.id) return elements;
 
     const exists = elements.some((existing) => existing.id === el.id);
-    if (exists) return elements;
+    if (exists) {
+      return elements.map((existing) =>
+        existing.id === el.id ? { ...existing, tombstoned: false } : existing,
+      );
+    }
 
-    return [...elements, el];
+    return [...elements, { ...el, tombstoned: false }];
   }
 
   if (op.type === "element.update") {
@@ -139,7 +151,106 @@ export function applyOperation(
     const id = (op.payload.id || op.payload.elementId) as string | undefined;
     if (!id) return elements;
 
-    return elements.filter((el) => el.id !== id);
+    // Soft delete via tombstone flag
+    return elements.map((el) =>
+      el.id === id ? { ...el, tombstoned: true } : el,
+    );
+  }
+
+  if (op.type === "op.undo") {
+    const targetOpId = op.payload.targetOpId as string | undefined;
+    const targetOpType = op.payload.targetOpType as string | undefined;
+    const targetLamport = op.payload.targetLamport as number | undefined;
+    const tombstoneId = (op.payload.tombstoneId || targetOpId) as
+      | string
+      | undefined;
+    const inversePayload = op.payload.inversePayload as
+      | {
+          restoredElement?: ISharedElement;
+          inverseUpdates?: Record<string, unknown>;
+        }
+      | undefined;
+
+    if (!targetOpId) return elements;
+
+    const targetElId =
+      tombstoneId || (inversePayload?.restoredElement?.id as string);
+
+    // [FIX 4] Conflict check: if element has been touched by a higher Lamport clock from another client, reject/skip undo
+    if (targetElId && typeof targetLamport === "number") {
+      const existingEl = elements.find((el) => el.id === targetElId);
+      if (existingEl?.lastUpdate) {
+        const hasConflict = Object.values(existingEl.lastUpdate).some(
+          (clock) =>
+            clock.lamport > targetLamport && clock.clientId !== op.actorId,
+        );
+        if (hasConflict) {
+          console.warn(
+            `[oplog] op.undo rejected for op ${targetOpId}: element ${targetElId} has newer concurrent edits`,
+          );
+          return elements;
+        }
+      }
+    }
+
+    if (
+      targetOpType === "element.delete" ||
+      (inversePayload && inversePayload.restoredElement)
+    ) {
+      // Undoing a delete: restore element
+      const restored = inversePayload?.restoredElement;
+      if (targetElId && elements.some((el) => el.id === targetElId)) {
+        return elements.map((el) =>
+          el.id === targetElId ? { ...el, tombstoned: false } : el,
+        );
+      } else if (restored) {
+        return [...elements, { ...restored, tombstoned: false }];
+      }
+    }
+
+    if (
+      targetOpType === "element.update" &&
+      inversePayload?.inverseUpdates &&
+      targetElId
+    ) {
+      // Undoing an update: apply inverseUpdates
+      return elements.map((el) => {
+        if (el.id !== targetElId) return el;
+        return { ...el, ...inversePayload.inverseUpdates };
+      });
+    }
+
+    // Default for creation/stroke: mark element tombstoned
+    if (targetElId) {
+      return elements.map((el) =>
+        el.id === targetElId ? { ...el, tombstoned: true } : el,
+      );
+    }
+
+    return elements;
+  }
+
+  if (op.type === "op.redo") {
+    const targetOpId = op.payload.targetOpId as string | undefined;
+    const targetOpType = op.payload.targetOpType as string | undefined;
+    const tombstoneId = (op.payload.tombstoneId || targetOpId) as
+      | string
+      | undefined;
+
+    const targetElId = tombstoneId || (op.payload.elementId as string);
+    if (!targetElId) return elements;
+
+    if (targetOpType === "element.delete") {
+      // Redo deletion: tombstone again
+      return elements.map((el) =>
+        el.id === targetElId ? { ...el, tombstoned: true } : el,
+      );
+    }
+
+    // Redo creation/stroke/update: untombstone element
+    return elements.map((el) =>
+      el.id === targetElId ? { ...el, tombstoned: false } : el,
+    );
   }
 
   return elements;
