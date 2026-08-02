@@ -1,3 +1,4 @@
+import { applyOperation, type IOp, type ISharedElement } from "@shared/oplog";
 import { create } from "zustand";
 import type { Element } from "../models/element";
 import { useHistoryStore } from "./historyStore";
@@ -157,7 +158,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const action = useHistoryStore.getState().lastUndoAction;
 
     if (action && action.length > 0) {
-      let updated = current as unknown as import("@shared/oplog").ISharedElement[];
+      let updated = current as unknown as ISharedElement[];
       let allAcked = true;
 
       for (const entry of action) {
@@ -169,12 +170,15 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         };
         const ack = await socketService.emitOp("op.undo", payload);
         if (!ack.ok) {
-          console.warn("[boardStore] op.undo rejected by server, rolling back:", ack.error);
+          console.warn(
+            "[boardStore] op.undo rejected by server, rolling back:",
+            ack.error,
+          );
           allAcked = false;
           break;
         }
 
-        const undoOp: import("@shared/oplog").IOp = {
+        const undoOp: IOp = {
           opId: ack.opId || crypto.randomUUID(),
           boardId: get().boardId || "",
           type: "op.undo",
@@ -183,7 +187,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
           lamport: 0,
           createdAt: new Date().toISOString(),
         };
-        updated = import("@shared/oplog").applyOperation(updated, undoOp);
+        updated = applyOperation(updated, undoOp);
       }
 
       if (allAcked) {
@@ -203,7 +207,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const action = useHistoryStore.getState().lastRedoAction;
 
     if (action && action.length > 0) {
-      let updated = current as unknown as import("@shared/oplog").ISharedElement[];
+      let updated = current as unknown as ISharedElement[];
       let allAcked = true;
 
       for (const entry of action) {
@@ -215,12 +219,15 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         };
         const ack = await socketService.emitOp("op.redo", payload);
         if (!ack.ok) {
-          console.warn("[boardStore] op.redo rejected by server, rolling back:", ack.error);
+          console.warn(
+            "[boardStore] op.redo rejected by server, rolling back:",
+            ack.error,
+          );
           allAcked = false;
           break;
         }
 
-        const redoOp: import("@shared/oplog").IOp = {
+        const redoOp: IOp = {
           opId: ack.opId || crypto.randomUUID(),
           boardId: get().boardId || "",
           type: "op.redo",
@@ -229,7 +236,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
           lamport: 0,
           createdAt: new Date().toISOString(),
         };
-        updated = import("@shared/oplog").applyOperation(updated, redoOp);
+        updated = applyOperation(updated, redoOp);
       }
 
       if (allAcked) {
