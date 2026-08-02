@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { User } from "../user/user.model";
-import { issueBoardJoinToken } from "shared";
+import { issueBoardJoinToken } from "shared/jwt";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { boardService } from "./board.service";
@@ -68,9 +68,9 @@ export const getBoardJoinToken = asyncHandler(
     }
 
     const user = await User.findById(userId).select("displayName").lean();
-    const displayName = user
-      ? (user as { displayName?: string }).displayName
-      : `Guest ${userId.slice(-4)}`;
+    const displayName =
+      (user as { displayName?: string } | null)?.displayName ||
+      `Guest ${userId.slice(-4)}`;
 
     const token = issueBoardJoinToken(
       { userId, boardId, displayName },

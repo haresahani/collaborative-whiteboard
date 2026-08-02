@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { registerBoardHandlers } from "../src/events/board";
-import { Oplog, Snapshot } from "shared";
+import { Oplog, Snapshot } from "shared/models";
 import {
   pushRecentOp,
   clearRecentOpsBuffer,
@@ -62,8 +62,8 @@ vi.mock("../src/models/chat", () => {
 });
 
 // Mock shared models
-vi.mock("shared", async () => {
-  const actual = await vi.importActual<any>("shared");
+vi.mock("shared/models", async () => {
+  const actual = await vi.importActual<any>("shared/models");
   return {
     ...actual,
     Oplog: {

@@ -1,5 +1,6 @@
 import { Worker, Job } from "bullmq";
-import { Oplog, YjsUpdate, type IOp } from "shared";
+import { type IOp } from "shared";
+import { Oplog, YjsUpdate } from "shared/models";
 import { redisConnection } from "./config/redis";
 import { tryCompact, tryCompactYjs } from "./compaction";
 

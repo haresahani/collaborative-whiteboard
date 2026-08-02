@@ -8,6 +8,15 @@ export const cursorMoveSchema = z.object({
   tool: z.string().optional(),
 });
 
+export const cursorBatchEntrySchema = cursorMoveSchema.extend({
+  userId: z.string().optional(),
+  displayName: z.string().optional(),
+});
+
+export const cursorBatchSchema = z.object({
+  cursors: z.array(cursorBatchEntrySchema),
+});
+
 export const chatSendSchema = z.object({
   message: z
     .string({ required_error: "Message is required" })
@@ -20,4 +29,6 @@ export const chatSendSchema = z.object({
 });
 
 export type CursorMove = z.infer<typeof cursorMoveSchema>;
+export type CursorBatchEntry = z.infer<typeof cursorBatchEntrySchema>;
+export type CursorBatch = z.infer<typeof cursorBatchSchema>;
 export type ChatSend = z.infer<typeof chatSendSchema>;

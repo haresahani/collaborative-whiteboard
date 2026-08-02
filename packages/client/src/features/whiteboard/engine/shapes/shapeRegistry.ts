@@ -1,5 +1,5 @@
 import type { Element, ElementType } from "../../models/element";
-import type { Shape } from "./Shape";
+import type { Shape, CanvasContext } from "./Shape";
 
 import { strokeShape } from "./strokeShape";
 import { rectangleShape } from "./rectangleShape";
@@ -26,7 +26,7 @@ export function getShape(type: ElementType): Shape<Element> {
 }
 
 export function drawElement(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasContext,
   element: Element,
   selected = false,
 ) {

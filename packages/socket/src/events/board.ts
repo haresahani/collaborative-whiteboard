@@ -3,11 +3,16 @@ import { z } from "zod";
 import {
   OpSchema,
   type IOp,
-  Oplog,
-  Snapshot,
   cursorMoveSchema,
+  cursorBatchSchema,
   chatSendSchema,
+  decodeOpBatch,
+  decodeCursorBatch,
+  encodeOpBatch,
+  encodeCursorBatch,
+  decodeBinaryPayload,
 } from "shared";
+import { Oplog, Snapshot } from "shared/models";
 import { enqueueOp } from "../services/oplogQueue";
 import { getNextLamport } from "../utils/lamport";
 import { pushRecentOp, getRecentOps } from "../utils/recentOpsBuffer";
@@ -201,12 +206,145 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       // Broadcast first for low latency
       socket.to(roomName(boardId)).emit("op.broadcast", op);
 
-      // Asynchronously enqueue for worker persistence
-      await enqueueOp(op);
+      // Asynchronously enqueue for worker persistence (bypass for ephemeral stroke.point)
+      if (op.type !== "stroke.point") {
+        await enqueueOp(op);
+      }
       void ack?.({ ok: true, opId: op.opId });
     } catch (err) {
       console.error(`[socket] failed to process op commit:`, err);
       void ack?.({ ok: false, error: "PERSISTENCE_FAILED" });
+    }
+  });
+
+  // 1b. Batched op handler with MessagePack binary payload support
+  socket.on(
+    "op.batch",
+    async (
+      raw: unknown,
+      ack?: (res: { ok: boolean; count?: number; error?: string }) => void,
+    ) => {
+      try {
+        let rawOps: unknown[] = [];
+        if (
+          raw instanceof ArrayBuffer ||
+          raw instanceof Uint8Array ||
+          Buffer.isBuffer(raw)
+        ) {
+          rawOps = decodeOpBatch(raw as ArrayBuffer);
+        } else if (Array.isArray(raw)) {
+          rawOps = raw;
+        } else if (
+          typeof raw === "object" &&
+          raw !== null &&
+          "ops" in raw &&
+          Array.isArray((raw as { ops: unknown[] }).ops)
+        ) {
+          rawOps = (raw as { ops: unknown[] }).ops;
+        }
+
+        const processedOps: IOp[] = [];
+        for (const item of rawOps) {
+          const nextLamport = await getNextLamport(boardId);
+          const enriched =
+            typeof item === "object" && item !== null
+              ? {
+                  ...item,
+                  boardId,
+                  actorId: userId,
+                  createdAt: new Date().toISOString(),
+                  lamport: nextLamport,
+                }
+              : item;
+
+          const parsed = OpSchema.safeParse(enriched);
+          if (parsed.success) {
+            const op = parsed.data;
+            pushRecentOp(boardId, op);
+            if (op.type !== "stroke.point") {
+              await enqueueOp(op);
+            }
+            processedOps.push(op);
+          }
+        }
+
+        if (processedOps.length > 0) {
+          const encoded = encodeOpBatch(processedOps);
+          socket.to(roomName(boardId)).emit("op.batch", encoded);
+        }
+
+        void ack?.({ ok: true, count: processedOps.length });
+      } catch (err) {
+        console.error("[socket] op.batch handling failed:", err);
+        void ack?.({ ok: false, error: "BATCH_PROCESSING_FAILED" });
+      }
+    },
+  );
+
+  // 1c. Batched cursor handler with MessagePack binary support & per-user collapsing
+  socket.on("cursor.batch", (raw: unknown) => {
+    try {
+      let rawCursors: (import("shared").CursorMove & {
+        userId?: string;
+        displayName?: string;
+      })[] = [];
+      if (
+        raw instanceof ArrayBuffer ||
+        raw instanceof Uint8Array ||
+        Buffer.isBuffer(raw)
+      ) {
+        rawCursors = decodeCursorBatch(raw as ArrayBuffer);
+      } else if (Array.isArray(raw)) {
+        rawCursors = raw as (import("shared").CursorMove & {
+          userId?: string;
+          displayName?: string;
+        })[];
+      } else if (
+        typeof raw === "object" &&
+        raw !== null &&
+        "cursors" in raw &&
+        Array.isArray(
+          (
+            raw as {
+              cursors: (import("shared").CursorMove & {
+                userId?: string;
+                displayName?: string;
+              })[];
+            }
+          ).cursors,
+        )
+      ) {
+        rawCursors = (
+          raw as {
+            cursors: (import("shared").CursorMove & {
+              userId?: string;
+              displayName?: string;
+            })[];
+          }
+        ).cursors;
+      }
+
+      const latestByUser = new Map<
+        string,
+        import("shared").CursorMove & { userId?: string; displayName?: string }
+      >();
+      for (const item of rawCursors) {
+        const targetUserId = item.userId || userId;
+        const targetDisplayName = item.displayName || displayName;
+        latestByUser.set(targetUserId, {
+          ...item,
+          userId: targetUserId,
+          displayName: targetDisplayName,
+        });
+      }
+
+      const collapsed = Array.from(latestByUser.values());
+      if (collapsed.length > 0) {
+        const encoded = encodeCursorBatch(collapsed);
+        socket.to(roomName(boardId)).emit("cursor.batch", encoded);
+      }
+    } catch (err) {
+      console.error("[socket] cursor.batch handling failed:", err);
     }
   });
 

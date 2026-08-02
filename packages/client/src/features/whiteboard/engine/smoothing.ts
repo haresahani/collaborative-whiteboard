@@ -1,7 +1,7 @@
 import type { Point } from "../models/stroke";
 
 export function drawSmoothStroke(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   points: Point[],
 ) {
   if (points.length < 2) return;

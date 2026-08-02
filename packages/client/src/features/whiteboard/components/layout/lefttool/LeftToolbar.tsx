@@ -131,7 +131,7 @@ export default function LeftToolbar({
     () =>
       elements.filter(
         (element) =>
-          !(element as Record<string, unknown>).tombstoned &&
+          !(element as unknown as Record<string, unknown>).tombstoned &&
           selectedIds.includes(element.id),
       ),
     [elements, selectedIds],

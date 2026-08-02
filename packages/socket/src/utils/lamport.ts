@@ -1,6 +1,6 @@
 import Redis from "ioredis";
 import { env } from "../config/env";
-import { Oplog } from "shared";
+import { Oplog } from "shared/models";
 
 const redis = new Redis(env.REDIS_URL, {
   maxRetriesPerRequest: null,

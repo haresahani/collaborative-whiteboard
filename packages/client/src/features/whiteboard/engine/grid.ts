@@ -1,5 +1,7 @@
+import type { CanvasContext } from "./shapes/Shape";
+
 export function renderGrid(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasContext,
   width: number,
   height: number,
   offsetX: number,

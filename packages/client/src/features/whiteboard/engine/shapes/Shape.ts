@@ -14,8 +14,12 @@ import type { Element } from "../../models/element";
 //   ): boolean;
 // }
 
+export type CanvasContext =
+  | CanvasRenderingContext2D
+  | OffscreenCanvasRenderingContext2D;
+
 export interface Shape<T extends Element = Element> {
-  draw(ctx: CanvasRenderingContext2D, element: T, selected: boolean): void;
+  draw(ctx: CanvasContext, element: T, selected: boolean): void;
   hitTest(x: number, y: number, element: T): boolean;
   getBounds(element: T): {
     minX: number;
