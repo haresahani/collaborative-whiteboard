@@ -24,9 +24,14 @@ export default function WorkspaceOverlay() {
     ? Math.round(selectionBounds.maxY - selectionBounds.minY)
     : 0;
 
+  const activeElements = useMemo(
+    () => elements.filter((element) => !(element as Record<string, unknown>).tombstoned),
+    [elements],
+  );
+
   return (
     <>
-      {elements.length === 0 ? (
+      {activeElements.length === 0 ? (
         <div className="wb-empty-state">
           <h2>Welcome to Collaboard.</h2>
           <p>Start sketching, brainstorming, or import files.</p>
@@ -40,7 +45,7 @@ export default function WorkspaceOverlay() {
         <span>
           {selectedIds.length > 0
             ? `${selectedIds.length} element${selectedIds.length === 1 ? "" : "s"}`
-            : `${elements.length} element${elements.length === 1 ? "" : "s"}`}
+            : `${activeElements.length} element${activeElements.length === 1 ? "" : "s"}`}
         </span>
       </div>
     </>
