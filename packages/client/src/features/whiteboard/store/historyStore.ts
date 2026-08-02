@@ -10,6 +10,7 @@ export interface HistoryOpEntry {
   inversePayload?: {
     restoredElement?: Element;
     inverseUpdates?: Record<string, unknown>;
+    forwardUpdates?: Record<string, unknown>;
   };
 }
 

@@ -1,3 +1,4 @@
+import { applyOperation, type IOp, type ISharedElement } from "@shared/oplog";
 import { create } from "zustand";
 import type { Element } from "../models/element";
 import { useHistoryStore } from "./historyStore";
@@ -115,6 +116,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
           tombstoneId: el.id,
           inversePayload: {
             inverseUpdates: prevUpdates,
+            forwardUpdates: updates,
           },
         });
       }
@@ -149,14 +151,16 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     get().commit(next);
   },
 
-  undo: () => {
+  undo: async () => {
     const current = get().elements;
 
     const previous = useHistoryStore.getState().undo(current);
     const action = useHistoryStore.getState().lastUndoAction;
 
     if (action && action.length > 0) {
-      let updated = current as unknown as import("@shared/oplog").ISharedElement[];
+      let updated = current as unknown as ISharedElement[];
+      let allAcked = true;
+
       for (const entry of action) {
         const payload = {
           targetOpId: entry.targetOpId,
@@ -164,9 +168,18 @@ export const useBoardStore = create<BoardState>((set, get) => ({
           tombstoneId: entry.tombstoneId,
           inversePayload: entry.inversePayload as Record<string, unknown>,
         };
-        socketService.emitOp("op.undo", payload);
-        const undoOp: import("@shared/oplog").IOp = {
-          opId: crypto.randomUUID(),
+        const ack = await socketService.emitOp("op.undo", payload);
+        if (!ack.ok) {
+          console.warn(
+            "[boardStore] op.undo rejected by server, rolling back:",
+            ack.error,
+          );
+          allAcked = false;
+          break;
+        }
+
+        const undoOp: IOp = {
+          opId: ack.opId || crypto.randomUUID(),
           boardId: get().boardId || "",
           type: "op.undo",
           payload,
@@ -174,31 +187,48 @@ export const useBoardStore = create<BoardState>((set, get) => ({
           lamport: 0,
           createdAt: new Date().toISOString(),
         };
-        updated = import("@shared/oplog").applyOperation(updated, undoOp);
+        updated = applyOperation(updated, undoOp);
       }
-      set({ elements: updated as unknown as Element[] });
+
+      if (allAcked) {
+        set({ elements: updated as unknown as Element[] });
+      } else {
+        set({ elements: current });
+      }
     } else if (previous) {
       set({ elements: previous });
     }
   },
 
-  redo: () => {
+  redo: async () => {
     const current = get().elements;
 
     const next = useHistoryStore.getState().redo(current);
     const action = useHistoryStore.getState().lastRedoAction;
 
     if (action && action.length > 0) {
-      let updated = current as unknown as import("@shared/oplog").ISharedElement[];
+      let updated = current as unknown as ISharedElement[];
+      let allAcked = true;
+
       for (const entry of action) {
         const payload = {
           targetOpId: entry.targetOpId,
           targetOpType: entry.targetOpType,
           tombstoneId: entry.tombstoneId,
+          inversePayload: entry.inversePayload as Record<string, unknown>,
         };
-        socketService.emitOp("op.redo", payload);
-        const redoOp: import("@shared/oplog").IOp = {
-          opId: crypto.randomUUID(),
+        const ack = await socketService.emitOp("op.redo", payload);
+        if (!ack.ok) {
+          console.warn(
+            "[boardStore] op.redo rejected by server, rolling back:",
+            ack.error,
+          );
+          allAcked = false;
+          break;
+        }
+
+        const redoOp: IOp = {
+          opId: ack.opId || crypto.randomUUID(),
           boardId: get().boardId || "",
           type: "op.redo",
           payload,
@@ -206,9 +236,14 @@ export const useBoardStore = create<BoardState>((set, get) => ({
           lamport: 0,
           createdAt: new Date().toISOString(),
         };
-        updated = import("@shared/oplog").applyOperation(updated, redoOp);
+        updated = applyOperation(updated, redoOp);
       }
-      set({ elements: updated as unknown as Element[] });
+
+      if (allAcked) {
+        set({ elements: updated as unknown as Element[] });
+      } else {
+        set({ elements: current });
+      }
     } else if (next) {
       set({ elements: next });
     }
