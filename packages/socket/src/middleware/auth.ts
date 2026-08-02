@@ -1,6 +1,6 @@
 // packages/socket/src/middleware/auth.ts
 import type { Socket } from "socket.io";
-import { verifyBoardJoinToken } from "shared";
+import { verifyBoardJoinToken } from "shared/jwt";
 import { env } from "../config/env";
 
 export function authMiddleware(socket: Socket, next: (err?: Error) => void) {

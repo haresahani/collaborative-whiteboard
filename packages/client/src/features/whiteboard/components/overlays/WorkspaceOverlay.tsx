@@ -25,7 +25,11 @@ export default function WorkspaceOverlay() {
     : 0;
 
   const activeElements = useMemo(
-    () => elements.filter((element) => !(element as Record<string, unknown>).tombstoned),
+    () =>
+      elements.filter(
+        (element) =>
+          !(element as unknown as Record<string, unknown>).tombstoned,
+      ),
     [elements],
   );
 

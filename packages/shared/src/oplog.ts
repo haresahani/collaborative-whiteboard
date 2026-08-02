@@ -9,6 +9,8 @@ import {
 
 export const OpTypeSchema = z.enum([
   "stroke.commit",
+  "stroke.point",
+  "stroke.finalize",
   "element.create",
   "element.update",
   "element.delete",
@@ -47,9 +49,70 @@ export function applyOperation(
 ): ISharedElement[] {
   const opId = op.opId;
 
-  if (op.type === "sticky.textUpdate") {
-    // Text updates are managed by Yjs CRDT and handled out-of-band for canvas elements
+  if (op.type === "sticky.textUpdate" || op.type === "stroke.point") {
+    // Text updates and ephemeral stroke points are not directly applied to persisted elements state
     return elements;
+  }
+
+  if (op.type === "stroke.finalize") {
+    const el = (op.payload.element || op.payload.stroke) as
+      | ISharedElement
+      | undefined;
+    const targetId = (op.payload.elementId || el?.id || opId) as string;
+    if (!el && !op.payload.points) return elements;
+
+    const points = (op.payload.points || el?.points) as
+      | { x: number; y: number }[]
+      | [number, number][];
+    const normalizedPoints = points
+      ? points.map((p: unknown) =>
+          Array.isArray(p)
+            ? { x: (p as [number, number])[0], y: (p as [number, number])[1] }
+            : (p as { x: number; y: number }),
+        )
+      : [];
+
+    const existingIndex = elements.findIndex(
+      (existing) => existing.id === targetId,
+    );
+    if (existingIndex !== -1) {
+      return elements.map((existing, i) => {
+        if (i !== existingIndex) return existing;
+        return {
+          ...existing,
+          ...(el || {}),
+          id: targetId,
+          points:
+            normalizedPoints.length > 0 ? normalizedPoints : existing.points,
+          tombstoned: false,
+          updatedAt: new Date(op.createdAt).getTime(),
+        };
+      });
+    }
+
+    const strokeEl: ISharedElement = el
+      ? {
+          ...el,
+          id: targetId,
+          points: normalizedPoints,
+          tombstoned: false,
+          createdAt: new Date(op.createdAt).getTime(),
+          updatedAt: new Date(op.createdAt).getTime(),
+        }
+      : {
+          id: targetId,
+          type: "stroke",
+          x: normalizedPoints[0]?.x || 0,
+          y: normalizedPoints[0]?.y || 0,
+          points: normalizedPoints,
+          style: op.payload.style || { strokeColor: "#000000", strokeWidth: 2 },
+          zIndex: 0,
+          tombstoned: false,
+          createdAt: new Date(op.createdAt).getTime(),
+          updatedAt: new Date(op.createdAt).getTime(),
+        };
+
+    return [...elements, strokeEl];
   }
 
   if (op.type === "stroke.commit") {

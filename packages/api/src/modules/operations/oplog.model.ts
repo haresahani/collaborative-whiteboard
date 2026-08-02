@@ -1,2 +1,2 @@
-export { Oplog } from "shared";
+export { Oplog } from "shared/models";
 export type { IOplog } from "shared";

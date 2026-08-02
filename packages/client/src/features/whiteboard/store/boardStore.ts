@@ -82,7 +82,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         targetOpType: "element.delete",
         tombstoneId: el.id,
         inversePayload: {
-          restoredElement: el as unknown as Record<string, unknown>,
+          restoredElement: el as unknown as Element,
         },
       });
     }

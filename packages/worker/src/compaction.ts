@@ -1,13 +1,10 @@
 import {
-  Oplog,
-  Snapshot,
-  YjsUpdate,
-  YjsSnapshot,
   mergeYjsUpdates,
   type IOp,
   applyOperation,
   type ISharedElement,
 } from "shared";
+import { Oplog, Snapshot, YjsUpdate, YjsSnapshot } from "shared/models";
 import { redisConnection } from "./config/redis";
 import mongoose from "mongoose";
 

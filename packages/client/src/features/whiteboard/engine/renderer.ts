@@ -25,7 +25,7 @@ Selection Bounding Box
 ----------------------------------------
 */
 function drawSelectionBox(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   elements: Element[],
   selectedIds: string[],
 ) {
@@ -52,7 +52,7 @@ function drawSelectionBox(
 
 // Marquee Box
 export function renderMarquee(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   box: { x: number; y: number; width: number; height: number },
 ) {
   ctx.save();
@@ -71,7 +71,7 @@ Resize Handles
 ----------------------------------------
 */
 function drawResizeHandles(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   minX: number,
   minY: number,
   maxX: number,
@@ -114,7 +114,7 @@ Main Renderer
 ----------------------------------------
 */
 export function renderElements(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   elements: Element[],
   tempElement: Element | null,
   offsetX = 0,
@@ -140,7 +140,7 @@ export function renderElements(
   ctx.setTransform(zoom, 0, 0, zoom, offsetX, offsetY);
 
   for (const element of elements) {
-    if ((element as Record<string, unknown>).tombstoned) continue;
+    if ((element as unknown as Record<string, unknown>).tombstoned) continue;
     const selected = selectedIds.includes(element.id);
     drawElement(ctx, element, selected);
   }

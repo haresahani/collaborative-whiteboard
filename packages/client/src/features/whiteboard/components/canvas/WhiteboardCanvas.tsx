@@ -2,7 +2,6 @@ import { Eraser } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useBoardStore } from "../../store/boardStore";
 import { useCollaborationStore } from "../../store/collaborationStore";
-import { renderElements } from "../../engine/renderer";
 import { useToolSession } from "../../hooks/useToolSession";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useToolStore } from "../../store/toolStore";
@@ -22,6 +21,8 @@ import { useStickyEditorStore } from "../../store/stickyEditorStore";
 import { socketService } from "../../../../api/ws";
 import type { Element } from "../../models/element";
 
+import { useOffscreenCanvas } from "../../hooks/useOffscreenCanvas";
+
 interface WhiteboardCanvasProps {
   onCanvasInteract?: () => void;
 }
@@ -30,6 +31,7 @@ export default function WhiteboardCanvas({
   onCanvasInteract,
 }: WhiteboardCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { render: renderCanvas } = useOffscreenCanvas(canvasRef);
 
   useKeyboardShortcuts();
 
@@ -79,40 +81,13 @@ export default function WhiteboardCanvas({
 
   /*
   ----------------------------------
-  Resize canvas to full screen
-  ----------------------------------
-  */
-  useEffect(() => {
-    function resizeCanvas() {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-
-    resizeCanvas();
-
-    window.addEventListener("resize", resizeCanvas);
-
-    return () => window.removeEventListener("resize", resizeCanvas);
-  }, []);
-
-  /*
-  ----------------------------------
   Render Loop
   ----------------------------------
   */
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
     let animationFrameId: number;
 
-    const render = () => {
+    const renderLoop = () => {
       const otherPreviews = Object.values(
         useCollaborationStore.getState().cursors,
       )
@@ -132,25 +107,33 @@ export default function WhiteboardCanvas({
           ? elements.filter((el) => !allErasedIds.has(el.id))
           : elements;
 
-      renderElements(
-        ctx,
-        visibleElements,
-        getPreview(),
+      renderCanvas({
+        elements: visibleElements,
+        tempElement: getPreview(),
         offsetX,
         offsetY,
         zoom,
         selectedIds,
-        useSelectionStore.getState().marquee,
-        otherPreviews,
-      );
+        marquee: useSelectionStore.getState().marquee,
+        otherTempElements: otherPreviews,
+      });
 
-      animationFrameId = requestAnimationFrame(render);
+      animationFrameId = requestAnimationFrame(renderLoop);
     };
 
-    animationFrameId = requestAnimationFrame(render);
+    animationFrameId = requestAnimationFrame(renderLoop);
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [elements, getPreview, getErasedIds, offsetX, offsetY, zoom, selectedIds]);
+  }, [
+    elements,
+    getPreview,
+    getErasedIds,
+    offsetX,
+    offsetY,
+    zoom,
+    selectedIds,
+    renderCanvas,
+  ]);
 
   /*
   ----------------------------------

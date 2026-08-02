@@ -1,2 +1,2 @@
-export { Snapshot } from "shared";
+export { Snapshot } from "shared/models";
 export type { ISnapshot } from "shared";

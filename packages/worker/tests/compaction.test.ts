@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { tryCompact } from "../src/compaction";
-import { Oplog, Snapshot } from "shared";
+import { Oplog, Snapshot } from "shared/models";
 import { redisConnection } from "../src/config/redis";
 import mongoose from "mongoose";
 
@@ -32,8 +32,8 @@ vi.mock("ioredis", () => {
 });
 
 // Mock mongoose models
-vi.mock("shared", async () => {
-  const actual = await vi.importActual<any>("shared");
+vi.mock("shared/models", async () => {
+  const actual = await vi.importActual<any>("shared/models");
   return {
     ...actual,
     Oplog: {

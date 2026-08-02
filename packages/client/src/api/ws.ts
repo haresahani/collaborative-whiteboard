@@ -15,7 +15,11 @@ import {
   applyOperation,
   replayOperations,
   type ISharedElement,
-} from "@shared/oplog";
+  encodeOpBatch,
+  decodeOpBatch,
+  encodeCursorBatch,
+  decodeCursorBatch,
+} from "shared";
 import {
   useCollaborationStore,
   type ChatMessage,
@@ -67,6 +71,12 @@ class SocketService {
   private myUserId: string | null = null;
   private heartbeatIntervalId: number | null = null;
   private isConnecting = false;
+
+  private pendingOpsQueue: any[] = [];
+  private pendingCursorsQueue: any[] = [];
+  private batchTimerId: number | null = null;
+  private readonly MAX_BATCH_SIZE = 20;
+  private readonly BATCH_INTERVAL_MS = 50;
 
   async connect(boardId: string) {
     if (this.socket && this.currentBoardId === boardId) {
@@ -120,6 +130,8 @@ class SocketService {
             this.socket.emit("presence.heartbeat");
           }
         }, 10000);
+
+        this.startBatching();
       });
 
       // Handle the initial board sync payload (snapshot + oplogs tail)
@@ -166,6 +178,60 @@ class SocketService {
           op as import("shared").IOp,
         ) as unknown as Element[];
         useBoardStore.getState().setElements(newElements);
+      });
+
+      // Handle binary / JSON op.batch broadcasts
+      this.socket.on("op.batch", (raw: unknown) => {
+        try {
+          const ops =
+            raw instanceof ArrayBuffer || raw instanceof Uint8Array
+              ? decodeOpBatch(raw)
+              : Array.isArray(raw)
+                ? raw
+                : (raw as any)?.ops || [];
+
+          let currentElements = useBoardStore.getState().elements;
+          for (const op of ops) {
+            currentElements = applyOperation(
+              currentElements as unknown as ISharedElement[],
+              op as import("shared").IOp,
+            ) as unknown as Element[];
+          }
+          useBoardStore.getState().setElements(currentElements);
+        } catch (err) {
+          console.error("[Socket] Failed to process incoming op.batch:", err);
+        }
+      });
+
+      // Handle binary / JSON cursor.batch broadcasts
+      this.socket.on("cursor.batch", (raw: unknown) => {
+        try {
+          const cursors =
+            raw instanceof ArrayBuffer || raw instanceof Uint8Array
+              ? decodeCursorBatch(raw)
+              : Array.isArray(raw)
+                ? raw
+                : (raw as any)?.cursors || [];
+
+          for (const c of cursors) {
+            if (c.userId === this.myUserId) continue;
+            useCollaborationStore.getState().updateCursor(c.userId!, {
+              userId: c.userId!,
+              displayName: c.displayName || "Anonymous",
+              accent: getUserAccent(c.userId!),
+              x: c.x,
+              y: c.y,
+              previewElement: c.previewElement,
+              erasedIds: c.erasedIds,
+              tool: c.tool,
+            });
+          }
+        } catch (err) {
+          console.error(
+            "[Socket] Failed to process incoming cursor.batch:",
+            err,
+          );
+        }
       });
 
       // Handle Yjs updates & awareness broadcasts
@@ -234,14 +300,6 @@ class SocketService {
       // --- Cursor listeners ---
       this.socket.on("cursor.broadcast", (data: any) => {
         if (data.userId === this.myUserId) return;
-        console.log("[socket] cursor.broadcast received:", {
-          userId: data.userId,
-          displayName: data.displayName,
-          hasPreview: !!data.previewElement,
-          previewElement: data.previewElement,
-          erasedCount: data.erasedIds?.length || 0,
-          tool: data.tool,
-        });
         useCollaborationStore.getState().updateCursor(data.userId, {
           userId: data.userId,
           displayName: data.displayName,
@@ -266,6 +324,10 @@ class SocketService {
       this.socket.on("connect_error", (err) => {
         console.error("[Socket] Connection error:", err.message);
       });
+
+      this.socket.on("disconnect", () => {
+        this.flushBatches();
+      });
     } catch (err) {
       this.isConnecting = false;
       this.currentBoardId = null;
@@ -273,7 +335,65 @@ class SocketService {
     }
   }
 
+  private startBatching() {
+    if (this.batchTimerId !== null) return;
+    this.batchTimerId = window.setInterval(() => {
+      this.flushBatches();
+    }, this.BATCH_INTERVAL_MS);
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("visibilitychange", this.handleVisibilityChange);
+      window.addEventListener("beforeunload", this.handleBeforeUnload);
+    }
+  }
+
+  private stopBatching() {
+    if (this.batchTimerId !== null) {
+      window.clearInterval(this.batchTimerId);
+      this.batchTimerId = null;
+    }
+    if (typeof window !== "undefined") {
+      window.removeEventListener(
+        "visibilitychange",
+        this.handleVisibilityChange,
+      );
+      window.removeEventListener("beforeunload", this.handleBeforeUnload);
+    }
+    this.flushBatches();
+  }
+
+  private handleVisibilityChange = () => {
+    if (typeof document !== "undefined" && document.hidden) {
+      this.flushBatches();
+    }
+  };
+
+  private handleBeforeUnload = () => {
+    this.flushBatches();
+  };
+
+  public flushBatches() {
+    if (!this.socket || !this.socket.connected) return;
+
+    if (this.pendingOpsQueue.length > 0) {
+      const opsToFlush = [...this.pendingOpsQueue];
+      this.pendingOpsQueue = [];
+      const encoded = encodeOpBatch(opsToFlush);
+      this.socket.emit("op.batch", encoded);
+    }
+
+    if (this.pendingCursorsQueue.length > 0) {
+      const cursorsToFlush = [...this.pendingCursorsQueue];
+      this.pendingCursorsQueue = [];
+      // Collapse cursor moves to the last write per user before sending
+      const collapsed = cursorsToFlush.slice(-1);
+      const encoded = encodeCursorBatch(collapsed);
+      this.socket.emit("cursor.batch", encoded);
+    }
+  }
+
   disconnect() {
+    this.stopBatching();
     this.isConnecting = false;
     this.currentBoardId = null;
     this.myUserId = null;
@@ -340,29 +460,12 @@ class SocketService {
     tool?: string,
   ) {
     if (!this.socket || !this.socket.connected) return;
-    console.log("[socket] emitting cursor.move:", {
-      x,
-      y,
-      hasPreview: !!previewElement,
-      previewElement,
-      erasedCount: erasedIds?.length || 0,
-      tool,
-    });
-    this.socket.emit("cursor.move", { x, y, previewElement, erasedIds, tool });
+    const cursorData = { x, y, previewElement, erasedIds, tool };
+    this.pendingCursorsQueue.push(cursorData);
+    if (this.pendingCursorsQueue.length >= this.MAX_BATCH_SIZE) {
+      this.flushBatches();
+    }
   }
-
-  private throttledCursorEmit = this.throttle(
-    (
-      x: number,
-      y: number,
-      previewElement?: any,
-      erasedIds?: string[],
-      tool?: string,
-    ) => {
-      this.emitCursor(x, y, previewElement, erasedIds, tool);
-    },
-    50,
-  );
 
   sendCursorMove(
     x: number,
@@ -371,7 +474,7 @@ class SocketService {
     erasedIds?: string[],
     tool?: string,
   ) {
-    this.throttledCursorEmit(x, y, previewElement, erasedIds, tool);
+    this.emitCursor(x, y, previewElement, erasedIds, tool);
   }
 
   sendChatMessage(message: string): { ok: boolean; error?: string } {
@@ -396,7 +499,14 @@ class SocketService {
   }
 
   emitOp(
-    type: "element.create" | "element.update" | "element.delete" | "op.undo" | "op.redo",
+    type:
+      | "element.create"
+      | "element.update"
+      | "element.delete"
+      | "op.undo"
+      | "op.redo"
+      | "stroke.finalize"
+      | "stroke.point",
     payload: Record<string, unknown>,
   ): Promise<{ ok: boolean; opId?: string; error?: string }> {
     return new Promise((resolve) => {
@@ -406,44 +516,23 @@ class SocketService {
         return;
       }
 
-      const opId = crypto.randomUUID();
+      const opId = (payload.id ||
+        payload.opId ||
+        crypto.randomUUID()) as string;
 
-      const payloadWithId = {
+      const opItem = {
         opId,
         type,
         payload,
       };
 
-      console.log("[Socket] Emitting op.commit:", payloadWithId);
-      this.socket.emit(
-        "op.commit",
-        payloadWithId,
-        (ack?: { ok: boolean; error?: string }) => {
-          if (!ack?.ok) {
-            console.error("[Socket] Op commit ack failed:", ack?.error);
-            resolve({ ok: false, error: ack?.error || "ACK_FAILED" });
-          } else {
-            console.log("[Socket] Op commit ack success:", ack);
-            resolve({ ok: true, opId: ack.opId || opId });
-          }
-        },
-      );
-    });
-  }
-
-  // Self-contained throttle helper to avoid external dependencies/types issues
-  private throttle<T extends (...args: any[]) => void>(
-    fn: T,
-    limit: number,
-  ): T {
-    let inThrottle = false;
-    return function (this: any, ...args: any[]) {
-      if (!inThrottle) {
-        fn.apply(this, args);
-        inThrottle = true;
-        window.setTimeout(() => (inThrottle = false), limit);
+      this.pendingOpsQueue.push(opItem);
+      if (this.pendingOpsQueue.length >= this.MAX_BATCH_SIZE) {
+        this.flushBatches();
       }
-    } as unknown as T;
+
+      resolve({ ok: true, opId });
+    });
   }
 }
 

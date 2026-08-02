@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
-import { YjsSnapshot, YjsUpdate, mergeYjsUpdates } from "shared";
+import { mergeYjsUpdates } from "shared";
+import { YjsSnapshot, YjsUpdate } from "shared/models";
 import { Board, IBoard } from "./board.model";
 import { Snapshot, ISnapshot } from "../snapshot/snapshot.model";
 import { Oplog } from "../operations/oplog.model";
