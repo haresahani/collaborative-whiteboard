@@ -398,32 +398,37 @@ class SocketService {
   emitOp(
     type: "element.create" | "element.update" | "element.delete" | "op.undo" | "op.redo",
     payload: Record<string, unknown>,
-  ) {
-    if (!this.socket || !this.socket.connected) {
-      console.warn("[Socket] Cannot emit op: socket is disconnected");
-      return;
-    }
+  ): Promise<{ ok: boolean; opId?: string; error?: string }> {
+    return new Promise((resolve) => {
+      if (!this.socket || !this.socket.connected) {
+        console.warn("[Socket] Cannot emit op: socket is disconnected");
+        resolve({ ok: false, error: "SOCKET_DISCONNECTED" });
+        return;
+      }
 
-    const opId = crypto.randomUUID();
+      const opId = crypto.randomUUID();
 
-    const payloadWithId = {
-      opId,
-      type,
-      payload,
-    };
+      const payloadWithId = {
+        opId,
+        type,
+        payload,
+      };
 
-    console.log("[Socket] Emitting op.commit:", payloadWithId);
-    this.socket.emit(
-      "op.commit",
-      payloadWithId,
-      (ack?: { ok: boolean; error?: string }) => {
-        if (!ack?.ok) {
-          console.error("[Socket] Op commit ack failed:", ack?.error);
-        } else {
-          console.log("[Socket] Op commit ack success:", ack);
-        }
-      },
-    );
+      console.log("[Socket] Emitting op.commit:", payloadWithId);
+      this.socket.emit(
+        "op.commit",
+        payloadWithId,
+        (ack?: { ok: boolean; error?: string }) => {
+          if (!ack?.ok) {
+            console.error("[Socket] Op commit ack failed:", ack?.error);
+            resolve({ ok: false, error: ack?.error || "ACK_FAILED" });
+          } else {
+            console.log("[Socket] Op commit ack success:", ack);
+            resolve({ ok: true, opId: ack.opId || opId });
+          }
+        },
+      );
+    });
   }
 
   // Self-contained throttle helper to avoid external dependencies/types issues

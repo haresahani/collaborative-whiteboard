@@ -236,6 +236,13 @@ export function applyOperation(
     const tombstoneId = (op.payload.tombstoneId || targetOpId) as
       | string
       | undefined;
+    const inversePayload = op.payload.inversePayload as
+      | {
+          restoredElement?: ISharedElement;
+          inverseUpdates?: Record<string, unknown>;
+          forwardUpdates?: Record<string, unknown>;
+        }
+      | undefined;
 
     const targetElId = tombstoneId || (op.payload.elementId as string);
     if (!targetElId) return elements;
@@ -247,7 +254,19 @@ export function applyOperation(
       );
     }
 
-    // Redo creation/stroke/update: untombstone element
+    if (
+      targetOpType === "element.update" &&
+      inversePayload?.forwardUpdates &&
+      targetElId
+    ) {
+      // Redo an update: re-apply forwardUpdates
+      return elements.map((el) => {
+        if (el.id !== targetElId) return el;
+        return { ...el, ...inversePayload.forwardUpdates, tombstoned: false };
+      });
+    }
+
+    // Redo creation/stroke: untombstone element
     return elements.map((el) =>
       el.id === targetElId ? { ...el, tombstoned: false } : el,
     );
