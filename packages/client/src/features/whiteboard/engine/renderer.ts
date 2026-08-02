@@ -140,6 +140,7 @@ export function renderElements(
   ctx.setTransform(zoom, 0, 0, zoom, offsetX, offsetY);
 
   for (const element of elements) {
+    if ((element as Record<string, unknown>).tombstoned) continue;
     const selected = selectedIds.includes(element.id);
     drawElement(ctx, element, selected);
   }
