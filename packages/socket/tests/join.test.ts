@@ -9,6 +9,7 @@ import {
 
 // Mock ioredis
 vi.mock("ioredis", () => {
+  const store = new Map<string, Array<{ score: number; member: string }>>();
   return {
     default: class MockRedis {
       constructor() {}
@@ -21,6 +22,38 @@ vi.mock("ioredis", () => {
       }
       set() {
         return Promise.resolve("OK");
+      }
+      zadd(key: string, score: number, member: string) {
+        let items = store.get(key);
+        if (!items) {
+          items = [];
+          store.set(key, items);
+        }
+        items.push({ score, member });
+        items.sort((a, b) => a.score - b.score);
+        return Promise.resolve(1);
+      }
+      zremrangebyrank() {
+        return Promise.resolve(0);
+      }
+      zrangebyscore(key: string, min: string | number) {
+        const items = store.get(key) || [];
+        const numMin =
+          typeof min === "string" ? parseFloat(min.replace("(", "")) : min;
+        const result = items
+          .filter((item) => item.score > numMin)
+          .map((item) => item.member);
+        return Promise.resolve(result);
+      }
+      expire() {
+        return Promise.resolve(1);
+      }
+      del(key: string) {
+        store.delete(key);
+        return Promise.resolve(1);
+      }
+      keys() {
+        return Promise.resolve(Array.from(store.keys()));
       }
     },
   };
@@ -81,9 +114,9 @@ describe("Socket Server Join Flow Tests", () => {
   let mockSocket: any;
   let mockIo: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    clearRecentOpsBuffer();
+    await clearRecentOpsBuffer();
     socketListeners = {};
 
     mockSocket = {
@@ -167,7 +200,7 @@ describe("Socket Server Join Flow Tests", () => {
       lamport: 12,
       createdAt: new Date().toISOString(),
     };
-    pushRecentOp("board-123", bufferedOplog);
+    await pushRecentOp("board-123", bufferedOplog);
 
     await joinHandler({ boardId: "board-123" });
 

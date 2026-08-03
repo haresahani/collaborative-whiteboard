@@ -101,7 +101,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         .lean();
 
       // Fetch recent unpersisted oplogs from buffer
-      const bufferedOps = getRecentOps(boardId, snapshotVersion);
+      const bufferedOps = await getRecentOps(boardId, snapshotVersion);
 
       // Merge and deduplicate by opId
       const opMap = new Map<string, IOp>();
@@ -200,8 +200,8 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         `[socket] op commit opId=${op.opId} type=${op.type} board=${op.boardId} user=${op.actorId} lamport=${op.lamport}`,
       );
 
-      // Cache in in-memory ring buffer
-      pushRecentOp(boardId, op);
+      // Cache in ring buffer
+      await pushRecentOp(boardId, op);
 
       // Broadcast first for low latency
       socket.to(roomName(boardId)).emit("op.broadcast", op);
@@ -260,7 +260,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
           const parsed = OpSchema.safeParse(enriched);
           if (parsed.success) {
             const op = parsed.data;
-            pushRecentOp(boardId, op);
+            await pushRecentOp(boardId, op);
             if (op.type !== "stroke.point") {
               await enqueueOp(op);
             }
@@ -381,8 +381,8 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         createdAt: new Date().toISOString(),
       };
 
-      // Cache in in-memory ring buffer
-      pushRecentOp(boardId, op);
+      // Cache in ring buffer
+      await pushRecentOp(boardId, op);
 
       // Broadcast specific stroke event
       socket.to(roomName(boardId)).emit("op.stroke.broadcast", {
@@ -527,7 +527,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
           createdAt: new Date().toISOString(),
         };
 
-        pushRecentOp(boardId, op);
+        await pushRecentOp(boardId, op);
         socket
           .to(roomName(boardId))
           .emit("yjs.update", { update: data.update });
