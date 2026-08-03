@@ -19,7 +19,7 @@ const BATCH_SIZE = Number(getArgValue("--batchSize", "50"));
 const BATCH_INTERVAL_MS = Number(getArgValue("--batchInterval", "100"));
 const TARGET_URLS = getArgValue(
   "--target",
-  process.env.SOCKET_URL || "http://localhost:3001",
+  process.env.SOCKET_URL || "http://127.0.0.1:3001",
 ).split(",");
 
 const JWT_SECRET =
@@ -76,7 +76,9 @@ async function runLoadTest() {
       auth: { token },
       transports: ["websocket"],
       forceNew: true,
-      reconnection: false,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 200,
     });
 
     const connectStart = Date.now();
@@ -194,7 +196,7 @@ async function runLoadTest() {
     );
     process.exit(0);
   } else {
-    console.error("❌ LOAD TEST FAILED: Fewer than 90% of clients connected.");
+    console.error("LOAD TEST FAILED: Fewer than 90% of clients connected.");
     process.exit(1);
   }
 }
