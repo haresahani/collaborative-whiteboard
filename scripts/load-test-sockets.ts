@@ -1,6 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { io as Client, type Socket as ClientSocket } from "socket.io-client";
 import { issueBoardJoinToken } from "../packages/shared/src/jwt.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({
+  path: path.resolve(__dirname, "../env/dev.env"),
+});
 
 // CLI Arguments parsing
 const args = process.argv.slice(2);
