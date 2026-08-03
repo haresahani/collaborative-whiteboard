@@ -15,7 +15,8 @@
     "lint": "pnpm -r --filter ./packages/* --if-present lint",
     "format": "prettier --write .",
     "prepare": "husky install",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "load-test:sockets": "tsx scripts/load-test-sockets.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
