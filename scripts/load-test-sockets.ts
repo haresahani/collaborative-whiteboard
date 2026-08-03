@@ -1,6 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { io as Client, type Socket as ClientSocket } from "socket.io-client";
-import { issueBoardJoinToken } from "shared/jwt";
+import { issueBoardJoinToken } from "../packages/shared/src/jwt.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({
+  path: path.resolve(__dirname, "../env/dev.env"),
+});
 
 // CLI Arguments parsing
 const args = process.argv.slice(2);
@@ -19,7 +28,7 @@ const BATCH_SIZE = Number(getArgValue("--batchSize", "50"));
 const BATCH_INTERVAL_MS = Number(getArgValue("--batchInterval", "100"));
 const TARGET_URLS = getArgValue(
   "--target",
-  process.env.SOCKET_URL || "http://localhost:3001",
+  process.env.SOCKET_URL || "http://127.0.0.1:3001",
 ).split(",");
 
 const JWT_SECRET =
@@ -43,7 +52,7 @@ const stats: ClientStats = {
 
 async function runLoadTest() {
   console.log("=================================================");
-  console.log("⚡ SOCKET.IO 1K+ CONCURRENT CLIENTS LOAD TEST ⚡");
+  console.log("SOCKET.IO 1K+ CONCURRENT CLIENTS LOAD TEST");
   console.log("=================================================");
   console.log(`Target Nodes    : ${TARGET_URLS.join(", ")}`);
   console.log(`Total Clients   : ${TOTAL_CLIENTS}`);
@@ -58,7 +67,7 @@ async function runLoadTest() {
 
   const startTime = Date.now();
 
-  console.log(`🚀 Spawning ${TOTAL_CLIENTS} simulated clients...`);
+  console.log(` Spawning ${TOTAL_CLIENTS} simulated clients...`);
 
   for (let i = 0; i < TOTAL_CLIENTS; i++) {
     const targetUrl = TARGET_URLS[i % TARGET_URLS.length];
@@ -76,7 +85,9 @@ async function runLoadTest() {
       auth: { token },
       transports: ["websocket"],
       forceNew: true,
-      reconnection: false,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 200,
     });
 
     const connectStart = Date.now();
@@ -115,7 +126,7 @@ async function runLoadTest() {
   // Wait for connections to stabilize
   await new Promise((r) => setTimeout(r, 2000));
 
-  console.log(`\n✅ ${stats.connected}/${TOTAL_CLIENTS} clients connected.`);
+  console.log(`\n ${stats.connected}/${TOTAL_CLIENTS} clients connected.`);
   if (stats.connectFailed > 0) {
     console.warn(`⚠️ ${stats.connectFailed} client connections failed.`);
   }
@@ -154,7 +165,7 @@ async function runLoadTest() {
 
   const totalTimeSecs = (Date.now() - startTime) / 1000;
 
-  console.log("\n🧹 Cleaning up client connections...");
+  console.log("\n Cleaning up client connections...");
   for (const client of clients) {
     if (client.connected) {
       client.disconnect();
@@ -176,7 +187,7 @@ async function runLoadTest() {
   );
 
   console.log("\n=================================================");
-  console.log("📊 LOAD TEST RESULTS SUMMARY");
+  console.log("LOAD TEST RESULTS SUMMARY");
   console.log("=================================================");
   console.log(`Target Clients      : ${TOTAL_CLIENTS}`);
   console.log(`Connected Clients   : ${stats.connected}`);
@@ -194,7 +205,7 @@ async function runLoadTest() {
     );
     process.exit(0);
   } else {
-    console.error("❌ LOAD TEST FAILED: Fewer than 90% of clients connected.");
+    console.error("LOAD TEST FAILED: Fewer than 90% of clients connected.");
     process.exit(1);
   }
 }
