@@ -15,7 +15,13 @@ export interface SocketServerOptions {
 }
 
 export function createSocketServer(options?: SocketServerOptions) {
-  const httpServer = createServer();
+  const httpServer = createServer((req, res) => {
+    if (req.url === "/health" || req.url === "/") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "ok" }));
+      return;
+    }
+  });
 
   const io = new Server(httpServer, {
     cors: {

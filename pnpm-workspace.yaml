@@ -1,5 +1,6 @@
 packages:
   - packages/*
+  - tests/e2e/playwright
 
 onlyBuiltDependencies:
   - "@swc/core"

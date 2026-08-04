@@ -3,7 +3,8 @@
   "name": "collaborative-whiteboard",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "tests/e2e/playwright"
   ],
   "scripts": {
     "predev": "pnpm --filter shared build",
@@ -16,14 +17,21 @@
     "format": "prettier --write .",
     "prepare": "husky install",
     "test": "pnpm -r test",
+    "test:e2e": "playwright test --project=chromium --config=tests/e2e/playwright/playwright.config.ts",
+    "test:e2e:ui": "playwright test --ui --config=tests/e2e/playwright/playwright.config.ts",
+    "test:e2e:headed": "playwright test --headed --config=tests/e2e/playwright/playwright.config.ts",
+    "test:e2e:debug": "playwright test --debug --config=tests/e2e/playwright/playwright.config.ts",
+    "test:e2e:report": "playwright show-report tests/e2e/playwright/reports/html",
     "load-test:sockets": "tsx scripts/load-test-sockets.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
+    "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
+    "@types/node": "^26.1.2",
     "@types/supertest": "^6.0.3",
     "@types/testing-library__jest-dom": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.43.0",
