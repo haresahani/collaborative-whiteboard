@@ -507,6 +507,15 @@ importers:
         specifier: ^4.0.8
         version: 4.0.8(@types/node@25.3.2)(happy-dom@20.0.10)(jiti@1.21.7)(jsdom@27.1.0)(tsx@4.20.5)(yaml@2.8.1)
 
+  tests/e2e/playwright:
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.50.0
+        version: 1.62.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
 packages:
 
   '@acemir/cssom@0.9.23':
