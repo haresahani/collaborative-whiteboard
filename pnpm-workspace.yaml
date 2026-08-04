@@ -4,4 +4,7 @@ packages:
 
 onlyBuiltDependencies:
   - "@swc/core"
+  - bcrypt
   - esbuild
+  - msgpackr-extract
+  - unrs-resolver
