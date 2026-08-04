@@ -6,6 +6,15 @@
     "packages/*",
     "tests/e2e/playwright"
   ],
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "bcrypt",
+      "esbuild",
+      "msgpackr-extract",
+      "unrs-resolver"
+    ]
+  },
   "scripts": {
     "predev": "pnpm --filter shared build",
     "dev": "pnpm -r --parallel --filter ./packages/* --if-present dev",
