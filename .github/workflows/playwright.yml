@@ -30,6 +30,11 @@ jobs:
 
       - name: Run Playwright tests
         run: pnpm test:e2e
+        env:
+          NODE_ENV: test
+          JWT_SECRET: mock_jwt_secret_for_e2e_testing_32_chars_long
+          PORT: 1234
+          SOCKET_PORT: 3001
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}

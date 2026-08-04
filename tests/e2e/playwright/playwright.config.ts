@@ -5,6 +5,14 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const e2eEnv = {
+  NODE_ENV: "test",
+  JWT_SECRET: process.env.JWT_SECRET || "mock_jwt_secret_for_e2e_testing_32_chars_long",
+  PORT: "1234",
+  SOCKET_PORT: "3001",
+  CLIENT_ORIGIN: "http://localhost:5173",
+};
+
 export default defineConfig({
   testDir: "./specs",
   fullyParallel: true,
@@ -55,18 +63,21 @@ export default defineConfig({
       url: "http://127.0.0.1:1234/",
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
+      env: e2eEnv,
     },
     {
       command: "pnpm --filter socket dev",
       url: "http://127.0.0.1:3001/health",
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
+      env: e2eEnv,
     },
     {
       command: "pnpm --filter client dev",
       url: "http://localhost:5173",
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
+      env: e2eEnv,
     },
   ],
 });
