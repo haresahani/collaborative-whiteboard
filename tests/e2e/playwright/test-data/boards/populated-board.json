@@ -1,0 +1,16 @@
+{
+  "id": "board-populated-e2e",
+  "title": "Populated Test Board",
+  "version": 1,
+  "elements": [
+    {
+      "id": "rect-1",
+      "type": "rectangle",
+      "x": 100,
+      "y": 100,
+      "width": 200,
+      "height": 150,
+      "style": { "strokeColor": "#000000", "fillColor": "#ffffff" }
+    }
+  ]
+}
