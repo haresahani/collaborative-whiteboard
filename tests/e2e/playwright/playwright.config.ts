@@ -8,6 +8,9 @@ const __dirname = path.dirname(__filename);
 const e2eEnv = {
   NODE_ENV: "test",
   JWT_SECRET: process.env.JWT_SECRET || "mock_jwt_secret_for_e2e_testing_32_chars_long",
+  MONGO_URL:
+    process.env.MONGO_URL ||
+    "mongodb+srv://haresahani:L6pnAMuyVnIpFFT3@whiteboard-collab.vtsbfwk.mongodb.net/collaborative-whiteboard?appName=whiteboard-collab",
   PORT: "1234",
   SOCKET_PORT: "3001",
   CLIENT_ORIGIN: "http://localhost:5173",
