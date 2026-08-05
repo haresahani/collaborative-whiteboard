@@ -4,7 +4,8 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "tests/e2e/playwright"
+    "tests/e2e/playwright",
+    "tests/performance/k6"
   ],
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -31,6 +32,12 @@
     "test:e2e:headed": "playwright test --headed --config=tests/e2e/playwright/playwright.config.ts",
     "test:e2e:debug": "playwright test --debug --config=tests/e2e/playwright/playwright.config.ts",
     "test:e2e:report": "playwright show-report tests/e2e/playwright/reports/html",
+    "performance:smoke": "k6 run tests/performance/k6/scenarios/smoke.ts",
+    "performance:load": "k6 run tests/performance/k6/scenarios/load.ts",
+    "performance:stress": "k6 run tests/performance/k6/scenarios/stress.ts",
+    "performance:spike": "k6 run tests/performance/k6/scenarios/spike.ts",
+    "performance:soak": "k6 run tests/performance/k6/scenarios/soak.ts",
+    "performance:breakpoint": "k6 run tests/performance/k6/scenarios/breakpoint.ts",
     "load-test:sockets": "tsx scripts/load-test-sockets.ts"
   },
   "devDependencies": {

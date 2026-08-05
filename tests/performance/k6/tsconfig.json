@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["k6", "node"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@config/*": ["config/*"],
+      "@metrics/*": ["metrics/*"],
+      "@utils/*": ["utils/*"],
+      "@types/*": ["types/*"],
+      "@api/*": ["api/*"],
+      "@websocket/*": ["websocket/*"],
+      "@workloads/*": ["workloads/*"]
+    }
+  },
+  "include": ["**/*.ts"]
+}
