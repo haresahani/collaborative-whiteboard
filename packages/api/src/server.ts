@@ -17,6 +17,10 @@ app.get("/", (req, res) => {
   res.send("Express server is active");
 });
 
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 // Centralized error handler — must be registered AFTER all routes
 app.use(errorHandler);
 

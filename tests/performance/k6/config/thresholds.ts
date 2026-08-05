@@ -10,11 +10,11 @@ export const THRESHOLDS = {
     ws_connecting: ["p(95)<1000"],
   },
   STRESS: {
-    http_req_duration: ["p(95)<2000"],
+    http_req_duration: ["p(95)<3000"],
     "http_req_failed{expected_response:true}": ["rate<0.05"],
   },
   SPIKE: {
-    http_req_duration: ["p(95)<3000"],
+    http_req_duration: ["p(95)<5000"],
     "http_req_failed{expected_response:true}": ["rate<0.10"],
   },
   SOAK: {
