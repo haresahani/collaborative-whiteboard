@@ -45,18 +45,33 @@ The k6 benchmark framework is configured across 6 standardized performance scena
 
 ## 📊 3. Measured Results & Metrics
 
-### 📈 Per-Endpoint Latency Summary (50-VU Load Scenario)
+### 1. Scenario Performance (k6 Overall Terminal Outputs)
 
-| Endpoint / Operation | Method | P50 (Median) | P90 Latency | P95 Latency | Max Latency | Target SLA | Compliance Status |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`POST /api/auth/login`** | REST | `134.00 ms` | `175.00 ms` | **`200.75 ms`** | `256.00 ms` | `< 300 ms` | **PASSED** ✅ |
-| **`POST /api/boards`** | REST | `1.04 ms` | `3.04 ms` | **`4.03 ms`** | `14.99 ms` | `< 50 ms` | **PASSED** ✅ |
-| **`POST /api/boards/:id/operations`** | REST | `0.51 ms` | `1.02 ms` | **`1.04 ms`** | `1.99 ms` | `< 20 ms` | **PASSED (⚡ Optimized)** ✅ |
-| **`GET /api/boards`** | REST | `2.04 ms` | `7.99 ms` | **`12.03 ms`** | `22.99 ms` | `< 50 ms` | **PASSED** ✅ |
-| **`GET /api/boards/:id/snapshot`** | REST | `1.03 ms` | `2.99 ms` | **`3.99 ms`** | `8.02 ms` | `< 30 ms` | **PASSED** ✅ |
-| **`POST /api/boards/:id/assets`** | REST | `3.10 ms` | `5.80 ms` | **`7.20 ms`** | `12.40 ms` | `< 100 ms` | **PASSED** ✅ |
-| **`WebSocket Connect`** | WS | `1.92 ms` | `2.70 ms` | **`3.03 ms`** | `8.99 ms` | `< 50 ms` | **PASSED** ✅ |
-| **`WebSocket Draw Broadcast`** | WS | `1.03 ms` | `2.35 ms` | **`3.04 ms`** | `5.99 ms` | `< 20 ms` | **PASSED** ✅ |
+Derived from standard k6 terminal summaries (`http_req_duration`):
+
+| Scenario | Peak Load | P95 Response Latency | Error Rate | SLA Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Smoke** | 5 VUs | **142 ms** | 0.00 % | **PASSED** ✅ |
+| **Load** | 50 VUs | **12 ms** | 0.00 % | **PASSED** ✅ |
+| **Stress** | 250 VUs | **14 ms** | 0.00 % | **PASSED** ✅ |
+| **Spike** | 200 VUs | **14 ms** | 0.00 % | **PASSED** ✅ |
+| **Soak** | 30 VUs | **248 ms** | 0.00 % | **PASSED** ✅ |
+| **Breakpoint** | 500 VUs | **14 ms** | 0.00 % | **PASSED** ✅ |
+
+---
+
+### 2. Business & Application Metrics (Custom Trend Probes)
+
+Derived from custom k6 `Trend` metrics and backend execution timing to isolate where time is spent inside the application:
+
+| Operation | Target SLA | P95 Latency | Measurement Scope |
+| :--- | :--- | :--- | :--- |
+| **Login** | `< 300 ms` | **200 ms** | `api_login_latency` (`bcrypt.compare` + JWT issuance) |
+| **Create Board** | `< 50 ms` | **4 ms** | `api_board_create_latency` (MongoDB Document instantiation) |
+| **Append Operation** | `< 20 ms` | **1 ms** | `api_op_append_latency` (⚡ CRDT Oplog write after `.lean()` optimization) |
+| **Snapshot Fetch** | `< 30 ms` | **4 ms** | `api_snapshot_latency` (Compiled board snapshot fetch) |
+| **Asset Upload** | `< 100 ms` | **7 ms** | Multipart disk buffer write + metadata save |
+| **WS Connect** | `< 50 ms` | **3 ms** | `ws_connect_latency` (WebSocket HTTP 101 Handshake) |
 
 ---
 
