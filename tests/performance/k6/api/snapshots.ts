@@ -1,8 +1,8 @@
 import http from "k6/http";
-import { ENV } from "../config/environments.js";
-import { getAuthHeaders } from "../utils/headers.js";
-import { checkHttpStatus } from "../utils/checks.js";
-import { apiSnapshotLatency } from "../metrics/latency.js";
+import { ENV } from "../config/environments.ts";
+import { getAuthHeaders } from "../utils/headers.ts";
+import { checkHttpStatus } from "../utils/checks.ts";
+import { apiSnapshotLatency } from "../metrics/latency.ts";
 
 export function testSnapshots(boardId: string, token?: string): boolean {
   const url = `${ENV.API_BASE_URL}/api/boards/${boardId}/snapshot`;

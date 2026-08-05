@@ -1,8 +1,8 @@
 import http from "k6/http";
-import { ENV } from "../config/environments.js";
-import { HEADERS } from "../utils/constants.js";
-import { randomEmail } from "../utils/random.js";
-import { checkHttpStatus } from "../utils/checks.js";
+import { ENV } from "../config/environments.ts";
+import { HEADERS } from "../utils/constants.ts";
+import { randomEmail } from "../utils/random.ts";
+import { checkHttpStatus } from "../utils/checks.ts";
 
 export function testAuthSignup(): boolean {
   const url = `${ENV.API_BASE_URL}/api/auth/register`;

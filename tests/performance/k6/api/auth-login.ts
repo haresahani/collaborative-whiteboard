@@ -1,8 +1,8 @@
 import http from "k6/http";
-import { ENV } from "../config/environments.js";
-import { HEADERS } from "../utils/constants.js";
-import { checkHttpStatus } from "../utils/checks.js";
-import { apiLoginLatency } from "../metrics/latency.js";
+import { ENV } from "../config/environments.ts";
+import { HEADERS } from "../utils/constants.ts";
+import { checkHttpStatus } from "../utils/checks.ts";
+import { apiLoginLatency } from "../metrics/latency.ts";
 
 export function testAuthLogin(): boolean {
   const url = `${ENV.API_BASE_URL}/api/auth/login`;

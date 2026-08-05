@@ -1,10 +1,9 @@
 import ws from "k6/ws";
 import { sleep } from "k6";
-import { ENV } from "../config/environments.js";
-import { wsReconnections } from "../metrics/websocket.js";
+import { ENV } from "../config/environments.ts";
+import { wsReconnections } from "../metrics/websocket.ts";
 
 export function testWSReconnect(boardId = "k6-reconnect-board"): void {
-  // Connect first session
   ws.connect(ENV.WS_BASE_URL, {}, function (socket) {
     socket.on("open", () => {
       socket.send(`42${JSON.stringify(["join.board", { boardId }])}`);
@@ -14,7 +13,6 @@ export function testWSReconnect(boardId = "k6-reconnect-board"): void {
 
   sleep(0.5);
 
-  // Reconnect second session
   ws.connect(ENV.WS_BASE_URL, {}, function (socket) {
     socket.on("open", () => {
       socket.send(`42${JSON.stringify(["join.board", { boardId }])}`);

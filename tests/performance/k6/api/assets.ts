@@ -1,7 +1,7 @@
 import http from "k6/http";
-import { ENV } from "../config/environments.js";
-import { getAuthHeaders } from "../utils/headers.js";
-import { checkHttpStatus } from "../utils/checks.js";
+import { ENV } from "../config/environments.ts";
+import { getAuthHeaders } from "../utils/headers.ts";
+import { checkHttpStatus } from "../utils/checks.ts";
 
 export function testGetAsset(boardId: string, assetId: string, token?: string): boolean {
   const url = `${ENV.API_BASE_URL}/api/boards/${boardId}/assets/${assetId}`;

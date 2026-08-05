@@ -1,9 +1,9 @@
 import http from "k6/http";
-import { ENV } from "../config/environments.js";
-import { getAuthHeaders } from "../utils/headers.js";
-import { randomBoardTitle } from "../utils/random.js";
-import { checkHttpStatus } from "../utils/checks.js";
-import { apiBoardCreateLatency } from "../metrics/latency.js";
+import { ENV } from "../config/environments.ts";
+import { getAuthHeaders } from "../utils/headers.ts";
+import { randomBoardTitle } from "../utils/random.ts";
+import { checkHttpStatus } from "../utils/checks.ts";
+import { apiBoardCreateLatency } from "../metrics/latency.ts";
 
 export function testCreateBoard(token?: string): string | null {
   const url = `${ENV.API_BASE_URL}/api/boards`;

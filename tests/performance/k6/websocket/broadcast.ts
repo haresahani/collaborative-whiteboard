@@ -1,7 +1,6 @@
 import ws from "k6/ws";
-import { sleep } from "k6";
-import { ENV } from "../config/environments.js";
-import { wsMessagesSent, wsMessagesReceived } from "../metrics/websocket.js";
+import { ENV } from "../config/environments.ts";
+import { wsMessagesSent, wsMessagesReceived } from "../metrics/websocket.ts";
 
 export function testWSBroadcast(boardId = "k6-broadcast-board"): void {
   ws.connect(ENV.WS_BASE_URL, {}, function (socket) {
@@ -11,7 +10,7 @@ export function testWSBroadcast(boardId = "k6-broadcast-board"): void {
       wsMessagesSent.add(1);
     });
 
-    socket.on("message", (msg) => {
+    socket.on("message", () => {
       wsMessagesReceived.add(1);
       socket.close();
     });

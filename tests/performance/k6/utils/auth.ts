@@ -1,8 +1,8 @@
 import http from "k6/http";
-import { ENV } from "../config/environments.js";
-import { HEADERS } from "./constants.js";
-import { checkHttpStatus } from "./checks.js";
-import { apiLoginLatency } from "../metrics/latency.js";
+import { ENV } from "../config/environments.ts";
+import { HEADERS } from "./constants.ts";
+import { checkHttpStatus } from "./checks.ts";
+import { apiLoginLatency } from "../metrics/latency.ts";
 
 export function loginVU(email = "user@example.com", password = "password123"): string | null {
   const url = `${ENV.API_BASE_URL}/api/auth/login`;

@@ -1,7 +1,7 @@
 import { sleep } from "k6";
-import { createK6Options } from "../config/options.js";
-import { testAuthLogin } from "../api/auth-login.js";
-import { testWSDraw } from "../websocket/draw.js";
+import { createK6Options } from "../config/options.ts";
+import { testAuthLogin } from "../api/auth-login.ts";
+import { testWSDraw } from "../websocket/draw.ts";
 
 const breakpointWorkload = [
   { duration: "30s", target: 50 },

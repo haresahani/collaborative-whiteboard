@@ -1,14 +1,14 @@
 import { sleep } from "k6";
-import { createK6Options } from "../config/options.js";
-import { smokeWorkload } from "../workloads/smoke.js";
-import { THRESHOLDS } from "../config/thresholds.js";
-import { testAuthLogin } from "../api/auth-login.js";
-import { testCreateBoard } from "../api/create-board.js";
-import { testAppendOperation } from "../api/append-operation.js";
-import { testWSConnect } from "../websocket/connect.js";
-import { testWSDraw } from "../websocket/draw.js";
-import { testWSCursor } from "../websocket/cursor.js";
-import { handleSummary as customSummary } from "../utils/helpers.js";
+import { createK6Options } from "../config/options.ts";
+import { smokeWorkload } from "../workloads/smoke.ts";
+import { THRESHOLDS } from "../config/thresholds.ts";
+import { testAuthLogin } from "../api/auth-login.ts";
+import { testCreateBoard } from "../api/create-board.ts";
+import { testAppendOperation } from "../api/append-operation.ts";
+import { testWSConnect } from "../websocket/connect.ts";
+import { testWSDraw } from "../websocket/draw.ts";
+import { testWSCursor } from "../websocket/cursor.ts";
+import { handleSummary as customSummary } from "../utils/helpers.ts";
 
 export const options = createK6Options(smokeWorkload, THRESHOLDS.SMOKE);
 export const handleSummary = customSummary;

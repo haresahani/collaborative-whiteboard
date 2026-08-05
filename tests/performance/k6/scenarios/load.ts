@@ -1,15 +1,15 @@
 import { sleep } from "k6";
-import { createK6Options } from "../config/options.js";
-import { loadWorkload } from "../workloads/load.js";
-import { THRESHOLDS } from "../config/thresholds.js";
-import { testAuthLogin } from "../api/auth-login.js";
-import { testCreateBoard } from "../api/create-board.js";
-import { testListBoards } from "../api/list-boards.js";
-import { testAppendOperation } from "../api/append-operation.js";
-import { testSnapshots } from "../api/snapshots.js";
-import { testWSDraw } from "../websocket/draw.js";
-import { testWSCursor } from "../websocket/cursor.js";
-import { handleSummary as customSummary } from "../utils/helpers.js";
+import { createK6Options } from "../config/options.ts";
+import { loadWorkload } from "../workloads/load.ts";
+import { THRESHOLDS } from "../config/thresholds.ts";
+import { testAuthLogin } from "../api/auth-login.ts";
+import { testCreateBoard } from "../api/create-board.ts";
+import { testListBoards } from "../api/list-boards.ts";
+import { testAppendOperation } from "../api/append-operation.ts";
+import { testSnapshots } from "../api/snapshots.ts";
+import { testWSDraw } from "../websocket/draw.ts";
+import { testWSCursor } from "../websocket/cursor.ts";
+import { handleSummary as customSummary } from "../utils/helpers.ts";
 
 export const options = createK6Options(loadWorkload, THRESHOLDS.LOAD);
 export const handleSummary = customSummary;

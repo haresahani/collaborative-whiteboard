@@ -1,6 +1,6 @@
 import ws from "k6/ws";
-import { ENV } from "../config/environments.js";
-import { wsMessagesSent } from "../metrics/websocket.js";
+import { ENV } from "../config/environments.ts";
+import { wsMessagesSent } from "../metrics/websocket.ts";
 
 export function testWSJoinBoard(boardId = "k6-test-board"): void {
   ws.connect(ENV.WS_BASE_URL, {}, function (socket) {

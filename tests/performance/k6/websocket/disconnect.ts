@@ -1,5 +1,5 @@
 import ws from "k6/ws";
-import { ENV } from "../config/environments.js";
+import { ENV } from "../config/environments.ts";
 
 export function testWSDisconnect(): void {
   ws.connect(ENV.WS_BASE_URL, {}, function (socket) {
