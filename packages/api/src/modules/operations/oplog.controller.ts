@@ -106,7 +106,9 @@ export const appendOperation = async (req: Request, res: Response) => {
 
     const operation = await Oplog.create({
       boardId,
-      opId: opId || `op-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      opId:
+        opId ||
+        `op-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       type: type || "element.create",
       payload: payload || {},
       actorId: actorId || userId,
