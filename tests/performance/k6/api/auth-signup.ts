@@ -5,7 +5,7 @@ import { randomEmail } from "../utils/random.ts";
 import { checkHttpStatus } from "../utils/checks.ts";
 
 export function testAuthSignup(): boolean {
-  const url = `${ENV.API_BASE_URL}/api/auth/register`;
+  const url = `${ENV.API_BASE_URL}/api/auth/signup`;
   const payload = JSON.stringify({
     email: randomEmail(),
     password: "Password123!",

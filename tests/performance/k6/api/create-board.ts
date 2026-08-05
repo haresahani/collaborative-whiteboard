@@ -17,7 +17,7 @@ export function testCreateBoard(token?: string): string | null {
   if (checkHttpStatus(res, 201, "create board 201")) {
     try {
       const body = JSON.parse(res.body as string);
-      return body.id || null;
+      return (body.data && body.data.id) || body.id || null;
     } catch (e) {
       return null;
     }

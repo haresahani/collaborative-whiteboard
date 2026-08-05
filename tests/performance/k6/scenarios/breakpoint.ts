@@ -1,6 +1,6 @@
 import { sleep } from "k6";
 import { createK6Options } from "../config/options.ts";
-import { testAuthLogin } from "../api/auth-login.ts";
+import { loginVU } from "../utils/auth.ts";
 import { testWSDraw } from "../websocket/draw.ts";
 
 const breakpointWorkload = [
@@ -16,7 +16,7 @@ export const options = createK6Options(breakpointWorkload, {
 });
 
 export default function () {
-  testAuthLogin();
+  loginVU();
   testWSDraw("k6-breakpoint-board", 5);
   sleep(0.05);
 }

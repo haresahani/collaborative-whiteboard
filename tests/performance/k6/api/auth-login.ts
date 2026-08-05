@@ -1,19 +1,35 @@
 import http from "k6/http";
+import { check } from "k6";
 import { ENV } from "../config/environments.ts";
 import { HEADERS } from "../utils/constants.ts";
-import { checkHttpStatus } from "../utils/checks.ts";
 import { apiLoginLatency } from "../metrics/latency.ts";
+import { randomEmail } from "../utils/random.ts";
 
 export function testAuthLogin(): boolean {
-  const url = `${ENV.API_BASE_URL}/api/auth/login`;
-  const payload = JSON.stringify({
-    email: "user@example.com",
-    password: "password123",
-  });
+  const signupUrl = `${ENV.API_BASE_URL}/api/auth/signup`;
+  const loginUrl = `${ENV.API_BASE_URL}/api/auth/login`;
 
+  const email = randomEmail();
+  const password = "Password123!";
+
+  // 1. Signup user (HTTP 201 Created)
+  const signupRes = http.post(
+    signupUrl,
+    JSON.stringify({ email, password, displayName: "k6 VU" }),
+    { headers: HEADERS.JSON }
+  );
+  const signupOk = check(signupRes, { "signup status is 201/200": (r) => r.status === 201 || r.status === 200 });
+
+  // 2. Login user (HTTP 200 OK)
   const start = Date.now();
-  const res = http.post(url, payload, { headers: HEADERS.JSON });
+  const loginRes = http.post(
+    loginUrl,
+    JSON.stringify({ email, password }),
+    { headers: HEADERS.JSON }
+  );
   apiLoginLatency.add(Date.now() - start);
 
-  return checkHttpStatus(res, 200, "auth login 200 OK");
+  const loginOk = check(loginRes, { "login status is 200": (r) => r.status === 200 });
+
+  return signupOk && loginOk;
 }
