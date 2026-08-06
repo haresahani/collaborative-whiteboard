@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    container_name: whiteboard-toxiproxy
+    ports:
+      - "8474:8474" # Toxiproxy API Port
+      - "27018:27018" # Proxied MongoDB Port
+      - "6380:6380" # Proxied Redis Port
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
