@@ -1,0 +1,21 @@
+{
+  "name": "collaborative-whiteboard-performance",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild scenarios/*.ts --bundle --outdir=dist --target=es2020 --format=esm",
+    "performance:smoke": "k6 run scenarios/smoke.ts",
+    "performance:load": "k6 run scenarios/load.ts",
+    "performance:stress": "k6 run scenarios/stress.ts",
+    "performance:spike": "k6 run scenarios/spike.ts",
+    "performance:soak": "k6 run scenarios/soak.ts",
+    "performance:breakpoint": "k6 run scenarios/breakpoint.ts"
+  },
+  "devDependencies": {
+    "@types/k6": "^0.54.0",
+    "@types/node": "^26.1.2",
+    "esbuild": "^0.25.9",
+    "typescript": "^5.9.2"
+  }
+}

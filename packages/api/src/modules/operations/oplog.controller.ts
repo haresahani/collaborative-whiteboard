@@ -8,7 +8,7 @@ export const appendOperation = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     const boardId = req.params.boardId ?? req.params.id;
-    const { type, payload, opId } = req.body;
+    const { type, payload, opId, actorId, lamport } = req.body;
 
     if (!boardId || !mongoose.Types.ObjectId.isValid(boardId)) {
       return res.status(400).json({
@@ -33,7 +33,7 @@ export const appendOperation = async (req: Request, res: Response) => {
       });
     }
 
-    //VALIDATION LAYER (CRITICAL)
+    // VALIDATION LAYER (CRITICAL)
     if (type === "element.insert") {
       const element = payload?.element;
 
@@ -44,7 +44,7 @@ export const appendOperation = async (req: Request, res: Response) => {
         });
       }
 
-      //IMAGE / ATTACHMENT VALIDATION
+      // IMAGE / ATTACHMENT VALIDATION
       if (element.type === "image" || element.type === "attachment") {
         const assetId = element.assetId;
 
@@ -65,7 +65,7 @@ export const appendOperation = async (req: Request, res: Response) => {
           });
         }
 
-        const asset = await Asset.findById(assetId);
+        const asset = await Asset.findById(assetId).lean();
 
         if (!asset) {
           return res.status(404).json({
@@ -74,7 +74,7 @@ export const appendOperation = async (req: Request, res: Response) => {
           });
         }
 
-        //Ensure asset belongs to board
+        // Ensure asset belongs to board
         if (asset.boardId.toString() !== boardId) {
           return res.status(403).json({
             success: false,
@@ -82,7 +82,7 @@ export const appendOperation = async (req: Request, res: Response) => {
           });
         }
 
-        //MOST IMPORTANT CHECK
+        // MOST IMPORTANT CHECK
         if (asset.status !== "ready") {
           return res.status(400).json({
             success: false,
@@ -92,20 +92,28 @@ export const appendOperation = async (req: Request, res: Response) => {
       }
     }
 
-    //Normal operation append
-    const lastOp = await Oplog.findOne({ boardId })
-      .sort({ seq: -1 })
-      .select("seq");
-
-    const nextSeq = lastOp ? lastOp.seq + 1 : 1;
+    // OPTIMIZED LAMPORT CALCULATION:
+    // If lamport is provided by client, skip database findOne roundtrip completely.
+    // Otherwise, fetch latest lamport using .lean() for zero object overhead.
+    let nextLamport = 1;
+    if (typeof lamport !== "number") {
+      const lastOp = await Oplog.findOne({ boardId })
+        .sort({ lamport: -1 })
+        .select("lamport")
+        .lean();
+      nextLamport = lastOp ? (lastOp as { lamport: number }).lamport + 1 : 1;
+    }
 
     const operation = await Oplog.create({
       boardId,
-      seq: nextSeq,
-      clientId: userId,
-      opId,
-      type,
-      payload,
+      opId:
+        opId ||
+        `op-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      type: type || "element.create",
+      payload: payload || {},
+      actorId: actorId || userId,
+      lamport: typeof lamport === "number" ? lamport : nextLamport,
+      createdAt: new Date(),
     });
 
     res.json({
