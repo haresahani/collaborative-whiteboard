@@ -1,8 +1,11 @@
-import { createSocketServer } from "./server";
-import { PORT } from "./config/env";
-import { connectDB } from "./config/db";
+import { initTelemetry } from "infra-utils";
+initTelemetry("whiteboard-socket");
 
 async function start() {
+  const { PORT } = await import("./config/env");
+  const { connectDB } = await import("./config/db");
+  const { createSocketServer } = await import("./server");
+
   await connectDB();
   const { httpServer } = createSocketServer();
   httpServer.listen(PORT, () => {

@@ -3,7 +3,9 @@ import { check } from "k6";
 import { ENV } from "../config/environments.ts";
 import { wsConnectLatency } from "../metrics/websocket.ts";
 
-export function testWSConnect(onConnected?: (socket: ws.Socket) => void): boolean {
+export function testWSConnect(
+  onConnected?: (socket: ws.Socket) => void,
+): boolean {
   const start = Date.now();
   let connected = false;
 

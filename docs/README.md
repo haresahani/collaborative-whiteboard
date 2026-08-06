@@ -12,6 +12,7 @@ These docs are meant to describe the project as it actually exists and the V1 we
 - `engineering-conventions.md`: folder, API, env, logging, and naming rules
 - `runbook.md`: local setup, commands, ports, and common troubleshooting
 - `testing-guide.md`: current test state and the minimum quality bar
+- `OBSERVABILITY.md`: full Prometheus, Grafana, Pino, OpenTelemetry & Jaeger stack architecture
 - `INTERVIEW_NOTES.md`: honest talking points for demos and interviews
 
 ## Principles

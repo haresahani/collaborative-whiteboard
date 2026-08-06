@@ -23,7 +23,8 @@ const cachedBoards: Record<string, string> = {};
 
 export default function (tokens: string[]) {
   const vuIndex = typeof __VU !== "undefined" ? __VU - 1 : 0;
-  const token = tokens && tokens.length > 0 ? tokens[vuIndex % tokens.length] : undefined;
+  const token =
+    tokens && tokens.length > 0 ? tokens[vuIndex % tokens.length] : undefined;
 
   const vuId = typeof __VU !== "undefined" ? `vu_${__VU}` : "vu_default";
   let boardId = cachedBoards[vuId];

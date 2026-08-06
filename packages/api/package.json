@@ -21,6 +21,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.4",
     "shared": "workspace:*",
+    "infra-utils": "workspace:*",
     "zod": "^3.25.76"
   },
   "devDependencies": {

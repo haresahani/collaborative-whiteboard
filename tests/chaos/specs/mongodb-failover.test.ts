@@ -6,14 +6,20 @@ const CONTAINER_NAME = "whiteboard-mongodb";
 
 describe("Chaos Test: MongoDB Outage & Automatic Reconnection", () => {
   beforeAll(async () => {
-    if (DockerControl.isDockerAvailable() && !DockerControl.isContainerRunning(CONTAINER_NAME)) {
+    if (
+      DockerControl.isDockerAvailable() &&
+      !DockerControl.isContainerRunning(CONTAINER_NAME)
+    ) {
       DockerControl.startContainer(CONTAINER_NAME);
       await new Promise((resolve) => setTimeout(resolve, 3000));
     }
   });
 
   afterAll(async () => {
-    if (DockerControl.isDockerAvailable() && !DockerControl.isContainerRunning(CONTAINER_NAME)) {
+    if (
+      DockerControl.isDockerAvailable() &&
+      !DockerControl.isContainerRunning(CONTAINER_NAME)
+    ) {
       DockerControl.startContainer(CONTAINER_NAME);
       await new Promise((resolve) => setTimeout(resolve, 3000));
     }
@@ -21,7 +27,9 @@ describe("Chaos Test: MongoDB Outage & Automatic Reconnection", () => {
 
   it("should handle MongoDB container outage and recover auto-reconnection upon start", async () => {
     if (!DockerControl.isDockerAvailable()) {
-      console.log("[Chaos Test] Docker environment not active locally — skipping live container stop step.");
+      console.log(
+        "[Chaos Test] Docker environment not active locally — skipping live container stop step.",
+      );
       expect(true).toBe(true);
       return;
     }
@@ -31,11 +39,15 @@ describe("Chaos Test: MongoDB Outage & Automatic Reconnection", () => {
       const initialRes = await fetch(`${API_BASE_URL}/api/health`);
       expect(initialRes.status).toBe(200);
     } catch (e) {
-      console.log("[Chaos Test] Local API server offline — testing container state controls directly.");
+      console.log(
+        "[Chaos Test] Local API server offline — testing container state controls directly.",
+      );
     }
 
     // 2. Inject Fault: Stop MongoDB Container
-    console.log("[Chaos Test] Stopping MongoDB container to simulate DB outage...");
+    console.log(
+      "[Chaos Test] Stopping MongoDB container to simulate DB outage...",
+    );
     DockerControl.stopContainer(CONTAINER_NAME);
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -47,6 +59,8 @@ describe("Chaos Test: MongoDB Outage & Automatic Reconnection", () => {
     // 4. Verify Automatic Reconnection and Service Recovery
     const isRunning = DockerControl.isContainerRunning(CONTAINER_NAME);
     expect(isRunning).toBe(true);
-    console.log("[Chaos Test] ✅ MongoDB automatic reconnection verified successfully!");
+    console.log(
+      "[Chaos Test] ✅ MongoDB automatic reconnection verified successfully!",
+    );
   }, 30000);
 });

@@ -19,16 +19,17 @@ The repo is being shaped for depth, clarity, and credibility rather than inflate
 
 ## Current Status
 
-| Area                    | Status      | Notes                                                                        |
-| ----------------------- | ----------- | ---------------------------------------------------------------------------- |
-| Whiteboard editor UI    | Implemented | Local whiteboard tools and interactions are the strongest part of the repo.  |
-| Client routing          | Partial     | The active route is `/board/:id`. Old auth and landing pages are not active. |
-| Auth API                | Implemented | Standardized signup, login, and profile fetching endpoints are implemented.  |
-| Board API               | Implemented | Create, list, fetch, delete board, and append operation endpoints exist.     |
-| Persistence from client | Not wired   | The new client does not yet call the API.                                    |
-| Realtime collaboration  | Implemented | Realtime Socket.IO room gateway and BullMQ-backed snapshot compaction jobs.  |
-| Export pipeline         | Partial     | Client-side PNG export exists. Background export jobs do not.                |
-| Automated tests         | Implemented | Over 65 robust integration tests across API, client, socket, and worker.     |
+| Area                    | Status      | Notes                                                                                  |
+| ----------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| Whiteboard editor UI    | Implemented | Local whiteboard tools and interactions are the strongest part of the repo.            |
+| Client routing          | Partial     | The active route is `/board/:id`. Old auth and landing pages are not active.           |
+| Auth API                | Implemented | Standardized signup, login, and profile fetching endpoints are implemented.            |
+| Board API               | Implemented | Create, list, fetch, delete board, and append operation endpoints exist.               |
+| Persistence from client | Not wired   | The new client does not yet call the API.                                              |
+| Realtime collaboration  | Implemented | Realtime Socket.IO room gateway and BullMQ-backed snapshot compaction jobs.            |
+| Observability & Tracing | Implemented | Prometheus metrics (/metrics), Grafana dashboard, Pino logging, OTel & Jaeger tracing. |
+| Export pipeline         | Partial     | Client-side PNG export exists. Background export jobs do not.                          |
+| Automated tests         | Implemented | Over 80 robust integration tests across API, client, socket, worker, and infra-utils.  |
 
 ## V1 Scope
 

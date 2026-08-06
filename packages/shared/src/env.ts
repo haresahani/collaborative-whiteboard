@@ -20,6 +20,11 @@ export const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
+  OTEL_EXPORTER_OTLP_ENDPOINT: z
+    .string()
+    .url("OTEL_EXPORTER_OTLP_ENDPOINT must be a valid URL")
+    .default("http://jaeger:4318/v1/traces"),
+  SERVICE_NAME: z.string().default("whiteboard-service"),
 });
 
 export type ValidatedEnv = z.infer<typeof envSchema>;

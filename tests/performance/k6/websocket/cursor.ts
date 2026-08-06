@@ -1,7 +1,10 @@
 import ws from "k6/ws";
 import { sleep } from "k6";
 import { ENV } from "../config/environments.ts";
-import { wsMessagesSent, wsCursorBroadcastLatency } from "../metrics/websocket.ts";
+import {
+  wsMessagesSent,
+  wsCursorBroadcastLatency,
+} from "../metrics/websocket.ts";
 
 export function testWSCursor(boardId = "k6-cursor-board", moves = 15): void {
   ws.connect(ENV.WS_BASE_URL, {}, function (socket) {

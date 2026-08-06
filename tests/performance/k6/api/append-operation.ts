@@ -21,7 +21,9 @@ export function testAppendOperation(boardId: string, token?: string): boolean {
   const res = http.post(url, payload, { headers });
   apiOpAppendLatency.add(Date.now() - start);
 
-  const ok = checkHttpStatus(res, 200, "append op 200 OK") || checkHttpStatus(res, 201, "append op 201 Created");
+  const ok =
+    checkHttpStatus(res, 200, "append op 200 OK") ||
+    checkHttpStatus(res, 201, "append op 201 Created");
   if (ok) {
     drawOpsCommittedCount.add(1);
   }

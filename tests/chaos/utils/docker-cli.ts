@@ -11,7 +11,10 @@ export class DockerControl {
 
   static isDockerAvailable(): boolean {
     try {
-      const output = execSync("docker info", { encoding: "utf-8", stdio: "pipe" });
+      const output = execSync("docker info", {
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
       return !output.includes("error") && !output.includes("Cannot connect");
     } catch (e) {
       return false;
@@ -50,7 +53,9 @@ export class DockerControl {
 
   static isContainerRunning(containerName: string): boolean {
     if (!this.isDockerAvailable()) return false;
-    const output = this.runCommand(`docker inspect -f "{{.State.Running}}" ${containerName}`).trim();
+    const output = this.runCommand(
+      `docker inspect -f "{{.State.Running}}" ${containerName}`,
+    ).trim();
     return output === "true";
   }
 }

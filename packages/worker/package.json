@@ -17,6 +17,7 @@
     "ioredis": "^5.5.0",
     "mongoose": "^9.2.4",
     "shared": "workspace:*",
+    "infra-utils": "workspace:*",
     "y-protocols": "^1.0.7",
     "yjs": "^13.6.31"
   },

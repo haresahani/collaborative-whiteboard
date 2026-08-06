@@ -6,7 +6,9 @@ export function testWSBroadcast(boardId = "k6-broadcast-board"): void {
   ws.connect(ENV.WS_BASE_URL, {}, function (socket) {
     socket.on("open", () => {
       socket.send(`42${JSON.stringify(["join.board", { boardId }])}`);
-      socket.send(`42${JSON.stringify(["op.broadcast", { boardId, opId: "k6-bcast-op", type: "element.create" }])}`);
+      socket.send(
+        `42${JSON.stringify(["op.broadcast", { boardId, opId: "k6-bcast-op", type: "element.create" }])}`,
+      );
       wsMessagesSent.add(1);
     });
 
