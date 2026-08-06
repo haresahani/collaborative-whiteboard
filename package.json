@@ -38,7 +38,11 @@
     "performance:spike": "k6 run tests/performance/k6/scenarios/spike.ts",
     "performance:soak": "k6 run tests/performance/k6/scenarios/soak.ts",
     "performance:breakpoint": "k6 run tests/performance/k6/scenarios/breakpoint.ts",
-    "load-test:sockets": "tsx scripts/load-test-sockets.ts"
+    "load-test:sockets": "tsx scripts/load-test-sockets.ts",
+    "docker:up": "docker compose -f infra/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker-compose.yml down",
+    "docker:chaos:up": "docker compose -f infra/docker-compose.yml -f infra/docker-compose.chaos.yml up -d",
+    "test:chaos": "vitest run tests/chaos/specs"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
