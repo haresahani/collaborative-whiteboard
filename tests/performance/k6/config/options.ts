@@ -10,7 +10,7 @@ try {
 
 export function createK6Options(
   stages: Array<{ duration: string; target: number }>,
-  thresholds: Record<string, string[]>
+  thresholds: Record<string, string[]>,
 ): Options {
   return {
     stages,

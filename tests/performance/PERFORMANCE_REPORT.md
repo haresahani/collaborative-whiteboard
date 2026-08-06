@@ -31,17 +31,17 @@ During comprehensive benchmarking, the backend successfully maintained:
 
 # Test Environment & Infrastructure
 
-| Component | Specification |
-|------------|---------------|
-| Operating System | Windows 11 Enterprise (64-bit) |
-| Runtime | Node.js v22.12.0 |
-| Backend | Express + TypeScript |
-| Database | MongoDB Community 7.x |
-| Cache / Queue | Redis 7.x (BullMQ + Redis Socket Adapter) |
-| Real-time Engine | Socket.IO (WebSockets) |
-| Performance Tool | Grafana k6 |
+| Component        | Specification                               |
+| ---------------- | ------------------------------------------- |
+| Operating System | Windows 11 Enterprise (64-bit)              |
+| Runtime          | Node.js v22.12.0                            |
+| Backend          | Express + TypeScript                        |
+| Database         | MongoDB Community 7.x                       |
+| Cache / Queue    | Redis 7.x (BullMQ + Redis Socket Adapter)   |
+| Real-time Engine | Socket.IO (WebSockets)                      |
+| Performance Tool | Grafana k6                                  |
 | E2E Testing Tool | Playwright Test (Chromium, Firefox, WebKit) |
-| Deployment | Local Monorepo Development Environment |
+| Deployment       | Local Monorepo Development Environment      |
 
 ---
 
@@ -82,14 +82,14 @@ tests/
 
 # Performance Test Scenarios (k6)
 
-| Scenario | Peak VUs | Duration | Purpose |
-|-----------|---------:|---------:|---------|
-| Smoke | 5 | 35 sec | Verify application health & quick sanity |
-| Load | 50 | 4 min | Expected production traffic SLA verification |
-| Stress | 250 | 6 min | Heavy concurrent workload & bottleneck test |
-| Spike | 200 | 70 sec | Sudden traffic surge & instant recovery test |
-| Soak | 30 | 13 min | Long-running endurance & memory leak test |
-| Breakpoint | 500 | 2.5 min | Infrastructure capacity ceiling discovery |
+| Scenario   | Peak VUs | Duration | Purpose                                      |
+| ---------- | -------: | -------: | -------------------------------------------- |
+| Smoke      |        5 |   35 sec | Verify application health & quick sanity     |
+| Load       |       50 |    4 min | Expected production traffic SLA verification |
+| Stress     |      250 |    6 min | Heavy concurrent workload & bottleneck test  |
+| Spike      |      200 |   70 sec | Sudden traffic surge & instant recovery test |
+| Soak       |       30 |   13 min | Long-running endurance & memory leak test    |
+| Breakpoint |      500 |  2.5 min | Infrastructure capacity ceiling discovery    |
 
 ---
 
@@ -97,14 +97,14 @@ tests/
 
 The following results are taken directly from the k6 terminal output (`http_req_duration`).
 
-| Scenario | Peak VUs | P95 Latency | Failed Requests | Status |
-|-----------|---------:|------------:|----------------:|:---:|
-| Smoke | 5 | **180 ms** | **0.00%** | **PASS** |
-| Load | 50 | **802 ms** | **0.00%** | **PASS** |
-| Stress | 250 | **2506 ms** | **0.00%** | **PASS** |
-| Spike | 200 | **3593 ms** | **0.00%** | **PASS** |
-| Soak | 30 | **217 ms** | **0.00%** | **PASS** |
-| Breakpoint | 500 | **6722 ms** | **0.00%** | **PASS** |
+| Scenario   | Peak VUs | P95 Latency | Failed Requests |  Status  |
+| ---------- | -------: | ----------: | --------------: | :------: |
+| Smoke      |        5 |  **180 ms** |       **0.00%** | **PASS** |
+| Load       |       50 |  **802 ms** |       **0.00%** | **PASS** |
+| Stress     |      250 | **2506 ms** |       **0.00%** | **PASS** |
+| Spike      |      200 | **3593 ms** |       **0.00%** | **PASS** |
+| Soak       |       30 |  **217 ms** |       **0.00%** | **PASS** |
+| Breakpoint |      500 | **6722 ms** |       **0.00%** | **PASS** |
 
 ## Interpretation
 
@@ -123,14 +123,14 @@ Although latency increases with higher concurrency, **0.00% request failures occ
 
 The following metrics are collected using custom k6 `Trend` metrics and backend instrumentation to measure precise execution time inside the application layers:
 
-| Operation | P95 Latency | Target SLA | Measurement Scope |
-|------------|------------:|-----------:|-------------------|
-| Login | **200 ms** | <300 ms | `api_login_latency` (`bcrypt.compare` + JWT creation) |
-| Create Board | **4 ms** | <50 ms | `api_board_create_latency` (MongoDB Document save) |
-| Append Operation | **1 ms** | <20 ms | `api_op_append_latency` (⚡ CRDT Oplog write after `.lean()` fix) |
-| Snapshot Retrieval | **4 ms** | <30 ms | `api_snapshot_latency` (Compiled board state fetch) |
-| Asset Upload | **7 ms** | <100 ms | Multipart buffer write & asset metadata save |
-| WebSocket Connection | **3 ms** | <50 ms | `ws_connect_latency` (HTTP 101 WS Handshake) |
+| Operation            | P95 Latency | Target SLA | Measurement Scope                                                 |
+| -------------------- | ----------: | ---------: | ----------------------------------------------------------------- |
+| Login                |  **200 ms** |    <300 ms | `api_login_latency` (`bcrypt.compare` + JWT creation)             |
+| Create Board         |    **4 ms** |     <50 ms | `api_board_create_latency` (MongoDB Document save)                |
+| Append Operation     |    **1 ms** |     <20 ms | `api_op_append_latency` (⚡ CRDT Oplog write after `.lean()` fix) |
+| Snapshot Retrieval   |    **4 ms** |     <30 ms | `api_snapshot_latency` (Compiled board state fetch)               |
+| Asset Upload         |    **7 ms** |    <100 ms | Multipart buffer write & asset metadata save                      |
+| WebSocket Connection |    **3 ms** |     <50 ms | `ws_connect_latency` (HTTP 101 WS Handshake)                      |
 
 ---
 
@@ -138,29 +138,29 @@ The following metrics are collected using custom k6 `Trend` metrics and backend 
 
 Playwright automates end-to-end user workflows across real browser engines (Desktop Chromium, Firefox, WebKit, and Mobile Viewports):
 
-| Spec Category | Browser Engines | Features Validated | Pass Rate |
-| :--- | :--- | :--- | :---: |
-| **`auth/`** | Chromium, Firefox, WebKit | Signup, Login, JWT storage, Protected route guards | **100%** |
-| **`boards/`** | Chromium, Firefox, WebKit | Board creation, Title editing, Owner permissions, Search | **100%** |
-| **`whiteboard/`** | Chromium, Firefox, WebKit | Pen/Shape tools, Canvas pan/zoom, Undo/Redo CRDT stack | **100%** |
-| **`collaboration/`** | Multi-Browser Contexts | Real-time multi-user cursor sync & stroke broadcasting | **100%** |
-| **`assets/`** | Chromium, Firefox | Image drag-and-drop upload & canvas rendering | **100%** |
-| **`accessibility/`**| Chromium (Axe-core) | WCAG 2.1 AA contrast, ARIA roles, Keyboard navigation | **100%** |
-| **`visual/`** | Chromium, WebKit | Pixel-match canvas snapshot visual regression testing | **100%** |
-| **`recovery/`** | Chromium | Socket disconnect auto-reconnect & offline stroke queuing | **100%** |
+| Spec Category        | Browser Engines           | Features Validated                                        | Pass Rate |
+| :------------------- | :------------------------ | :-------------------------------------------------------- | :-------: |
+| **`auth/`**          | Chromium, Firefox, WebKit | Signup, Login, JWT storage, Protected route guards        | **100%**  |
+| **`boards/`**        | Chromium, Firefox, WebKit | Board creation, Title editing, Owner permissions, Search  | **100%**  |
+| **`whiteboard/`**    | Chromium, Firefox, WebKit | Pen/Shape tools, Canvas pan/zoom, Undo/Redo CRDT stack    | **100%**  |
+| **`collaboration/`** | Multi-Browser Contexts    | Real-time multi-user cursor sync & stroke broadcasting    | **100%**  |
+| **`assets/`**        | Chromium, Firefox         | Image drag-and-drop upload & canvas rendering             | **100%**  |
+| **`accessibility/`** | Chromium (Axe-core)       | WCAG 2.1 AA contrast, ARIA roles, Keyboard navigation     | **100%**  |
+| **`visual/`**        | Chromium, WebKit          | Pixel-match canvas snapshot visual regression testing     | **100%**  |
+| **`recovery/`**      | Chromium                  | Socket disconnect auto-reconnect & offline stroke queuing | **100%**  |
 
 ---
 
 # System Throughput & Capacity
 
-| Metric | Value |
-|---------|------:|
-| HTTP Failure Rate | **0.00%** |
-| Check Success Rate | **100%** |
-| Peak Concurrent Users | **500 Virtual Users** |
-| Maximum WebSocket Messages | **≈2,700 msgs/sec** |
-| Operation Throughput | **≈270 operations/sec** |
-| E2E Test Pass Rate | **100% (All Browsers)** |
+| Metric                     |                   Value |
+| -------------------------- | ----------------------: |
+| HTTP Failure Rate          |               **0.00%** |
+| Check Success Rate         |                **100%** |
+| Peak Concurrent Users      |   **500 Virtual Users** |
+| Maximum WebSocket Messages |     **≈2,700 msgs/sec** |
+| Operation Throughput       | **≈270 operations/sec** |
+| E2E Test Pass Rate         | **100% (All Browsers)** |
 
 ---
 
@@ -189,13 +189,9 @@ Implemented:
 
 ```ts
 if (typeof lamport !== "number") {
-    const lastOp = await Oplog.findOne({ boardId })
-        .sort({ lamport: -1 })
-        .lean();
+  const lastOp = await Oplog.findOne({ boardId }).sort({ lamport: -1 }).lean();
 
-    effectiveLamport = lastOp
-        ? lastOp.lamport + 1
-        : 1;
+  effectiveLamport = lastOp ? lastOp.lamport + 1 : 1;
 }
 ```
 
@@ -203,12 +199,12 @@ if (typeof lamport !== "number") {
 
 ### Results
 
-| Metric | Before | After | Improvement |
-|---------|-------:|------:|------------:|
-| P50 | 1.04 ms | 0.51 ms | 51% |
-| Average | 1.03 ms | 0.68 ms | 34% |
-| P95 | 1.90 ms | 1.04 ms | 45% |
-| Maximum | 2.99 ms | 1.99 ms | 33% |
+| Metric  |  Before |   After | Improvement |
+| ------- | ------: | ------: | ----------: |
+| P50     | 1.04 ms | 0.51 ms |         51% |
+| Average | 1.03 ms | 0.68 ms |         34% |
+| P95     | 1.90 ms | 1.04 ms |         45% |
+| Maximum | 2.99 ms | 1.99 ms |         33% |
 
 ---
 
@@ -232,11 +228,11 @@ Tokens are generated once before execution and shared with Virtual Users.
 
 ### Results
 
-| Metric | Before | After |
-|---------|--------|-------|
-| Completed Iterations | 1,901 | 40,600 |
-| Authentication Overhead | High | Eliminated |
-| CPU Utilization | Authentication | Business Logic |
+| Metric                  | Before         | After          |
+| ----------------------- | -------------- | -------------- |
+| Completed Iterations    | 1,901          | 40,600         |
+| Authentication Overhead | High           | Eliminated     |
+| CPU Utilization         | Authentication | Business Logic |
 
 ---
 
@@ -290,12 +286,12 @@ Used for:
 
 Automated fault injection suite in `tests/chaos/specs/` verifies infrastructure resilience under container failures, network isolation, and process crashes:
 
-| Chaos Scenario | Injected Fault | Expected Recovery Behavior | Measured Result |
-| :--- | :--- | :--- | :---: |
-| **MongoDB Outage** | Stopped `whiteboard-mongodb` container | Express API returns 503/retries; auto-connects `< 5s` upon container restart | **PASSED** ✅ |
-| **Redis Disconnect** | Paused `whiteboard-redis` container | Socket server handles adapter pause; unpauses pub/sub `< 3s` upon restart | **PASSED** ✅ |
-| **Worker Crash** | Force killed `whiteboard-worker` container | Task lock released; background worker container restarts with zero data loss | **PASSED** ✅ |
-| **Network Latency** | Toxiproxy injected 500ms latency & 10% jitter | WebSockets retain ping/pong heartbeat without disconnecting | **PASSED** ✅ |
+| Chaos Scenario       | Injected Fault                                | Expected Recovery Behavior                                                   | Measured Result |
+| :------------------- | :-------------------------------------------- | :--------------------------------------------------------------------------- | :-------------: |
+| **MongoDB Outage**   | Stopped `whiteboard-mongodb` container        | Express API returns 503/retries; auto-connects `< 5s` upon container restart |  **PASSED** ✅  |
+| **Redis Disconnect** | Paused `whiteboard-redis` container           | Socket server handles adapter pause; unpauses pub/sub `< 3s` upon restart    |  **PASSED** ✅  |
+| **Worker Crash**     | Force killed `whiteboard-worker` container    | Task lock released; background worker container restarts with zero data loss |  **PASSED** ✅  |
+| **Network Latency**  | Toxiproxy injected 500ms latency & 10% jitter | WebSockets retain ping/pong heartbeat without disconnecting                  |  **PASSED** ✅  |
 
 ---
 

@@ -64,7 +64,7 @@ describe("Socket Server Batching & Ephemeral Filtering", () => {
     // Simulate processing loop inside server handler
     const persistedOps: IOp[] = [];
     for (const op of decodedOps) {
-      pushRecentOp("board-1", op);
+      await pushRecentOp("board-1", op);
       if (op.type !== "stroke.point") {
         await enqueueOp(op);
         persistedOps.push(op);

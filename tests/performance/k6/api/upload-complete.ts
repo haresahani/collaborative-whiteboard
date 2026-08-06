@@ -3,7 +3,11 @@ import { ENV } from "../config/environments.ts";
 import { getAuthHeaders } from "../utils/headers.ts";
 import { checkHttpStatus } from "../utils/checks.ts";
 
-export function testUploadComplete(boardId: string, assetId: string, token?: string): boolean {
+export function testUploadComplete(
+  boardId: string,
+  assetId: string,
+  token?: string,
+): boolean {
   const url = `${ENV.API_BASE_URL}/api/boards/${boardId}/assets/${assetId}/complete`;
   const headers = getAuthHeaders(token);
 

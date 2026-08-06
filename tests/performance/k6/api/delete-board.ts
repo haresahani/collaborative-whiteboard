@@ -8,5 +8,8 @@ export function testDeleteBoard(boardId: string, token?: string): boolean {
   const headers = getAuthHeaders(token);
   const res = http.del(url, null, { headers });
 
-  return checkHttpStatus(res, 200, "delete board 200 OK") || checkHttpStatus(res, 204, "delete board 204 No Content");
+  return (
+    checkHttpStatus(res, 200, "delete board 200 OK") ||
+    checkHttpStatus(res, 204, "delete board 204 No Content")
+  );
 }

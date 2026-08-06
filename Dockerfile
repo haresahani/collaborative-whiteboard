@@ -1,30 +1,25 @@
 FROM node:22-alpine AS base
 
-# Install pnpm globally
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@10.17.0 --activate
 
 WORKDIR /app
 
-# Copy root manifest files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/shared/package.json ./packages/shared/
-COPY packages/api/package.json ./packages/api/
-COPY packages/socket/package.json ./packages/socket/
-COPY packages/worker/package.json ./packages/worker/
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy source files
+# Copy workspace config and source files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json tsconfig.json ./
 COPY packages/shared ./packages/shared
+COPY packages/infra-utils ./packages/infra-utils
 COPY packages/api ./packages/api
 COPY packages/socket ./packages/socket
 COPY packages/worker ./packages/worker
-COPY tsconfig.base.json tsconfig.json ./
 COPY env ./env
 
-# Build shared library first
+# Install dependencies with full workspace context
+RUN pnpm install --frozen-lockfile
+
+# Build shared libraries
 RUN pnpm --filter shared build
+RUN pnpm --filter infra-utils build
 
 # API Target
 FROM base AS api
@@ -38,4 +33,5 @@ CMD ["pnpm", "--filter", "socket", "start:dev"]
 
 # Worker Target
 FROM base AS worker
+EXPOSE 9090
 CMD ["pnpm", "--filter", "worker", "start:dev"]

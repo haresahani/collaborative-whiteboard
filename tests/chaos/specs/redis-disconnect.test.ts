@@ -6,7 +6,10 @@ const CONTAINER_NAME = "whiteboard-redis";
 
 describe("Chaos Test: Redis Outage & Adapter Recovery", () => {
   beforeAll(async () => {
-    if (DockerControl.isDockerAvailable() && !DockerControl.isContainerRunning(CONTAINER_NAME)) {
+    if (
+      DockerControl.isDockerAvailable() &&
+      !DockerControl.isContainerRunning(CONTAINER_NAME)
+    ) {
       DockerControl.startContainer(CONTAINER_NAME);
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
@@ -25,7 +28,9 @@ describe("Chaos Test: Redis Outage & Adapter Recovery", () => {
 
   it("should handle Redis container pause/unpause without crashing socket server", async () => {
     if (!DockerControl.isDockerAvailable()) {
-      console.log("[Chaos Test] Docker environment not active locally — skipping live container pause step.");
+      console.log(
+        "[Chaos Test] Docker environment not active locally — skipping live container pause step.",
+      );
       expect(true).toBe(true);
       return;
     }
@@ -43,6 +48,8 @@ describe("Chaos Test: Redis Outage & Adapter Recovery", () => {
     // 3. Verify container is unpaused & running
     const isRunning = DockerControl.isContainerRunning(CONTAINER_NAME);
     expect(isRunning).toBe(true);
-    console.log("[Chaos Test] ✅ Redis adapter disconnection recovery verified successfully!");
+    console.log(
+      "[Chaos Test] ✅ Redis adapter disconnection recovery verified successfully!",
+    );
   }, 30000);
 });

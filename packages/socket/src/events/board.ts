@@ -18,6 +18,9 @@ import { getNextLamport } from "../utils/lamport";
 import { pushRecentOp, getRecentOps } from "../utils/recentOpsBuffer";
 import { PresenceService } from "../services/presence";
 import { Chat } from "../models/chat";
+import { opsCounter, logger, getTracer } from "infra-utils";
+
+const tracer = getTracer("socket-events");
 
 const StrokeCommitSchema = z.object({
   opId: z.string().uuid(),
@@ -168,7 +171,9 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
 
   // 1. Generic op.commit handler (Step 5 core)
   socket.on("op.commit", async (raw: unknown, ack?: OpCommitAck) => {
+    const span = tracer.startSpan("op.commit");
     try {
+      opsCounter.inc({ type: "op.commit", service: "socket" });
       const nextLamport = await getNextLamport(boardId);
 
       // Fill in server-known context and assign authoritative lamport
@@ -186,18 +191,26 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       const parsed = OpSchema.safeParse(enriched);
 
       if (!parsed.success) {
-        console.warn(
-          `[socket] invalid op payload from ${userId}:`,
-          parsed.error.issues,
+        logger.warn(
+          { userId, errors: parsed.error.issues },
+          "[socket] invalid op payload",
         );
         void ack?.({ ok: false, error: "INVALID_PAYLOAD" });
+        span.end();
         return;
       }
 
       const op = parsed.data;
 
-      console.log(
-        `[socket] op commit opId=${op.opId} type=${op.type} board=${op.boardId} user=${op.actorId} lamport=${op.lamport}`,
+      logger.info(
+        {
+          opId: op.opId,
+          type: op.type,
+          boardId: op.boardId,
+          userId: op.actorId,
+          lamport: op.lamport,
+        },
+        "[socket] op commit",
       );
 
       // Cache in ring buffer
@@ -212,8 +225,10 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       }
       void ack?.({ ok: true, opId: op.opId });
     } catch (err) {
-      console.error(`[socket] failed to process op commit:`, err);
+      logger.error({ err }, "[socket] failed to process op commit");
       void ack?.({ ok: false, error: "PERSISTENCE_FAILED" });
+    } finally {
+      span.end();
     }
   });
 
@@ -269,13 +284,17 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         }
 
         if (processedOps.length > 0) {
+          opsCounter.inc(
+            { type: "op.batch", service: "socket" },
+            processedOps.length,
+          );
           const encoded = encodeOpBatch(processedOps);
           socket.to(roomName(boardId)).emit("op.batch", encoded);
         }
 
         void ack?.({ ok: true, count: processedOps.length });
       } catch (err) {
-        console.error("[socket] op.batch handling failed:", err);
+        logger.error({ err }, "[socket] op.batch handling failed");
         void ack?.({ ok: false, error: "BATCH_PROCESSING_FAILED" });
       }
     },
@@ -353,9 +372,9 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     const parsed = StrokeCommitSchema.safeParse(raw);
 
     if (!parsed.success) {
-      console.warn(
-        `[socket] invalid stroke payload from ${userId}:`,
-        parsed.error.issues,
+      logger.warn(
+        { userId, errors: parsed.error.issues },
+        "[socket] invalid stroke payload",
       );
       void ack?.({ ok: false, error: "INVALID_PAYLOAD" });
       return;
@@ -364,6 +383,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     const { opId, stroke } = parsed.data;
 
     try {
+      opsCounter.inc({ type: "op.stroke.commit", service: "socket" });
       const nextLamport = await getNextLamport(boardId);
 
       console.log(
@@ -516,6 +536,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     "yjs.update",
     async (data: { update: unknown }, ack?: (res: { ok: boolean }) => void) => {
       try {
+        opsCounter.inc({ type: "sticky.textUpdate", service: "socket" });
         const nextLamport = await getNextLamport(boardId);
         const op: IOp = {
           opId: crypto.randomUUID(),

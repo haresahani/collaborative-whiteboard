@@ -20,11 +20,17 @@ export function loginVU(): string | null {
   const password = "Password123!";
 
   // 1. Signup user
-  http.post(signupUrl, JSON.stringify({ email, password, displayName: `VU ${vuId}` }), { headers: HEADERS.JSON });
+  http.post(
+    signupUrl,
+    JSON.stringify({ email, password, displayName: `VU ${vuId}` }),
+    { headers: HEADERS.JSON },
+  );
 
   // 2. Login user
   const startTime = Date.now();
-  const res = http.post(loginUrl, JSON.stringify({ email, password }), { headers: HEADERS.JSON });
+  const res = http.post(loginUrl, JSON.stringify({ email, password }), {
+    headers: HEADERS.JSON,
+  });
   apiLoginLatency.add(Date.now() - startTime);
 
   if (checkHttpStatus(res, 200, "auth login 200 OK")) {
@@ -51,8 +57,14 @@ export function provisionVUTokens(count: number = 50): string[] {
     const email = `k6_preseed_${i}_${Date.now()}@example.com`;
     const password = "Password123!";
 
-    http.post(signupUrl, JSON.stringify({ email, password, displayName: `VU Preseed ${i}` }), { headers: HEADERS.JSON });
-    const res = http.post(loginUrl, JSON.stringify({ email, password }), { headers: HEADERS.JSON });
+    http.post(
+      signupUrl,
+      JSON.stringify({ email, password, displayName: `VU Preseed ${i}` }),
+      { headers: HEADERS.JSON },
+    );
+    const res = http.post(loginUrl, JSON.stringify({ email, password }), {
+      headers: HEADERS.JSON,
+    });
     if (res.status === 200) {
       try {
         const body = JSON.parse(res.body as string);

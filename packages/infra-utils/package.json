@@ -3,17 +3,39 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "dist/index.js",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "build": "tsc -b",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "test": "vitest run"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.2",
+    "@opentelemetry/instrumentation-express": "^0.47.0",
+    "@opentelemetry/instrumentation-http": "^0.57.2",
+    "@opentelemetry/instrumentation-mongodb": "^0.49.0",
+    "@opentelemetry/resources": "^1.30.1",
+    "@opentelemetry/sdk-node": "^0.57.2",
+    "@opentelemetry/semantic-conventions": "^1.28.0",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0",
+    "prom-client": "^15.1.3",
+    "shared": "workspace:*",
+    "express": "^4.21.2"
+  },
   "devDependencies": {
-    "typescript": "^5.9.2",
-    "eslint": "^9.32.0",
-    "@typescript-eslint/parser": "^8.38.0",
+    "@types/express": "^5.0.3",
+    "@types/node": "^26.1.2",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
-    "prettier": "^3.0.0"
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9.32.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.9.2",
+    "vitest": "^4.0.8"
   }
 }
