@@ -1,0 +1,45 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/2.2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "whiteboard.fullname" . }}-api-hpa
+  labels:
+    app.kubernetes.io/component: api
+    {{- include "whiteboard.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "whiteboard.fullname" . }}-api
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+---
+apiVersion: autoscaling/2.2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "whiteboard.fullname" . }}-socket-hpa
+  labels:
+    app.kubernetes.io/component: socket
+    {{- include "whiteboard.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "whiteboard.fullname" . }}-socket
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}

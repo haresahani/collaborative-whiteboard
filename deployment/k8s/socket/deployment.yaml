@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whiteboard-socket
+  namespace: whiteboard-production
+  labels:
+    app: whiteboard-socket
+    app.kubernetes.io/component: socket-realtime
+    app.kubernetes.io/part-of: collaborative-whiteboard
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: whiteboard-socket
+  template:
+    metadata:
+      labels:
+        app: whiteboard-socket
+        app.kubernetes.io/component: socket-realtime
+    spec:
+      terminationGracePeriodSeconds: 30
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - whiteboard-socket
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: socket
+          image: ghcr.io/collaborative-whiteboard/socket:production-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3001
+              name: websocket
+          envFrom:
+            - configMapRef:
+                name: whiteboard-config
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: whiteboard-secrets
+                  key: REDIS_PASSWORD
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 5

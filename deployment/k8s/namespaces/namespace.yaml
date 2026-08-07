@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: whiteboard-production
+  labels:
+    name: whiteboard-production
+    environment: production

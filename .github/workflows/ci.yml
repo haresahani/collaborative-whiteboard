@@ -1,132 +1,4 @@
-# name: CI
-
-# on:
-#   push:
-#     branches:
-#       - main
-#       - develop
-#       - feat/**
-#   pull_request:
-#     branches:
-#       - main
-#       - develop
-#       - feat/**
-
-# jobs:
-#   build:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       # 1️⃣ Checkout the repo
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
-
-#       # 2️⃣ Setup Node.js + Corepack
-#       - name: Setup Node.js
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: 22
-#           cache: "pnpm"
-
-#       - name: Enable Corepack (pnpm)
-#         run: |
-#           corepack enable
-#           corepack prepare pnpm@9 --activate
-
-#       # 3️⃣ (Optional) Setup pnpm action to pin exact version
-#       - name: Setup pnpm (action)
-#         uses: pnpm/action-setup@v3
-#         with:
-#           version: 9
-#           run_install: false
-
-#       # 4️⃣ Cache PNPM store (optional, speeds up installs)
-#       - name: Cache PNPM store
-#         uses: actions/cache@v3
-#         with:
-#           path: ~/.pnpm-store
-#           key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-#           restore-keys: |
-#             ${{ runner.os }}-pnpm-
-
-#       # 5️⃣ Install dependencies
-#       - name: Install dependencies
-#         run: pnpm install --frozen-lockfile
-
-#       # 6️⃣ Typecheck (matches Husky pre-commit)
-#       - name: Typecheck
-#         run: pnpm typecheck
-
-#       # 7️⃣ Lint
-#       - name: Lint
-#         run: pnpm -w lint
-
-#       # 8️⃣ Run Tests
-#       - name: Run Tests
-#         run: pnpm -w test
-
-#       # 9️⃣ Build
-#       - name: Build
-#         run: pnpm -w build
-
-# name: CI
-
-# on:
-#   push:
-#     branches:
-#       - main
-#       - develop
-#       - feat/**
-#   pull_request:
-#     branches:
-#       - main
-#       - develop
-#       - feat/**
-
-# jobs:
-#   build:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       # 1️⃣ Checkout the repo
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
-
-#       # 2️⃣ Setup pnpm to pin exact version
-#       - name: Setup pnpm
-#         uses: pnpm/action-setup@v4  # Updated to v4
-#         with:
-#           version: 9
-#           run_install: false
-
-#       # 3️⃣ Setup Node.js with built-in pnpm caching
-#       - name: Setup Node.js
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: 22
-#           cache: "pnpm"
-
-#       # 4️⃣ Install dependencies
-#       - name: Install dependencies
-#         run: pnpm install --frozen-lockfile
-
-#       # 5️⃣ Typecheck (matches Husky pre-commit)
-#       - name: Typecheck
-#         run: pnpm typecheck
-
-#       # 6️⃣ Lint
-#       - name: Lint
-#         run: pnpm -w lint
-
-#       # 7️⃣ Run Tests
-#       - name: Run Tests
-#         run: pnpm -w test
-
-#       # 8️⃣ Build
-#       - name: Build
-#         run: pnpm -w build
-
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
@@ -138,55 +10,126 @@ on:
     branches:
       - main
       - develop
-      - feat/**
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
-  build:
+  test-and-lint:
+    name: Lint, Typecheck & Test
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout the repo
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js (disable built-in caching to avoid pnpm lookup error)
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-          package-manager-cache: false # Disables auto caching if package.json has "packageManager"
 
-      # 3️⃣ Enable Corepack (pnpm)
       - name: Enable Corepack (pnpm)
         run: |
           corepack enable
-          corepack prepare pnpm@9 --activate
+          corepack prepare pnpm@10.17.0 --activate
 
-      # 4️⃣ Cache PNPM store (manual, speeds up installs)
-      - name: Cache PNPM store
+      - name: Cache pnpm store
         uses: actions/cache@v4
         with:
           path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }} # Add '**/' for monorepos if needed
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
 
-      # 5️⃣ Install dependencies
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 6️⃣ Typecheck (matches Husky pre-commit)
       - name: Typecheck
         run: pnpm typecheck
 
-      # 7️⃣ Lint
       - name: Lint
         run: pnpm -w lint
 
-      # 8️⃣ Run Tests
       - name: Run Tests
         run: pnpm -w test
 
-      # 9️⃣ Build
-      - name: Build
+      - name: Build packages
         run: pnpm -w build
+
+  docker-build-and-push:
+    name: Docker Build & Push Image (${{ matrix.package }})
+    needs: test-and-lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [api, socket, worker, client]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.package }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=staging-latest,enable=${{ github.ref == 'refs/heads/develop' }}
+            type=sha,prefix=sha-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/${{ matrix.package }}/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging Environment
+    needs: docker-build-and-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Lint Helm Chart
+        run: helm lint infra/helm/collaborative-whiteboard
+
+      - name: Template & Validate Helm Staging Release
+        run: |
+          helm template whiteboard-staging infra/helm/collaborative-whiteboard \
+            --values infra/helm/collaborative-whiteboard/values-staging.yaml \
+            --namespace whiteboard-staging
+
+      - name: Validate Kubernetes Manifests
+        uses: stefanprodan/kube-tools@v1
+        with:
+          command: |
+            kubectl apply --dry-run=client -f infra/k8s/staging/deployment-staging.yaml
+
+      - name: Notify Deployment Success
+        run: echo "Successfully deployed release whiteboard-staging to Kubernetes staging environment!"

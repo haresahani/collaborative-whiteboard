@@ -12,6 +12,7 @@ COPY packages/infra-utils ./packages/infra-utils
 COPY packages/api ./packages/api
 COPY packages/socket ./packages/socket
 COPY packages/worker ./packages/worker
+COPY packages/client ./packages/client
 COPY env ./env
 
 # Install dependencies with full workspace context
@@ -35,3 +36,14 @@ CMD ["pnpm", "--filter", "socket", "start:dev"]
 FROM base AS worker
 EXPOSE 9090
 CMD ["pnpm", "--filter", "worker", "start:dev"]
+
+# Client Builder Stage
+FROM base AS client-build
+RUN pnpm --filter client build
+
+# Client Target
+FROM nginx:1.27-alpine AS client
+COPY --from=client-build /app/packages/client/dist /usr/share/nginx/html
+COPY packages/client/nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

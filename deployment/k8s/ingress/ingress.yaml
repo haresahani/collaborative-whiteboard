@@ -1,0 +1,51 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: whiteboard-ingress
+  namespace: whiteboard-production
+  labels:
+    app.kubernetes.io/part-of: collaborative-whiteboard
+    app.kubernetes.io/environment: production
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "whiteboard-socket"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: SAMEORIGIN";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+spec:
+  tls:
+    - hosts:
+        - whiteboard.local
+        - api.whiteboard.local
+      secretName: whiteboard-prod-tls
+  rules:
+    - host: whiteboard.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: whiteboard-client
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: whiteboard-api
+                port:
+                  number: 1234
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: whiteboard-socket
+                port:
+                  number: 3001

@@ -12,7 +12,7 @@ interface Closable {
   close: () => Promise<void>;
 }
 interface Quittable {
-  quit: () => Promise<void>;
+  quit: () => Promise<unknown>;
 }
 
 let oplogWorkerRef: Closable | null = null;

@@ -1,0 +1,19 @@
+{{- if .Values.socket.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "whiteboard.fullname" . }}-socket
+  labels:
+    app.kubernetes.io/component: socket
+    {{- include "whiteboard.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.socket.service.type }}
+  ports:
+    - port: {{ .Values.socket.service.port }}
+      targetPort: ws
+      protocol: TCP
+      name: ws
+  selector:
+    app.kubernetes.io/component: socket
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

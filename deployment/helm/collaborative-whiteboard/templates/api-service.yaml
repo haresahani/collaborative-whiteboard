@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "whiteboard.fullname" . }}-api
+  labels:
+    app.kubernetes.io/component: api
+    {{- include "whiteboard.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.api.service.type }}
+  ports:
+    - port: {{ .Values.api.service.port }}
+      targetPort: {{ .Values.api.service.port }}
+      name: http
+  selector:
+    app.kubernetes.io/component: api
+    app.kubernetes.io/instance: {{ .Release.Name }}

@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: whiteboard-db-backup-cronjob
+  namespace: whiteboard-production
+  labels:
+    app.kubernetes.io/component: backup-service
+    app.kubernetes.io/part-of: collaborative-whiteboard
+spec:
+  schedule: "0 2 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup-runner
+              image: ghcr.io/collaborative-whiteboard/api:production-latest
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "Running automated MongoDB and Redis snapshot script..."
+                  sh /app/deployment/scripts/backup-mongo-to-s3.sh
+                  sh /app/deployment/scripts/backup-redis-to-s3.sh
+              envFrom:
+                - configMapRef:
+                    name: whiteboard-config
+              env:
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: whiteboard-secrets
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: whiteboard-secrets
+                      key: AWS_SECRET_ACCESS_KEY
