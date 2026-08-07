@@ -94,3 +94,17 @@ jobs:
           helm template whiteboard-prod deployment/helm/collaborative-whiteboard \
             --namespace whiteboard-production \
             --values deployment/helm/collaborative-whiteboard/values-production.yaml > /dev/null
+
+      - name: Deploy to Live Kubernetes Cluster (Optional)
+        if: ${{ secrets.KUBECONFIG_DATA != '' }}
+        run: |
+          echo "KUBECONFIG_DATA secret detected. Setting up cluster credentials..."
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          
+          echo "Upgrading Helm production release..."
+          helm upgrade --install whiteboard-prod deployment/helm/collaborative-whiteboard \
+            --namespace whiteboard-production \
+            --create-namespace \
+            --values deployment/helm/collaborative-whiteboard/values-production.yaml
