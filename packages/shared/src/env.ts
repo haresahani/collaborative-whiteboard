@@ -3,10 +3,12 @@ import { z } from "zod";
 export const envSchema = z.object({
   JWT_SECRET: z.preprocess(
     (val) => {
-      // In test mode, fallback to a safe 32+ character dummy key if missing or too short
-      if (process.env.NODE_ENV === "test") {
-        if (!val || typeof val !== "string" || val.length < 32) {
+      if (!val || typeof val !== "string" || val.length < 32) {
+        if (process.env.NODE_ENV === "test") {
           return "mock_jwt_secret_for_tests_only_32_chars_long";
+        }
+        if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
+          return "default_development_jwt_secret_must_be_at_least_32_characters_long";
         }
       }
       return val;
