@@ -30,7 +30,7 @@ COPY packages/infra-utils ./packages/infra-utils
 COPY packages/worker ./packages/worker
 
 RUN corepack enable && corepack prepare pnpm@10.17.0 --activate
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 USER appuser
 
