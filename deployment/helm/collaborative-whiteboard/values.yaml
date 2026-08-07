@@ -1,0 +1,122 @@
+global:
+  environment: production
+  domain: whiteboard.local
+
+imageRegistry: ghcr.io/collaborative-whiteboard
+imageTag: latest
+imagePullPolicy: IfNotPresent
+
+api:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: ghcr.io/collaborative-whiteboard/api
+  service:
+    type: ClusterIP
+    port: 1234
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  env:
+    PORT: "1234"
+    NODE_ENV: "production"
+
+socket:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: ghcr.io/collaborative-whiteboard/socket
+  service:
+    type: ClusterIP
+    port: 3001
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  env:
+    PORT: "3001"
+    NODE_ENV: "production"
+
+worker:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/collaborative-whiteboard/worker
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  env:
+    PORT: "9090"
+    NODE_ENV: "production"
+
+client:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/collaborative-whiteboard/client
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  tls:
+    enabled: true
+    secretName: whiteboard-prod-tls
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "collaborative-whiteboard-socket"
+  hosts:
+    - host: whiteboard.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: client
+        - path: /api
+          pathType: Prefix
+          service: api
+        - path: /socket.io
+          pathType: Prefix
+          service: socket
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+backupCronJob:
+  enabled: true
+  schedule: "0 2 * * *"
+  s3Bucket: "whiteboard-prod-snapshots"
+
+mongodb:
+  uri: mongodb://whiteboard-mongodb:27017/whiteboard-prod?replicaSet=rs0&ssl=true
+
+redis:
+  host: whiteboard-redis
+  port: 6379

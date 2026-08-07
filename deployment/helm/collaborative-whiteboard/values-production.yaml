@@ -1,0 +1,79 @@
+# Production Override Values for Collaborative Whiteboard
+global:
+  environment: production
+  domain: whiteboard.app.domain
+
+imageRegistry: ghcr.io/collaborative-whiteboard
+imageTag: production-v1.0.0
+imagePullPolicy: Always
+
+api:
+  replicaCount: 3
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+socket:
+  replicaCount: 3
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+worker:
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+client:
+  replicaCount: 3
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  tls:
+    enabled: true
+    secretName: whiteboard-prod-tls
+  hosts:
+    - host: whiteboard.app.domain
+      paths:
+        - path: /
+          pathType: Prefix
+          service: client
+        - path: /api
+          pathType: Prefix
+          service: api
+        - path: /socket.io
+          pathType: Prefix
+          service: socket
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+backupCronJob:
+  enabled: true
+  schedule: "0 2 * * *"
+  s3Bucket: "whiteboard-prod-snapshots-us-east-1"

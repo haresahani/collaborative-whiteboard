@@ -1,0 +1,21 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: whiteboard-api-pdb
+  namespace: whiteboard-production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: whiteboard-api
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: whiteboard-socket-pdb
+  namespace: whiteboard-production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: whiteboard-socket

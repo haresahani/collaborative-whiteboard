@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whiteboard-client
+  namespace: whiteboard-production
+  labels:
+    app: whiteboard-client
+    app.kubernetes.io/component: frontend-client
+    app.kubernetes.io/part-of: collaborative-whiteboard
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: whiteboard-client
+  template:
+    metadata:
+      labels:
+        app: whiteboard-client
+        app.kubernetes.io/component: frontend-client
+    spec:
+      containers:
+        - name: client
+          image: ghcr.io/collaborative-whiteboard/client:production-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10

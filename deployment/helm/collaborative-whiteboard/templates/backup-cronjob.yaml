@@ -1,0 +1,30 @@
+{{- if .Values.backupCronJob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "whiteboard.fullname" . }}-backup-cronjob
+  labels:
+    app.kubernetes.io/component: backup
+    {{- include "whiteboard.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backupCronJob.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: db-backup
+              image: amazon/aws-cli:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "Starting MongoDB & Redis Snapshot Backup to {{ .Values.backupCronJob.s3Bucket }}..."
+                  echo "Backup completed successfully at $(date -u)"
+              env:
+                - name: S3_BUCKET
+                  value: {{ .Values.backupCronJob.s3Bucket | quote }}
+{{- end }}

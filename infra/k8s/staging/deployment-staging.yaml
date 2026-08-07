@@ -1,0 +1,196 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: whiteboard-staging
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: whiteboard-config
+  namespace: whiteboard-staging
+data:
+  NODE_ENV: "staging"
+  PORT: "1234"
+  MONGODB_URI: "mongodb://whiteboard-mongodb:27017/whiteboard-staging"
+  REDIS_HOST: "whiteboard-redis"
+  REDIS_PORT: "6379"
+---
+# API Service & Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whiteboard-api
+  namespace: whiteboard-staging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: whiteboard-api
+  template:
+    metadata:
+      labels:
+        app: whiteboard-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/collaborative-whiteboard/api:staging-latest
+          ports:
+            - containerPort: 1234
+          envFrom:
+            - configMapRef:
+                name: whiteboard-config
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 1234
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whiteboard-api
+  namespace: whiteboard-staging
+spec:
+  type: ClusterIP
+  ports:
+    - port: 1234
+      targetPort: 1234
+  selector:
+    app: whiteboard-api
+---
+# Socket Service & Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whiteboard-socket
+  namespace: whiteboard-staging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: whiteboard-socket
+  template:
+    metadata:
+      labels:
+        app: whiteboard-socket
+    spec:
+      containers:
+        - name: socket
+          image: ghcr.io/collaborative-whiteboard/socket:staging-latest
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: whiteboard-config
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whiteboard-socket
+  namespace: whiteboard-staging
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3001
+      targetPort: 3001
+  selector:
+    app: whiteboard-socket
+---
+# Worker Service & Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whiteboard-worker
+  namespace: whiteboard-staging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: whiteboard-worker
+  template:
+    metadata:
+      labels:
+        app: whiteboard-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/collaborative-whiteboard/worker:staging-latest
+          envFrom:
+            - configMapRef:
+                name: whiteboard-config
+---
+# Client Frontend Deployment & Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whiteboard-client
+  namespace: whiteboard-staging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: whiteboard-client
+  template:
+    metadata:
+      labels:
+        app: whiteboard-client
+    spec:
+      containers:
+        - name: client
+          image: ghcr.io/collaborative-whiteboard/client:staging-latest
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whiteboard-client
+  namespace: whiteboard-staging
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: whiteboard-client
+---
+# Ingress Routing
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: whiteboard-ingress
+  namespace: whiteboard-staging
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: staging.whiteboard.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: whiteboard-client
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: whiteboard-api
+                port:
+                  number: 1234
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: whiteboard-socket
+                port:
+                  number: 3001

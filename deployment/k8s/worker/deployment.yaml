@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whiteboard-worker
+  namespace: whiteboard-production
+  labels:
+    app: whiteboard-worker
+    app.kubernetes.io/component: worker-tasks
+    app.kubernetes.io/part-of: collaborative-whiteboard
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: whiteboard-worker
+  template:
+    metadata:
+      labels:
+        app: whiteboard-worker
+        app.kubernetes.io/component: worker-tasks
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/collaborative-whiteboard/worker:production-latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: whiteboard-config
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: whiteboard-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: whiteboard-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 15
+            periodSeconds: 15

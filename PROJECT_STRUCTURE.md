@@ -11,6 +11,7 @@ This document provides a tree view of the folders and files in the `collaborativ
 │           └── label.tsx
 ├── docs/
 │   ├── INTERVIEW_NOTES.md
+│   ├── OBSERVABILITY.md
 │   ├── README.md
 │   ├── architecture.md
 │   ├── collaboration-model.md
@@ -22,13 +23,41 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   └── v1-scope.md
 ├── env/
 │   ├── dev.env
+│   ├── docker.env
 │   └── prod.env
 ├── infra/
 │   ├── grafana/
-│   │   └── dashboards/
+│   │   └── provisioning/
+│   │       ├── dashboards/
+│   │       │   ├── dashboards.yml
+│   │       │   └── whiteboard-dashboard.json
+│   │       └── datasources/
+│   │           └── prometheus.yml
+│   ├── helm/
+│   │   └── collaborative-whiteboard/
+│   │       ├── templates/
+│   │       │   ├── _helpers.tpl
+│   │       │   ├── api-deployment.yaml
+│   │       │   ├── api-service.yaml
+│   │       │   ├── client-deployment.yaml
+│   │       │   ├── client-service.yaml
+│   │       │   ├── configmap.yaml
+│   │       │   ├── hpa.yaml
+│   │       │   ├── ingress.yaml
+│   │       │   ├── socket-deployment.yaml
+│   │       │   ├── socket-service.yaml
+│   │       │   └── worker-deployment.yaml
+│   │       ├── Chart.yaml
+│   │       ├── values-staging.yaml
+│   │       └── values.yaml
 │   ├── k8s/
+│   │   └── staging/
+│   │       └── deployment-staging.yaml
 │   ├── prometheus/
-│   └── README.md
+│   │   └── prometheus.yml
+│   ├── README.md
+│   ├── docker-compose.chaos.yml
+│   └── docker-compose.yml
 ├── packages/
 │   ├── api/
 │   │   ├── prisma/
@@ -46,6 +75,10 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │   │   ├── asset.model.ts
 │   │   │   │   │   ├── asset.routes.ts
 │   │   │   │   │   └── asset.service.ts
+│   │   │   │   ├── audit/
+│   │   │   │   │   ├── audit.controller.ts
+│   │   │   │   │   ├── audit.routes.ts
+│   │   │   │   │   └── audit.service.ts
 │   │   │   │   ├── auth/
 │   │   │   │   │   ├── auth.controller.ts
 │   │   │   │   │   ├── auth.middleware.ts
@@ -66,7 +99,6 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │   │   └── snapshot.model.ts
 │   │   │   │   └── user/
 │   │   │   │       └── user.model.ts
-│   │   │   ├── realtime/
 │   │   │   ├── types/
 │   │   │   │   ├── express.d.ts
 │   │   │   │   └── jwt.types.ts
@@ -77,9 +109,13 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   ├── index.ts
 │   │   │   └── server.ts
 │   │   ├── tests/
+│   │   │   ├── auditLog.test.ts
 │   │   │   ├── auth.test.ts
 │   │   │   ├── board.test.ts
-│   │   │   └── health.test.ts
+│   │   │   ├── health.test.ts
+│   │   │   ├── rateLimiter.test.ts
+│   │   │   └── securityHeaders.test.ts
+│   │   ├── Dockerfile
 │   │   ├── README.md
 │   │   ├── jest.config.js
 │   │   ├── package.json
@@ -120,6 +156,7 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │       │   │   ├── PresenceCursor.tsx
 │   │   │   │       │   │   ├── SelectionBox.tsx
 │   │   │   │       │   │   ├── SelectionPropertyCards.tsx
+│   │   │   │       │   │   ├── StickyTextEditor.tsx
 │   │   │   │       │   │   ├── TextEditor.tsx
 │   │   │   │       │   │   └── WorkspaceOverlay.tsx
 │   │   │   │       │   ├── toolbar/
@@ -157,9 +194,12 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │       │   │   ├── applyLineStyle.ts
 │   │   │   │       │   │   ├── arrowShape.ts
 │   │   │   │       │   │   ├── attachmentShape.ts
+│   │   │   │       │   │   ├── ellipseShape.ts
 │   │   │   │       │   │   ├── imageShape.ts
+│   │   │   │       │   │   ├── pathShape.ts
 │   │   │   │       │   │   ├── rectangleShape.ts
 │   │   │   │       │   │   ├── shapeRegistry.ts
+│   │   │   │       │   │   ├── stickyShape.ts
 │   │   │   │       │   │   ├── strokeShape.ts
 │   │   │   │       │   │   └── textShape.ts
 │   │   │   │       │   ├── snapping/
@@ -168,19 +208,22 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │       │   │   └── snapToGrid.ts
 │   │   │   │       │   ├── clipboard.ts
 │   │   │   │       │   ├── grid.ts
+│   │   │   │       │   ├── renderWorker.ts
 │   │   │   │       │   ├── renderer.ts
 │   │   │   │       │   ├── smoothing.ts
 │   │   │   │       │   └── viewport.ts
 │   │   │   │       ├── hooks/
 │   │   │   │       │   ├── useCanvas.ts
 │   │   │   │       │   ├── useKeyboardShortcuts.ts
+│   │   │   │       │   ├── useOffscreenCanvas.ts
 │   │   │   │       │   ├── usePanelFocus.ts
 │   │   │   │       │   └── useToolSession.ts
 │   │   │   │       ├── models/
 │   │   │   │       │   ├── boardModel.ts
 │   │   │   │       │   ├── element.ts
 │   │   │   │       │   └── stroke.ts
-│   │   │   │       ├── pages/
+│   │   │   │       ├── services/
+│   │   │   │       │   └── yjsService.ts
 │   │   │   │       ├── store/
 │   │   │   │       │   ├── __tests__/
 │   │   │   │       │   │   └── historyStore.test.ts
@@ -188,6 +231,7 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │       │   ├── collaborationStore.ts
 │   │   │   │       │   ├── historyStore.ts
 │   │   │   │       │   ├── selectionStore.ts
+│   │   │   │       │   ├── stickyEditorStore.ts
 │   │   │   │       │   ├── textEditorStore.ts
 │   │   │   │       │   ├── toolStore.ts
 │   │   │   │       │   └── viewportStore.ts
@@ -209,6 +253,10 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │       ├── types/
 │   │   │   │       │   └── whiteboardTypes.ts
 │   │   │   │       └── utils/
+│   │   │   │           ├── sampling.test.ts
+│   │   │   │           ├── sampling.ts
+│   │   │   │           ├── smoothing.test.ts
+│   │   │   │           ├── smoothing.ts
 │   │   │   │           └── snapshotStorage.ts
 │   │   │   ├── hooks/
 │   │   │   │   ├── useAuth.ts
@@ -230,9 +278,11 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │   └── protocol.ts
 │   │   │   ├── main.tsx
 │   │   │   └── vite.env.d.ts
+│   │   ├── Dockerfile
 │   │   ├── README.md
 │   │   ├── eslint.config.js
 │   │   ├── index.html
+│   │   ├── nginx.conf
 │   │   ├── package.json
 │   │   ├── tsconfig.app.json
 │   │   ├── tsconfig.json
@@ -245,8 +295,17 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   ├── src/
 │   │   │   ├── ci/
 │   │   │   │   └── githubActionsHelper.ts
+│   │   │   ├── health/
+│   │   │   │   ├── health.test.ts
+│   │   │   │   └── health.ts
+│   │   │   ├── logging/
+│   │   │   │   ├── logger.ts
+│   │   │   │   └── requestId.ts
 │   │   │   ├── monitoring/
-│   │   │   │   └── prometheusConfig.ts
+│   │   │   │   ├── metrics.test.ts
+│   │   │   │   └── metrics.ts
+│   │   │   ├── tracing/
+│   │   │   │   └── telemetry.ts
 │   │   │   └── index.ts
 │   │   ├── README.md
 │   │   ├── package.json
@@ -256,16 +315,30 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   ├── lib/
 │   │   │   │   └── utils.ts
 │   │   │   ├── models/
+│   │   │   │   ├── auditLog.ts
+│   │   │   │   ├── index.ts
 │   │   │   │   ├── oplog.model.ts
-│   │   │   │   └── snapshot.model.ts
+│   │   │   │   ├── snapshot.model.ts
+│   │   │   │   └── yjs.model.ts
 │   │   │   ├── schemas/
 │   │   │   │   └── collab.ts
 │   │   │   ├── utils/
-│   │   │   │   └── accent.ts
+│   │   │   │   ├── __tests__/
+│   │   │   │   │   └── bandwidthBenchmark.test.ts
+│   │   │   │   ├── accent.ts
+│   │   │   │   ├── binaryEncoding.test.ts
+│   │   │   │   ├── binaryEncoding.ts
+│   │   │   │   ├── lww.test.ts
+│   │   │   │   ├── lww.ts
+│   │   │   │   ├── oplogUndo.test.ts
+│   │   │   │   └── yjsPersistence.ts
 │   │   │   ├── env.ts
 │   │   │   ├── index.ts
 │   │   │   ├── jwt.ts
-│   │   │   └── oplog.ts
+│   │   │   ├── oplog.ts
+│   │   │   └── sanitizer.ts
+│   │   ├── tests/
+│   │   │   └── sanitizer.test.ts
 │   │   ├── README.md
 │   │   ├── package.json
 │   │   └── tsconfig.json
@@ -274,12 +347,15 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   ├── config/
 │   │   │   │   ├── README.md
 │   │   │   │   ├── db.ts
-│   │   │   │   └── env.ts
+│   │   │   │   ├── env.ts
+│   │   │   │   └── redis.ts
 │   │   │   ├── events/
 │   │   │   │   ├── README.md
+│   │   │   │   ├── batch.test.ts
 │   │   │   │   └── board.ts
 │   │   │   ├── middleware/
-│   │   │   │   └── auth.ts
+│   │   │   │   ├── auth.ts
+│   │   │   │   └── rateLimiter.ts
 │   │   │   ├── models/
 │   │   │   │   └── chat.ts
 │   │   │   ├── rooms/
@@ -292,12 +368,16 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   │   │   ├── README.md
 │   │   │   │   ├── lamport.ts
 │   │   │   │   └── recentOpsBuffer.ts
+│   │   │   ├── clear-chats.ts
 │   │   │   ├── index.ts
 │   │   │   └── server.ts
 │   │   ├── tests/
 │   │   │   ├── README.md
 │   │   │   ├── join.test.ts
-│   │   │   └── presence.test.ts
+│   │   │   ├── presence.test.ts
+│   │   │   ├── redis-adapter.test.ts
+│   │   │   └── socketRateLimit.test.ts
+│   │   ├── Dockerfile
 │   │   ├── README.md
 │   │   ├── package.json
 │   │   └── tsconfig.json
@@ -313,19 +393,250 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   │   ├── tests/
 │   │   │   ├── compaction.test.ts
 │   │   │   └── oplog.test.ts
+│   │   ├── Dockerfile
 │   │   ├── README.md
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   └── README.md
+├── playwright-report/
+│   ├── data/
+│   │   ├── e0b332b26985098837660a14d495215410cbf1e8.zip
+│   │   └── edc2fa5307a5531635a07aad2bd1afe6364fe51d.zip
+│   ├── trace/
+│   │   ├── assets/
+│   │   │   ├── codeMirrorModule-rXmQmLUY.js
+│   │   │   ├── defaultSettingsView-B-dXF5JN.js
+│   │   │   └── urlMatch-L3liM589.js
+│   │   ├── codeMirrorModule.-QdMvsKi.css
+│   │   ├── codicon.DCmgc-ay.ttf
+│   │   ├── defaultSettingsView.BLFoOugd.css
+│   │   ├── index.B_TqY17P.css
+│   │   ├── index.KZ4wOW1K.js
+│   │   ├── index.html
+│   │   ├── manifest.webmanifest
+│   │   ├── playwright-logo.svg
+│   │   ├── snapshot.B_Jk1wbt.js
+│   │   ├── snapshot.html
+│   │   ├── sw.bundle.js
+│   │   ├── uiMode.C7UW1sC9.css
+│   │   ├── uiMode.Dzuouizj.js
+│   │   ├── uiMode.html
+│   │   └── xtermModule.kHJ-D0s7.css
+│   └── index.html
 ├── scripts/
-│   └── README.md
+│   ├── README.md
+│   └── load-test-sockets.ts
+├── test-results/
+│   ├── example-get-started-link-chromium/
+│   │   └── trace.zip
+│   └── example-has-title-chromium/
+│       └── trace.zip
 ├── tests/
 │   ├── chaos/
+│   │   ├── specs/
+│   │   │   ├── mongodb-failover.test.ts
+│   │   │   ├── redis-disconnect.test.ts
+│   │   │   └── worker-crash.test.ts
+│   │   └── utils/
+│   │       └── docker-cli.ts
 │   ├── e2e/
-│   ├── load/
+│   │   └── playwright/
+│   │       ├── api/
+│   │       │   ├── assets.api.ts
+│   │       │   ├── auth.api.ts
+│   │       │   ├── boards.api.ts
+│   │       │   └── users.api.ts
+│   │       ├── auth/
+│   │       │   └── user.json
+│   │       ├── fixtures/
+│   │       │   ├── auth.fixture.ts
+│   │       │   ├── board.fixture.ts
+│   │       │   └── test.ts
+│   │       ├── pages/
+│   │       │   ├── BoardPage.ts
+│   │       │   ├── Canvas.ts
+│   │       │   ├── DashboardPage.ts
+│   │       │   ├── LoginPage.ts
+│   │       │   ├── Sidebar.ts
+│   │       │   ├── SignupPage.ts
+│   │       │   └── Toolbar.ts
+│   │       ├── reports/
+│   │       │   ├── html/
+│   │       │   │   └── index.html
+│   │       │   └── junit/
+│   │       │       └── results.xml
+│   │       ├── screenshots/
+│   │       │   └── draw-stroke.png
+│   │       ├── specs/
+│   │       │   ├── accessibility/
+│   │       │   │   ├── aria.spec.ts
+│   │       │   │   ├── focus.spec.ts
+│   │       │   │   └── keyboard.spec.ts
+│   │       │   ├── assets/
+│   │       │   │   ├── invalid-file.spec.ts
+│   │       │   │   ├── large-upload.spec.ts
+│   │       │   │   ├── render-image.spec.ts
+│   │       │   │   └── upload-image.spec.ts
+│   │       │   ├── auth/
+│   │       │   │   ├── invalid-login.spec.ts
+│   │       │   │   ├── login.spec.ts
+│   │       │   │   ├── logout.spec.ts
+│   │       │   │   ├── session.spec.ts
+│   │       │   │   └── signup.spec.ts
+│   │       │   ├── boards/
+│   │       │   │   ├── create-board.spec.ts
+│   │       │   │   ├── delete-board.spec.ts
+│   │       │   │   ├── list-boards.spec.ts
+│   │       │   │   ├── permissions.spec.ts
+│   │       │   │   └── rename-board.spec.ts
+│   │       │   ├── collaboration/
+│   │       │   │   ├── cursors.spec.ts
+│   │       │   │   ├── join-leave.spec.ts
+│   │       │   │   ├── live-drawing.spec.ts
+│   │       │   │   ├── reconnect.spec.ts
+│   │       │   │   └── simultaneous-edit.spec.ts
+│   │       │   ├── health/
+│   │       │   │   ├── environment.spec.ts
+│   │       │   │   └── health.spec.ts
+│   │       │   ├── recovery/
+│   │       │   │   ├── offline.spec.ts
+│   │       │   │   ├── refresh.spec.ts
+│   │       │   │   ├── restore.spec.ts
+│   │       │   │   └── snapshot.spec.ts
+│   │       │   ├── regression/
+│   │       │   │   ├── collaboration-workflow.spec.ts
+│   │       │   │   ├── happy-path.spec.ts
+│   │       │   │   └── image-workflow.spec.ts
+│   │       │   ├── visual/
+│   │       │   │   ├── board.spec.ts-snapshots/
+│   │       │   │   │   ├── board-page-chromium-win32.png
+│   │       │   │   │   └── board-page-webkit-win32.png
+│   │       │   │   ├── dashboard.spec.ts-snapshots/
+│   │       │   │   │   ├── dashboard-page-chromium-win32.png
+│   │       │   │   │   ├── dashboard-page-firefox-win32.png
+│   │       │   │   │   └── dashboard-page-webkit-win32.png
+│   │       │   │   ├── login.spec.ts-snapshots/
+│   │       │   │   │   ├── login-page-chromium-win32.png
+│   │       │   │   │   ├── login-page-firefox-win32.png
+│   │       │   │   │   └── login-page-webkit-win32.png
+│   │       │   │   ├── board.spec.ts
+│   │       │   │   ├── dashboard.spec.ts
+│   │       │   │   └── login.spec.ts
+│   │       │   └── whiteboard/
+│   │       │       ├── arrow.spec.ts
+│   │       │       ├── draw.spec.ts
+│   │       │       ├── move.spec.ts
+│   │       │       ├── pan.spec.ts
+│   │       │       ├── pen.spec.ts
+│   │       │       ├── rectangle.spec.ts
+│   │       │       ├── redo.spec.ts
+│   │       │       ├── resize.spec.ts
+│   │       │       ├── selection.spec.ts
+│   │       │       ├── text.spec.ts
+│   │       │       ├── undo.spec.ts
+│   │       │       └── zoom.spec.ts
+│   │       ├── test-data/
+│   │       │   ├── boards/
+│   │       │   │   ├── empty-board.json
+│   │       │   │   └── populated-board.json
+│   │       │   ├── images/
+│   │       │   └── json/
+│   │       │       └── users.json
+│   │       ├── test-results/
+│   │       ├── traces/
+│   │       ├── utils/
+│   │       │   ├── assertions.ts
+│   │       │   ├── constants.ts
+│   │       │   ├── random.ts
+│   │       │   └── wait.ts
+│   │       ├── videos/
+│   │       ├── README.md
+│   │       ├── global.setup.ts
+│   │       ├── global.teardown.ts
+│   │       ├── package.json
+│   │       ├── playwright.config.ts
+│   │       └── tsconfig.json
+│   ├── performance/
+│   │   ├── k6/
+│   │   │   ├── api/
+│   │   │   │   ├── append-operation.ts
+│   │   │   │   ├── assets.ts
+│   │   │   │   ├── auth-login.ts
+│   │   │   │   ├── auth-signup.ts
+│   │   │   │   ├── create-board.ts
+│   │   │   │   ├── delete-board.ts
+│   │   │   │   ├── get-board.ts
+│   │   │   │   ├── list-boards.ts
+│   │   │   │   ├── snapshots.ts
+│   │   │   │   ├── upload-complete.ts
+│   │   │   │   └── upload-init.ts
+│   │   │   ├── config/
+│   │   │   │   ├── environments.ts
+│   │   │   │   ├── options.ts
+│   │   │   │   └── thresholds.ts
+│   │   │   ├── data/
+│   │   │   │   └── payloads/
+│   │   │   │       ├── assets.json
+│   │   │   │       ├── boards.json
+│   │   │   │       ├── operations.json
+│   │   │   │       └── users.json
+│   │   │   ├── metrics/
+│   │   │   │   ├── business.ts
+│   │   │   │   ├── latency.ts
+│   │   │   │   └── websocket.ts
+│   │   │   ├── reports/
+│   │   │   │   ├── html/
+│   │   │   │   └── summary/
+│   │   │   ├── scenarios/
+│   │   │   │   ├── breakpoint.ts
+│   │   │   │   ├── load.ts
+│   │   │   │   ├── smoke.ts
+│   │   │   │   ├── soak.ts
+│   │   │   │   ├── spike.ts
+│   │   │   │   └── stress.ts
+│   │   │   ├── scripts/
+│   │   │   │   ├── cleanup.ts
+│   │   │   │   ├── seed.ts
+│   │   │   │   └── setup.ts
+│   │   │   ├── types/
+│   │   │   │   ├── asset.ts
+│   │   │   │   ├── auth.ts
+│   │   │   │   ├── board.ts
+│   │   │   │   ├── operation.ts
+│   │   │   │   └── websocket.ts
+│   │   │   ├── utils/
+│   │   │   │   ├── assets.ts
+│   │   │   │   ├── auth.ts
+│   │   │   │   ├── boards.ts
+│   │   │   │   ├── checks.ts
+│   │   │   │   ├── constants.ts
+│   │   │   │   ├── headers.ts
+│   │   │   │   ├── helpers.ts
+│   │   │   │   └── random.ts
+│   │   │   ├── websocket/
+│   │   │   │   ├── broadcast.ts
+│   │   │   │   ├── connect.ts
+│   │   │   │   ├── cursor.ts
+│   │   │   │   ├── disconnect.ts
+│   │   │   │   ├── draw.ts
+│   │   │   │   ├── join-board.ts
+│   │   │   │   ├── leave-board.ts
+│   │   │   │   └── reconnect.ts
+│   │   │   ├── workloads/
+│   │   │   │   ├── load.ts
+│   │   │   │   ├── smoke.ts
+│   │   │   │   ├── soak.ts
+│   │   │   │   ├── spike.ts
+│   │   │   │   └── stress.ts
+│   │   │   ├── README.md
+│   │   │   ├── package.json
+│   │   │   └── tsconfig.json
+│   │   ├── PERFORMANCE_REPORT.md
+│   │   └── STRUCTURE.md
 │   └── README.md
 ├── tools/
 │   └── README.md
+├── Dockerfile
 ├── LICENSE
 ├── MAINTAINING.md
 ├── PROJECT_STRUCTURE.md
