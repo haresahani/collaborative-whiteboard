@@ -3,13 +3,19 @@ initTelemetry("whiteboard-api");
 
 import dotenv from "dotenv";
 import path from "path";
+import { fileURLToPath } from "url";
 import fs from "fs";
 import http from "http";
 import https from "https";
 import { validateEnv } from "shared";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const NODE_ENV = process.env.NODE_ENV ?? "development";
+const envFile = NODE_ENV === "production" ? "prod.env" : "dev.env";
+
 dotenv.config({
-  path: path.resolve(process.cwd(), "../../env/dev.env"),
+  path: path.resolve(__dirname, "../../../env", envFile),
 });
 
 const validatedEnv = validateEnv(process.env);
