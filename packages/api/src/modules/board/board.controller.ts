@@ -2,30 +2,49 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { User } from "../user/user.model";
 import { issueBoardJoinToken } from "shared/jwt";
+import { sanitizeText } from "shared";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { boardService } from "./board.service";
+import { auditService } from "../audit/audit.service";
 
 /**
  * Board controllers — thin HTTP handlers.
- *
- * Each controller follows the same 3-step pattern:
- *   1. Read request (params, query, body)
- *   2. Delegate to service
- *   3. Return standardised ApiResponse
- *
- * No try/catch, no Mongoose imports, no business logic.
  */
 
 /** POST /api/boards — Create a new board with an initial empty snapshot. */
 export const createBoard = asyncHandler(async (req: Request, res: Response) => {
-  const board = await boardService.create(req.user!.id, req.body);
+  const body = req.body;
+  if (body && typeof body.title === "string") {
+    body.title = sanitizeText(body.title);
+  }
+
+  const board = await boardService.create(req.user!.id, body);
+
+  void auditService.logEvent({
+    userId: req.user!.id,
+    action: "BOARD_CREATE",
+    resourceId: String(board._id),
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+    details: { title: board.title },
+  });
+
   ApiResponse.created(res, board);
 });
 
 /** GET /api/boards/:id — Fetch a single board by ID. */
 export const getBoard = asyncHandler(async (req: Request, res: Response) => {
   const board = await boardService.findById(req.params.id, req.user!.id);
+
+  void auditService.logEvent({
+    userId: req.user!.id,
+    action: "BOARD_ACCESS",
+    resourceId: req.params.id,
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+  });
+
   ApiResponse.success(res, board);
 });
 
@@ -44,6 +63,15 @@ export const getMyBoards = asyncHandler(async (req: Request, res: Response) => {
 /** DELETE /api/boards/:id — Delete a board and cascade-remove related data. */
 export const deleteBoard = asyncHandler(async (req: Request, res: Response) => {
   await boardService.remove(req.params.id, req.user!.id);
+
+  void auditService.logEvent({
+    userId: req.user!.id,
+    action: "BOARD_DELETE",
+    resourceId: req.params.id,
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+  });
+
   ApiResponse.message(res, "Board deleted");
 });
 
@@ -77,6 +105,14 @@ export const getBoardJoinToken = asyncHandler(
       process.env.JWT_SECRET!,
       "2h",
     );
+
+    void auditService.logEvent({
+      userId,
+      action: "BOARD_JOIN_TOKEN",
+      resourceId: boardId,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
 
     ApiResponse.success(res, { token });
   },

@@ -9,3 +9,4 @@ export * from "./schemas/collab";
 export * from "./utils/lww";
 export * from "./utils/yjsPersistence";
 export * from "./utils/binaryEncoding";
+export * from "./sanitizer";

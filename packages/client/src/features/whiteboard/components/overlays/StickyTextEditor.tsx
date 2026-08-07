@@ -1,3 +1,4 @@
+import { sanitizeText } from "shared";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import type { StickyElement } from "../../models/element";
 import {
@@ -22,7 +23,7 @@ export default function StickyTextEditor({
 }: StickyTextEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [textValue, setTextValue] = useState(() =>
-    yjsService.getStickyText(sticky.id).toString(),
+    sanitizeText(yjsService.getStickyText(sticky.id).toString()),
   );
   const [remotePresence, setRemotePresence] = useState<StickyAwarenessState[]>(
     [],
@@ -35,7 +36,8 @@ export default function StickyTextEditor({
 
     // Update board store's static text field so preview canvas renders current text
     const updateStaticText = () => {
-      const currentVal = ytext.toString();
+      const rawVal = ytext.toString();
+      const currentVal = sanitizeText(rawVal);
       setTextValue(currentVal);
 
       const latestElements = useBoardStore.getState().elements;
@@ -82,8 +84,8 @@ export default function StickyTextEditor({
       unsubscribeAwareness();
       yjsService.setLocalStickyAwareness(null);
 
-      // On finish, commit updated text to board store for history / snapshot
-      const finalVal = ytext.toString();
+      // On finish, commit updated sanitized text to board store for history / snapshot
+      const finalVal = sanitizeText(ytext.toString());
       const currentBoard = useBoardStore.getState().elements;
       const updated = currentBoard.map((el) =>
         el.id === sticky.id

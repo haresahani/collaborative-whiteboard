@@ -1,8 +1,11 @@
 import express, { type Express } from "express";
+import helmet from "helmet";
+import cors from "cors";
 import assetRoutes from "./modules/asset/asset.routes";
 import authRoutes from "./modules/auth/auth.routes";
 import boardRoutes from "./modules/board/board.routes";
-import { rateLimiter } from "./middleware/rateLimiter";
+import auditRoutes from "./modules/audit/audit.routes";
+import { authLimiter, globalLimiter } from "./middleware/rateLimiter";
 import { errorHandler } from "./middleware/errorHandler";
 
 import {
@@ -21,6 +24,32 @@ import {
 } from "infra-utils";
 
 const app: Express = express();
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "blob:"],
+        connectSrc: ["'self'", "ws:", "wss:"],
+      },
+    },
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
+
+const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
+app.use(
+  cors({
+    origin: corsOrigin.includes(",") ? corsOrigin.split(",") : corsOrigin,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID"],
+  }),
+);
 
 app.use(requestIdMiddleware);
 app.use(httpLoggerMiddleware({ serviceName: "whiteboard-api" }));
@@ -72,9 +101,12 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/api/auth", rateLimiter, authRoutes);
+app.use(globalLimiter);
+
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/boards/:boardId/assets", assetRoutes);
 app.use("/api/boards", boardRoutes);
+app.use("/api/audit-logs", auditRoutes);
 
 app.get("/", (req, res) => {
   res.send("Express server is active");

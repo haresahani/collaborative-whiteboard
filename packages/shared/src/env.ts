@@ -25,6 +25,13 @@ export const envSchema = z.object({
     .url("OTEL_EXPORTER_OTLP_ENDPOINT must be a valid URL")
     .default("http://jaeger:4318/v1/traces"),
   SERVICE_NAME: z.string().default("whiteboard-service"),
+  TLS_ENABLED: z
+    .preprocess((val) => val === "true" || val === true, z.boolean())
+    .default(false),
+  SSL_KEY_PATH: z.string().optional(),
+  SSL_CERT_PATH: z.string().optional(),
+  CORS_ORIGIN: z.string().default("http://localhost:5173"),
+  CLIENT_ORIGIN: z.string().default("http://localhost:5173"),
 });
 
 export type ValidatedEnv = z.infer<typeof envSchema>;
