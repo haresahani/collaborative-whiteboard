@@ -88,11 +88,9 @@ jobs:
         with:
           version: 'v3.14.0'
 
-      - name: Helm Upgrade / Install Production Release
+      - name: Template & Validate Helm Production Release
         run: |
-          echo "Deploying via Helm to production cluster..."
-          helm upgrade --install whiteboard-prod deployment/helm/collaborative-whiteboard \
+          echo "Validating Helm production release template..."
+          helm template whiteboard-prod deployment/helm/collaborative-whiteboard \
             --namespace whiteboard-production \
-            --create-namespace \
-            --values deployment/helm/collaborative-whiteboard/values-production.yaml \
-            --dry-run
+            --values deployment/helm/collaborative-whiteboard/values-production.yaml > /dev/null

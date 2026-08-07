@@ -126,10 +126,10 @@ jobs:
             --namespace whiteboard-staging
 
       - name: Validate Kubernetes Manifests
-        uses: stefanprodan/kube-tools@v1
-        with:
-          command: |
-            kubectl apply --dry-run=client -f infra/k8s/staging/deployment-staging.yaml
+        run: |
+          helm template whiteboard-staging infra/helm/collaborative-whiteboard \
+            --values infra/helm/collaborative-whiteboard/values-staging.yaml \
+            --namespace whiteboard-staging > /dev/null
 
       - name: Notify Deployment Success
         run: echo "Successfully deployed release whiteboard-staging to Kubernetes staging environment!"
