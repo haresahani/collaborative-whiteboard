@@ -1,15 +1,21 @@
-import createDOMPurify from "dompurify";
-import { JSDOM } from "jsdom";
+import DOMPurify from "dompurify";
 
-let purify: ReturnType<typeof createDOMPurify>;
+let nodePurify: ReturnType<typeof DOMPurify> | null = null;
 
-if (typeof window !== "undefined" && window.document) {
-  purify = createDOMPurify(window);
-} else {
-  const dom = new JSDOM("");
-  purify = createDOMPurify(
-    dom.window as unknown as Parameters<typeof createDOMPurify>[0],
-  );
+function getPurify(): ReturnType<typeof DOMPurify> {
+  if (typeof window !== "undefined" && window.document) {
+    return DOMPurify;
+  }
+  if (!nodePurify) {
+    // Dynamic require for Node.js environment to prevent Vite bundling jsdom in browser
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { JSDOM } = require("jsdom");
+    const dom = new JSDOM("");
+    nodePurify = DOMPurify(
+      dom.window as unknown as Parameters<typeof DOMPurify>[0],
+    );
+  }
+  return nodePurify;
 }
 
 /**
@@ -17,11 +23,11 @@ if (typeof window !== "undefined" && window.document) {
  */
 export function sanitizeText(input: string): string {
   if (typeof input !== "string") return "";
-  const cleaned = purify.sanitize(input, {
+  const purify = getPurify();
+  return purify.sanitize(input, {
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
   });
-  return cleaned;
 }
 
 /**
@@ -29,6 +35,7 @@ export function sanitizeText(input: string): string {
  */
 export function sanitizeHtml(input: string): string {
   if (typeof input !== "string") return "";
+  const purify = getPurify();
   return purify.sanitize(input, {
     ALLOWED_TAGS: [
       "b",
