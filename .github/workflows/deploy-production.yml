@@ -91,9 +91,10 @@ jobs:
       - name: Template & Validate Helm Production Release
         run: |
           echo "Validating Helm production release template..."
+          helm dependency update deployment/helm/collaborative-whiteboard || true
           helm template whiteboard-prod deployment/helm/collaborative-whiteboard \
             --namespace whiteboard-production \
-            --values deployment/helm/collaborative-whiteboard/values-production.yaml > /dev/null
+            --values deployment/helm/collaborative-whiteboard/values-production.yaml --debug > /dev/null
 
       - name: Deploy to Live Kubernetes Cluster (Optional)
         if: ${{ secrets.KUBECONFIG_DATA != '' }}

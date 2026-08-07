@@ -121,15 +121,10 @@ jobs:
 
       - name: Template & Validate Helm Staging Release
         run: |
+          helm dependency update infra/helm/collaborative-whiteboard || true
           helm template whiteboard-staging infra/helm/collaborative-whiteboard \
             --values infra/helm/collaborative-whiteboard/values-staging.yaml \
-            --namespace whiteboard-staging
-
-      - name: Validate Kubernetes Manifests
-        run: |
-          helm template whiteboard-staging infra/helm/collaborative-whiteboard \
-            --values infra/helm/collaborative-whiteboard/values-staging.yaml \
-            --namespace whiteboard-staging > /dev/null
+            --namespace whiteboard-staging --debug > /dev/null
 
       - name: Notify Deployment Success
         run: echo "Successfully deployed release whiteboard-staging to Kubernetes staging environment!"
