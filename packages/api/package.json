@@ -15,18 +15,22 @@
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "express-rate-limit": "^8.3.0",
+    "helmet": "^8.0.0",
+    "infra-utils": "workspace:*",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.4",
+    "rate-limiter-flexible": "^5.0.5",
     "shared": "workspace:*",
-    "infra-utils": "workspace:*",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",

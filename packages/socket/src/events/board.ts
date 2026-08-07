@@ -11,6 +11,7 @@ import {
   encodeOpBatch,
   encodeCursorBatch,
   decodeBinaryPayload,
+  sanitizeText,
 } from "shared";
 import { Oplog, Snapshot } from "shared/models";
 import { enqueueOp } from "../services/oplogQueue";
@@ -19,6 +20,12 @@ import { pushRecentOp, getRecentOps } from "../utils/recentOpsBuffer";
 import { PresenceService } from "../services/presence";
 import { Chat } from "../models/chat";
 import { opsCounter, logger, getTracer } from "infra-utils";
+import {
+  socketOpRateLimiterMemory,
+  socketChatRateLimiterMemory,
+  socketJoinRateLimiterMemory,
+  checkSocketRateLimit,
+} from "../middleware/rateLimiter";
 
 const tracer = getTracer("socket-events");
 
@@ -66,6 +73,16 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
   // join.board handler: fetches snapshot + oplogs tail and sends board.init
   socket.on("join.board", async (data: { boardId: string }) => {
     try {
+      if (
+        !(await checkSocketRateLimit(
+          socketJoinRateLimiterMemory,
+          socket,
+          "join.board",
+        ))
+      ) {
+        return;
+      }
+
       const targetBoardId = data.boardId;
       if (targetBoardId !== boardId) {
         console.warn(
@@ -173,6 +190,18 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
   socket.on("op.commit", async (raw: unknown, ack?: OpCommitAck) => {
     const span = tracer.startSpan("op.commit");
     try {
+      if (
+        !(await checkSocketRateLimit(
+          socketOpRateLimiterMemory,
+          socket,
+          "op.commit",
+        ))
+      ) {
+        void ack?.({ ok: false, error: "RATE_LIMIT_EXCEEDED" });
+        span.end();
+        return;
+      }
+
       opsCounter.inc({ type: "op.commit", service: "socket" });
       const nextLamport = await getNextLamport(boardId);
 
@@ -240,6 +269,16 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       ack?: (res: { ok: boolean; count?: number; error?: string }) => void,
     ) => {
       try {
+        if (
+          !(await checkSocketRateLimit(
+            socketOpRateLimiterMemory,
+            socket,
+            "op.batch",
+          ))
+        ) {
+          void ack?.({ ok: false, error: "RATE_LIMIT_EXCEEDED" });
+          return;
+        }
         let rawOps: unknown[] = [];
         if (
           raw instanceof ArrayBuffer ||
@@ -369,6 +408,17 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
 
   // 2. Legacy/specific stroke.commit handler (kept for compatibility/robustness)
   socket.on("op.stroke.commit", async (raw: unknown, ack?: StrokeCommitAck) => {
+    if (
+      !(await checkSocketRateLimit(
+        socketOpRateLimiterMemory,
+        socket,
+        "op.stroke.commit",
+      ))
+    ) {
+      void ack?.({ ok: false, error: "RATE_LIMIT_EXCEEDED" });
+      return;
+    }
+
     const parsed = StrokeCommitSchema.safeParse(raw);
 
     if (!parsed.success) {
@@ -477,17 +527,15 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
 
   socket.on("chat.send", async (raw: unknown) => {
     try {
-      // Rate limit: max 2 messages/sec per socket
-      const now = Date.now();
-      socket.data.lastChatTime = socket.data.lastChatTime || 0;
-      if (now - socket.data.lastChatTime < 500) {
-        socket.emit("protocol:error", {
-          code: "RATE_LIMIT_EXCEEDED",
-          message: "You are sending messages too fast",
-        });
+      if (
+        !(await checkSocketRateLimit(
+          socketChatRateLimiterMemory,
+          socket,
+          "chat.send",
+        ))
+      ) {
         return;
       }
-      socket.data.lastChatTime = now;
 
       const parsed = chatSendSchema.safeParse(raw);
       if (!parsed.success) {
@@ -498,7 +546,8 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         return;
       }
 
-      const { message, messageId } = parsed.data;
+      const { message: rawMessage, messageId } = parsed.data;
+      const message = sanitizeText(rawMessage);
 
       let chatMessage;
       try {

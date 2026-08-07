@@ -50,7 +50,8 @@ export const stickyShape: Shape<StickyElement> = {
 
       const padding = 12;
       const maxWidth = width - padding * 2;
-      const lines = sticky.text.split("\n");
+      const cleanText = sticky.text.replace(/<[^>]*>/g, "");
+      const lines = cleanText.split("\n");
 
       let currentY = y + padding;
       for (const line of lines) {

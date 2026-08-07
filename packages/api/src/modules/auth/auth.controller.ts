@@ -5,6 +5,7 @@ import { User } from "../user/user.model";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { ApiError } from "../../utils/ApiError";
+import { auditService } from "../audit/audit.service";
 
 /**
  * Controller for user signup.
@@ -15,6 +16,13 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
+    void auditService.logEvent({
+      action: "USER_SIGNUP",
+      status: "FAILURE",
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+      details: { email, reason: "User already exists" },
+    });
     throw ApiError.badRequest("User already exists");
   }
 
@@ -28,6 +36,15 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
 
   const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, {
     expiresIn: "7d",
+  });
+
+  void auditService.logEvent({
+    userId: String(user._id),
+    action: "USER_SIGNUP",
+    status: "SUCCESS",
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+    details: { email: user.email, displayName: user.displayName },
   });
 
   ApiResponse.created(res, {
@@ -50,16 +67,40 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   const user = await User.findOne({ email });
   if (!user) {
+    void auditService.logEvent({
+      action: "USER_LOGIN_FAILED",
+      status: "FAILURE",
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+      details: { email, reason: "User not found" },
+    });
     throw ApiError.badRequest("Invalid credentials");
   }
 
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) {
+    void auditService.logEvent({
+      userId: String(user._id),
+      action: "USER_LOGIN_FAILED",
+      status: "FAILURE",
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+      details: { email, reason: "Invalid password" },
+    });
     throw ApiError.badRequest("Invalid credentials");
   }
 
   const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, {
     expiresIn: "7d",
+  });
+
+  void auditService.logEvent({
+    userId: String(user._id),
+    action: "USER_LOGIN",
+    status: "SUCCESS",
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+    details: { email: user.email },
   });
 
   ApiResponse.success(res, {

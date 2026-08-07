@@ -1,8 +1,16 @@
-import { createServer } from "http";
+import {
+  createServer as createHttpServer,
+  type Server as HttpServer,
+} from "http";
+import {
+  createServer as createHttpsServer,
+  type Server as HttpsServer,
+} from "https";
+import fs from "fs";
 import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import type Redis from "ioredis";
-import { CLIENT_ORIGIN } from "./config/env";
+import { env, CLIENT_ORIGIN } from "./config/env";
 import { authMiddleware } from "./middleware/auth";
 import { registerBoardHandlers } from "./events/board";
 import { createRedisAdapterClients } from "./config/redis";
@@ -21,7 +29,10 @@ export interface SocketServerOptions {
 }
 
 export function createSocketServer(options?: SocketServerOptions) {
-  const httpServer = createServer((req, res) => {
+  const requestListener = (
+    req: import("http").IncomingMessage,
+    res: import("http").ServerResponse,
+  ) => {
     if (req.url === "/health" || req.url === "/") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
@@ -68,7 +79,27 @@ export function createSocketServer(options?: SocketServerOptions) {
         });
       return;
     }
-  });
+  };
+
+  let httpServer: HttpServer | HttpsServer;
+  if (
+    env.TLS_ENABLED &&
+    env.SSL_KEY_PATH &&
+    env.SSL_CERT_PATH &&
+    fs.existsSync(env.SSL_KEY_PATH) &&
+    fs.existsSync(env.SSL_CERT_PATH)
+  ) {
+    httpServer = createHttpsServer(
+      {
+        key: fs.readFileSync(env.SSL_KEY_PATH),
+        cert: fs.readFileSync(env.SSL_CERT_PATH),
+      },
+      requestListener,
+    );
+    logger.info("[socket] HTTPS/WSS server created with TLS enabled");
+  } else {
+    httpServer = createHttpServer(requestListener);
+  }
 
   const io = new Server(httpServer, {
     cors: {
