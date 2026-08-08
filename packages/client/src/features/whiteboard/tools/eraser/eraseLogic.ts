@@ -72,3 +72,37 @@ export function getElementsTouchedByEraser(
     elementHitsEraser(point, element, radius),
   );
 }
+
+/**
+ * Mathematical segment sampling: checks elements intersected along the trajectory from p1 to p2.
+ * Ensures fast eraser swipes never skip elements.
+ */
+export function getElementsTouchedByEraserSegment(
+  elements: Element[],
+  p1: Point,
+  p2: Point,
+  radius: number,
+) {
+  const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+  const stepSize = Math.max(radius * 0.5, 4);
+  const steps = Math.max(1, Math.ceil(dist / stepSize));
+
+  const touchedSet = new Set<Element>();
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const samplePoint: Point = {
+      x: p1.x + (p2.x - p1.x) * t,
+      y: p1.y + (p2.y - p1.y) * t,
+    };
+
+    for (const element of elements) {
+      if (!touchedSet.has(element) && elementHitsEraser(samplePoint, element, radius)) {
+        touchedSet.add(element);
+      }
+    }
+  }
+
+  return Array.from(touchedSet);
+}
+

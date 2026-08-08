@@ -84,15 +84,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4
         with:
           version: 'v3.14.0'
 
-      - name: Helm Upgrade / Install Production Release
+      - name: Template & Validate Helm Production Release
         run: |
-          echo "Deploying via Helm to production cluster..."
+          echo "Validating Helm production release template..."
+          helm dependency update deployment/helm/collaborative-whiteboard || true
+          helm template whiteboard-prod deployment/helm/collaborative-whiteboard \
+            --namespace whiteboard-production \
+            --values deployment/helm/collaborative-whiteboard/values-production.yaml --debug > /dev/null
+
+      - name: Deploy to Live Kubernetes Cluster (Optional)
+        if: ${{ secrets.KUBECONFIG_DATA != '' }}
+        run: |
+          echo "KUBECONFIG_DATA secret detected. Setting up cluster credentials..."
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          
+          echo "Upgrading Helm production release..."
           helm upgrade --install whiteboard-prod deployment/helm/collaborative-whiteboard \
             --namespace whiteboard-production \
             --create-namespace \
-            --values deployment/helm/collaborative-whiteboard/values-production.yaml \
-            --dry-run
+            --values deployment/helm/collaborative-whiteboard/values-production.yaml
