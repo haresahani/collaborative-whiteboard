@@ -6,6 +6,7 @@ import { useToolSession } from "../../hooks/useToolSession";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useToolStore } from "../../store/toolStore";
 import { useViewportStore } from "../../store/viewportStore";
+import { useCanvasDefaultsStore } from "../../store/useCanvasDefaultsStore";
 import { useSelectionStore } from "../../store/selectionStore";
 import {
   getHandleUnderPoint,
@@ -180,11 +181,12 @@ function getElementGeometryHash(el: Element | null): string {
 
       const preview = getPreview();
       const marquee = useSelectionStore.getState().marquee;
+      const gridStyle = useCanvasDefaultsStore.getState().gridStyle;
 
       // Mathematical State Signature for Live Drawing & Dirty Checking
       const previewHash = getElementGeometryHash(preview);
       const remotePreviewsHash = otherPreviews.map(getElementGeometryHash).join(";");
-      const stateHash = `${elements.length}:${elements[elements.length - 1]?.id ?? ""}:${previewHash}:${remotePreviewsHash}:${offsetX}:${offsetY}:${zoom}:${selectedIds.join(",")}:${marquee ? `${marquee.x},${marquee.y},${marquee.width},${marquee.height}` : ""}:${eraserTrailPoints.length}:${getImageCacheVersion()}`;
+      const stateHash = `${elements.length}:${gridStyle}:${elements[elements.length - 1]?.id ?? ""}:${previewHash}:${remotePreviewsHash}:${offsetX}:${offsetY}:${zoom}:${selectedIds.join(",")}:${marquee ? `${marquee.x},${marquee.y},${marquee.width},${marquee.height}` : ""}:${eraserTrailPoints.length}:${getImageCacheVersion()}`;
 
       if (stateHash !== lastStateHash) {
         lastStateHash = stateHash;

@@ -1,5 +1,6 @@
 import { renderElements } from "./renderer";
 import type { Element } from "../models/element";
+import type { GridStyle } from "./grid";
 
 let offscreenCanvas: OffscreenCanvas | null = null;
 let ctx: OffscreenCanvasRenderingContext2D | null = null;
@@ -30,6 +31,7 @@ export interface RenderWorkerRenderMessage {
   width: number;
   height: number;
   isDark: boolean;
+  gridStyle?: GridStyle;
 }
 
 export type RenderWorkerMessage =
@@ -74,6 +76,7 @@ self.onmessage = (event: MessageEvent<RenderWorkerMessage>) => {
       data.marquee,
       data.otherTempElements,
       data.isDark,
+      data.gridStyle || "dots",
     );
   }
 };

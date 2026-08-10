@@ -113,6 +113,8 @@ function drawResizeHandles(
 Main Renderer
 ----------------------------------------
 */
+import { renderGrid, type GridStyle } from "./grid";
+
 export function renderElements(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   elements: Element[],
@@ -129,6 +131,7 @@ export function renderElements(
   } | null = null,
   otherTempElements: Element[] = [],
   isDark = false,
+  gridStyle: GridStyle = "dots",
 ) {
   const canvas = ctx.canvas;
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
@@ -140,7 +143,7 @@ export function renderElements(
   const cssHeight = canvas.height / dpr;
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  renderGrid(ctx, cssWidth, cssHeight, offsetX, offsetY, zoom, isDark);
+  renderGrid(ctx, cssWidth, cssHeight, offsetX, offsetY, zoom, isDark, gridStyle);
 
   // Exact High-DPI World Transform Matrix Math
   ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, offsetX * dpr, offsetY * dpr);
