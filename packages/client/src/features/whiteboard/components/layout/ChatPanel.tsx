@@ -14,13 +14,12 @@ interface ChatPanelProps {
 export default function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
   const closeButtonRef = usePanelFocus(isOpen);
   const chatMessages = useCollaborationStore((state) => state.chatMessages);
-  const activeUsers = useCollaborationStore((state) => state.activeUsers);
   const currentUser = useAuthStore((state) => state.user);
   const [inputText, setInputText] = useState("");
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  const myUserId = socketService.getMyUserId() || currentUser?.id;
+  const myUserId = socketService.getUserId() || currentUser?.id;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,19 +81,6 @@ export default function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
               <h3 id="board-chat-panel-title" className="wb-right-panel__title">
                 Collaborative Chat
               </h3>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  padding: "2px 8px",
-                  borderRadius: 12,
-                  background: "rgba(16, 185, 129, 0.15)",
-                  color: "#10b981",
-                  border: "1px solid rgba(16, 185, 129, 0.25)",
-                }}
-              >
-                {activeUsers.length || 1} online
-              </span>
             </div>
 
             <button
