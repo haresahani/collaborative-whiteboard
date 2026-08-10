@@ -1,16 +1,31 @@
-import { Plus, Trash2, X } from "lucide-react";
-import { useMemo, useState, type KeyboardEvent } from "react";
+import {
+  Plus,
+  Trash2,
+  X,
+  FlipHorizontal,
+  FlipVertical,
+  RotateCw,
+  Download,
+  ChevronsUp,
+  ChevronsDown,
+} from "lucide-react";
+import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { cn } from "../../../../../lib/utils";
 import { getSelectionBounds } from "../../../engine/geometry/bounds";
 import {
   alignElements,
   deleteElements,
+  reorderElements,
   setElementStyle,
   translateElements,
   type AlignMode,
   type ElementStylePatch,
+  type ReorderMode,
 } from "../../../engine/mutations";
-import type { LineStyle } from "../../../models/element";
+import type { ImageElement, LineStyle } from "../../../models/element";
+import { useViewportStore } from "../../../store/viewportStore";
+import { screenToWorld } from "../../../engine/viewport";
+import { processImageFile } from "../../../utils/imageLoader";
 import { useBoardStore } from "../../../store/boardStore";
 import { useSelectionStore } from "../../../store/selectionStore";
 import { useToolStore } from "../../../store/toolStore";
@@ -31,7 +46,7 @@ import {
 interface LeftToolbarProps {
   isOpen: boolean;
   isSurfaceOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   onSurfaceOpenChange: (isOpen: boolean) => void;
 }
 
@@ -41,11 +56,7 @@ interface PositionFieldsProps {
   onCommit: (axis: "x" | "y", value: string) => void;
 }
 
-function PositionFields({
-  initialX,
-  initialY,
-  onCommit,
-}: PositionFieldsProps) {
+function PositionFields({ initialX, initialY, onCommit }: PositionFieldsProps) {
   const [draftX, setDraftX] = useState(() => String(Math.round(initialX)));
   const [draftY, setDraftY] = useState(() => String(Math.round(initialY)));
 
@@ -102,7 +113,6 @@ function linePreviewClassName(lineStyle: LineStyle) {
 export default function LeftToolbar({
   isOpen,
   isSurfaceOpen,
-  onClose,
   onSurfaceOpenChange,
 }: LeftToolbarProps) {
   const tool = useToolStore((state) => state.tool);
@@ -132,7 +142,12 @@ export default function LeftToolbar({
   const activeTool = getToolDefinition(tool);
 
   const selectedElements = useMemo(
-    () => elements.filter((element) => selectedIds.includes(element.id)),
+    () =>
+      elements.filter(
+        (element) =>
+          !(element as unknown as Record<string, unknown>).tombstoned &&
+          selectedIds.includes(element.id),
+      ),
     [elements, selectedIds],
   );
 
@@ -143,46 +158,42 @@ export default function LeftToolbar({
 
   const selectionTypes = useMemo(
     () =>
-      Array.from(new Set(selectedElements.map((element) => element.type))).sort(),
+      Array.from(
+        new Set(selectedElements.map((element) => element.type)),
+      ).sort(),
     [selectedElements],
   );
 
   const isSelectionInspector =
-    tool === "select" && selectedElements.length > 0 && selectionBounds !== null;
+    tool === "select" &&
+    selectedElements.length > 0 &&
+    selectionBounds !== null;
 
-  const selectionColor =
-    selectedElements[0]?.style.strokeColor ?? color;
+  const selectionColor = selectedElements[0]?.style.strokeColor ?? color;
   const selectionFillColor =
     selectedElements.find((element) => element.type === "rectangle")?.style
       .fillColor ?? fillColor;
-  const selectionWidth =
-    selectedElements[0]?.style.strokeWidth ?? width;
-  const selectionLineStyle =
-    selectedElements[0]?.style.lineStyle ?? lineStyle;
+  const selectionWidth = selectedElements[0]?.style.strokeWidth ?? width;
+  const selectionLineStyle = selectedElements[0]?.style.lineStyle ?? lineStyle;
   const selectionFontFamily =
     selectedElements[0]?.type === "text"
-      ? selectedElements[0].fontFamily ?? fontFamily
+      ? (selectedElements[0].fontFamily ?? fontFamily)
       : fontFamily;
   const selectionFontSize =
     selectedElements[0]?.type === "text"
       ? selectedElements[0].fontSize
       : fontSize;
 
-  const selectionSupportsFill =
-    selectedElements.length > 0 &&
-    selectedElements.every((element) => element.type === "rectangle");
   const selectionSupportsStrokeControls =
     selectedElements.length > 0 &&
-    selectedElements.every((element) => element.type !== "text");
+    selectedElements.every((element) => element.type !== "text" && element.type !== "image");
   const selectionSupportsTextControls =
     selectedElements.length > 0 &&
     selectedElements.every((element) => element.type === "text");
 
   const currentWidthIndex = Math.max(
     0,
-    WIDTH_OPTIONS.indexOf(
-      isSelectionInspector ? selectionWidth : width,
-    ),
+    WIDTH_OPTIONS.indexOf(isSelectionInspector ? selectionWidth : width),
   );
 
   function focusToolButton(index: number) {
@@ -194,8 +205,9 @@ export default function LeftToolbar({
 
   function handleRailKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const currentIndex = Number(
-      (event.target as HTMLElement | null)?.getAttribute("data-lefttool-index") ??
-        TOOL_RAIL_ITEMS.findIndex((item) => item.tool === tool),
+      (event.target as HTMLElement | null)?.getAttribute(
+        "data-lefttool-index",
+      ) ?? TOOL_RAIL_ITEMS.findIndex((item) => item.tool === tool),
     );
 
     if (event.key === "ArrowDown") {
@@ -243,7 +255,8 @@ export default function LeftToolbar({
 
     if (Number.isNaN(nextValue)) return;
 
-    const currentValue = axis === "x" ? selectionBounds.minX : selectionBounds.minY;
+    const currentValue =
+      axis === "x" ? selectionBounds.minX : selectionBounds.minY;
 
     commit(
       translateElements(
@@ -298,12 +311,49 @@ export default function LeftToolbar({
     }
   }
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  function handleImageFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const { offsetX, offsetY, zoom } = useViewportStore.getState();
+    const screenWidth = typeof window !== "undefined" ? window.innerWidth : 1440;
+    const screenHeight = typeof window !== "undefined" ? window.innerHeight : 900;
+    const centerWorld = screenToWorld(
+      { x: screenWidth / 2, y: screenHeight / 2 },
+      { offsetX, offsetY, zoom },
+    );
+
+    processImageFile(
+      file,
+      centerWorld,
+      elements.length,
+      (imageElement) => {
+        commit([...elements, imageElement]);
+        setSelection([imageElement.id]);
+        setTool("select");
+      },
+    );
+
+    if (e.target) e.target.value = "";
+  }
+
   function setBoardTool(nextTool: typeof tool) {
-    setTool(nextTool);
-    if (nextTool !== "select") {
-      clearSelection();
+    if (nextTool === "image") {
+      fileInputRef.current?.click();
+      return;
     }
-    onSurfaceOpenChange(true);
+
+    if (nextTool === tool) {
+      onSurfaceOpenChange(!isSurfaceOpen);
+    } else {
+      setTool(nextTool);
+      if (nextTool !== "select") {
+        clearSelection();
+      }
+      onSurfaceOpenChange(true);
+    }
   }
 
   function renderColorField(
@@ -390,10 +440,18 @@ export default function LeftToolbar({
         </div>
 
         <div className="wb-lefttool__field-grid wb-lefttool__field-grid--style">
-          {renderColorField("Stroke Color", options.colorValue, handleStrokeColorChange)}
+          {renderColorField(
+            "Stroke Color",
+            options.colorValue,
+            handleStrokeColorChange,
+          )}
 
           {options.showFill
-            ? renderColorField("Fill Color", options.fillValue, handleFillColorChange)
+            ? renderColorField(
+                "Fill Color",
+                options.fillValue,
+                handleFillColorChange,
+              )
             : null}
 
           {options.showWidth !== false ? (
@@ -403,7 +461,9 @@ export default function LeftToolbar({
                 <select
                   className="wb-lefttool__select"
                   value={String(options.widthValue)}
-                  onChange={(event) => handleWidthChange(Number(event.target.value))}
+                  onChange={(event) =>
+                    handleWidthChange(Number(event.target.value))
+                  }
                 >
                   {WIDTH_OPTIONS.map((option) => (
                     <option key={option} value={option}>
@@ -446,7 +506,9 @@ export default function LeftToolbar({
                   ))}
                 </select>
 
-                <span className={linePreviewClassName(options.lineStyleValue)} />
+                <span
+                  className={linePreviewClassName(options.lineStyleValue)}
+                />
               </div>
             </label>
           ) : null}
@@ -486,7 +548,9 @@ export default function LeftToolbar({
             <select
               className="wb-lefttool__select"
               value={String(fontSizeValue)}
-              onChange={(event) => handleFontSizeChange(Number(event.target.value))}
+              onChange={(event) =>
+                handleFontSizeChange(Number(event.target.value))
+              }
             >
               {FONT_SIZE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -500,38 +564,169 @@ export default function LeftToolbar({
     );
   }
 
+  function toggleFlipX() {
+    const next = elements.map((el) => {
+      if (selectedIds.includes(el.id) && el.type === "image") {
+        return { ...el, flipX: !el.flipX, updatedAt: Date.now() };
+      }
+      return el;
+    });
+    commit(next);
+  }
+
+  function toggleFlipY() {
+    const next = elements.map((el) => {
+      if (selectedIds.includes(el.id) && el.type === "image") {
+        return { ...el, flipY: !el.flipY, updatedAt: Date.now() };
+      }
+      return el;
+    });
+    commit(next);
+  }
+
+  function rotateSelectedImage() {
+    const next = elements.map((el) => {
+      if (selectedIds.includes(el.id) && el.type === "image") {
+        const img = el as ImageElement;
+        const oldW = img.width;
+        const oldH = img.height;
+        const cx = img.x + oldW / 2;
+        const cy = img.y + oldH / 2;
+
+        const newW = oldH;
+        const newH = oldW;
+        const newX = cx - newW / 2;
+        const newY = cy - newH / 2;
+
+        return {
+          ...img,
+          x: Math.round(newX),
+          y: Math.round(newY),
+          width: Math.round(newW),
+          height: Math.round(newH),
+          rotation: ((img.rotation || 0) + 90) % 360,
+          updatedAt: Date.now(),
+        };
+      }
+      return el;
+    });
+    commit(next);
+  }
+
+  function updateImageOpacity(opacity: number) {
+    const next = elements.map((el) => {
+      if (selectedIds.includes(el.id) && el.type === "image") {
+        return { ...el, opacity, updatedAt: Date.now() };
+      }
+      return el;
+    });
+    commit(next);
+  }
+
+  function downloadSelectedImage() {
+    const imageEl = selectedElements.find((el) => el.type === "image") as ImageElement | undefined;
+    if (!imageEl || !imageEl.src) return;
+
+    const a = document.createElement("a");
+    a.href = imageEl.src;
+    a.download = `whiteboard-image-${imageEl.id.slice(0, 8)}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function renderImageControls() {
+    const selectedImage = selectedElements.find((el) => el.type === "image") as ImageElement | undefined;
+    if (!selectedImage) return null;
+
+    return (
+      <section className="wb-lefttool__section">
+        <div className="wb-lefttool__section-head">
+          <div>
+            <h3>Image Options</h3>
+            <span>Transform, flip, rotate, or download selected image.</span>
+          </div>
+        </div>
+
+        <div className="wb-lefttool__inspector-group">
+          <span>Transform</span>
+          <div className="wb-lefttool__mini-actions">
+            <button
+              type="button"
+              className={cn("wb-lefttool__mini-button", selectedImage.flipX && "is-active")}
+              onClick={toggleFlipX}
+              title="Flip Horizontal"
+            >
+              <FlipHorizontal size={14} />
+              Flip H
+            </button>
+            <button
+              type="button"
+              className={cn("wb-lefttool__mini-button", selectedImage.flipY && "is-active")}
+              onClick={toggleFlipY}
+              title="Flip Vertical"
+            >
+              <FlipVertical size={14} />
+              Flip V
+            </button>
+            <button
+              type="button"
+              className="wb-lefttool__mini-button"
+              onClick={rotateSelectedImage}
+              title="Rotate 90° Clockwise"
+            >
+              <RotateCw size={14} />
+              Rotate
+            </button>
+            <button
+              type="button"
+              className="wb-lefttool__mini-button"
+              onClick={downloadSelectedImage}
+              title="Download Image"
+            >
+              <Download size={14} />
+            </button>
+          </div>
+        </div>
+
+        <div className="wb-lefttool__field" style={{ marginTop: "8px" }}>
+          <span>Opacity ({Math.round((selectedImage.opacity ?? 1) * 100)}%)</span>
+          <input
+            type="range"
+            min="0.1"
+            max="1"
+            step="0.05"
+            className="wb-lefttool__slider"
+            value={selectedImage.opacity ?? 1}
+            onChange={(e) => updateImageOpacity(Number(e.target.value))}
+          />
+        </div>
+      </section>
+    );
+  }
+
+  function reorderSelection(mode: ReorderMode) {
+    commit(reorderElements(elements, selectedIds, mode));
+  }
+
   function renderSelectionInspector() {
     if (!selectionBounds) return null;
+
+    const count = selectedElements.length;
+    const isSingle = count === 1;
+
+    const isImageOnly = selectedElements.every((el) => el.type === "image");
+    const isPathOnly = selectedElements.every((el) => el.type === "path");
+    const isTextOnly = selectedElements.every((el) => el.type === "text");
+    const isShapeOnly = selectedElements.every((el) =>
+      ["rectangle", "ellipse"].includes(el.type),
+    );
 
     return (
       <>
         <section className="wb-lefttool__section">
-          <div className="wb-lefttool__section-head">
-            <div>
-              <h3>Quick Actions</h3>
-              <span>Selection controls only appear while the select tool is active.</span>
-            </div>
-          </div>
-
           <div className="wb-lefttool__inspector-group">
-            <span>Alignment</span>
-            <div className="wb-lefttool__mini-actions">
-              {ALIGNMENT_ACTIONS.map((action) => (
-                <button
-                  key={action.id}
-                  type="button"
-                  className="wb-lefttool__mini-button"
-                  onClick={() => alignSelection(action.mode)}
-                  aria-label={action.label}
-                >
-                  <action.Icon size={14} />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="wb-lefttool__inspector-group">
-            <span>Position</span>
+            <span>Positioning</span>
             <PositionFields
               key={`${selectedIds.join(",")}:${Math.round(selectionBounds.minX)}:${Math.round(selectionBounds.minY)}`}
               initialX={selectionBounds.minX}
@@ -540,11 +735,91 @@ export default function LeftToolbar({
             />
           </div>
 
+          {!isSingle ? (
+            <div className="wb-lefttool__inspector-group" style={{ marginTop: "12px" }}>
+              <span>Alignment & Distribution</span>
+              <div className="wb-lefttool__mini-actions">
+                {ALIGNMENT_ACTIONS.map((action) => (
+                  <button
+                    key={action.id}
+                    type="button"
+                    className="wb-lefttool__mini-button"
+                    onClick={() => alignSelection(action.mode)}
+                    aria-label={action.label}
+                    title={action.label}
+                  >
+                    <action.Icon size={14} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="wb-lefttool__inspector-group" style={{ marginTop: "12px" }}>
+            <span>Layer Depth</span>
+            <div className="wb-lefttool__mini-actions">
+              <button
+                type="button"
+                className="wb-lefttool__mini-button"
+                onClick={() => reorderSelection("bringToFront")}
+                title="Bring to Front"
+              >
+                <ChevronsUp size={14} />
+                Bring to Front
+              </button>
+              <button
+                type="button"
+                className="wb-lefttool__mini-button"
+                onClick={() => reorderSelection("sendToBack")}
+                title="Send to Back"
+              >
+                <ChevronsDown size={14} />
+                Send to Back
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {selectedElements.some((el) => el.type === "image") ? renderImageControls() : null}
+
+        {isPathOnly || isShapeOnly
+          ? renderStrokeControls({
+              showWidth: true,
+              showFill: false,
+              showLineStyle: true,
+              colorValue: selectionColor,
+              fillValue: selectionFillColor,
+              widthValue: selectionWidth,
+              lineStyleValue: selectionLineStyle,
+            })
+          : null}
+
+        {isTextOnly
+          ? renderTextControls(selectionFontFamily, selectionFontSize)
+          : null}
+
+        {!selectionSupportsStrokeControls &&
+        !selectionSupportsTextControls &&
+        !isImageOnly &&
+        !isPathOnly &&
+        !isShapeOnly ? (
+          <section className="wb-lefttool__section">
+            <p className="wb-lefttool__section-note">
+              Mixed selections keep the inspector focused on actions that are
+              safe across different element types.
+            </p>
+          </section>
+        ) : null}
+
+        {isPathOnly || isShapeOnly || isTextOnly ? renderPalette() : null}
+
+        <section className="wb-lefttool__section" style={{ marginTop: "8px" }}>
           <div className="wb-lefttool__mini-actions">
             <button
               type="button"
               className="wb-lefttool__mini-button"
               onClick={() => setSelection([])}
+              style={{ flex: 1 }}
             >
               Clear Selection
             </button>
@@ -552,37 +827,13 @@ export default function LeftToolbar({
               type="button"
               className="wb-lefttool__mini-button wb-lefttool__mini-button--danger"
               onClick={handleDeleteSelection}
+              style={{ flex: 1 }}
             >
               <Trash2 size={14} />
               Delete
             </button>
           </div>
         </section>
-
-        {renderStrokeControls({
-          showWidth: selectionSupportsStrokeControls,
-          showFill: selectionSupportsFill,
-          showLineStyle: selectionSupportsStrokeControls,
-          colorValue: selectionColor,
-          fillValue: selectionFillColor,
-          widthValue: selectionWidth,
-          lineStyleValue: selectionLineStyle,
-        })}
-
-        {selectionSupportsTextControls
-          ? renderTextControls(selectionFontFamily, selectionFontSize)
-          : null}
-
-        {!selectionSupportsStrokeControls && !selectionSupportsTextControls ? (
-          <section className="wb-lefttool__section">
-            <p className="wb-lefttool__section-note">
-              Mixed selections keep the inspector focused on actions that are safe
-              across different element types.
-            </p>
-          </section>
-        ) : null}
-
-        {renderPalette()}
       </>
     );
   }
@@ -602,7 +853,9 @@ export default function LeftToolbar({
             <ul className="wb-lefttool__supporting-list">
               <li>Single click to select an element.</li>
               <li>Drag on empty space to create a marquee.</li>
-              <li>Once selected, position and appearance controls appear here.</li>
+              <li>
+                Once selected, position and appearance controls appear here.
+              </li>
             </ul>
           </section>
 
@@ -610,7 +863,9 @@ export default function LeftToolbar({
             <div className="wb-lefttool__section-head">
               <div>
                 <h3>Roadmap Notes</h3>
-                <span>Secondary utilities stay out of the core drawing rail.</span>
+                <span>
+                  Secondary utilities stay out of the core drawing rail.
+                </span>
               </div>
             </div>
 
@@ -675,20 +930,16 @@ export default function LeftToolbar({
     if (activeTool.inspectorKind === "text") {
       return (
         <>
-          <section className="wb-lefttool__section">
-            <div className="wb-lefttool__section-head">
-              <div>
-                <h3>Primary Properties</h3>
-                <span>Text is created once, edited inline, then returned to select.</span>
-              </div>
-            </div>
-
-            <div className="wb-lefttool__field-grid wb-lefttool__field-grid--two">
-              {renderColorField("Text Color", color, handleStrokeColorChange)}
-            </div>
-          </section>
-
           {renderTextControls(fontFamily, fontSize)}
+          {renderStrokeControls({
+            showWidth: false,
+            showFill: false,
+            showLineStyle: false,
+            colorValue: color,
+            fillValue: fillColor,
+            widthValue: width,
+            lineStyleValue: lineStyle,
+          })}
           {renderPalette()}
         </>
       );
@@ -704,7 +955,9 @@ export default function LeftToolbar({
         <div className="wb-lefttool__section-head">
           <div>
             <h3>Eraser Size</h3>
-            <span>The eraser remains active so you can scrub multiple elements.</span>
+            <span>
+              The eraser remains active so you can scrub multiple elements.
+            </span>
           </div>
         </div>
 
@@ -745,10 +998,10 @@ export default function LeftToolbar({
   }
 
   const heroTitle = isSelectionInspector
-    ? `${selectedElements.length} selected`
+    ? "Selection Properties"
     : activeTool.label;
   const heroDescription = isSelectionInspector
-    ? `Editing ${formatSelectionTypes(selectionTypes).toLowerCase()} with contextual controls.`
+    ? `${selectedElements.length} ${selectedElements.length === 1 ? "element" : "elements"} selected (${formatSelectionTypes(selectionTypes).toLowerCase()}).`
     : activeTool.description;
 
   return (
@@ -762,17 +1015,12 @@ export default function LeftToolbar({
         aria-orientation="vertical"
         onKeyDown={handleRailKeyDown}
       >
-        <button
-          type="button"
-          className="wb-icon-button wb-mobile-only"
-          onClick={onClose}
-          aria-label="Close tools"
-        >
-          <X size={16} />
-        </button>
 
         {TOOL_RAIL_SECTIONS.map((section, sectionIndex) => {
-          const startingIndex = TOOL_RAIL_SECTIONS.slice(0, sectionIndex).reduce(
+          const startingIndex = TOOL_RAIL_SECTIONS.slice(
+            0,
+            sectionIndex,
+          ).reduce(
             (count, currentSection) => count + currentSection.items.length,
             0,
           );
@@ -811,13 +1059,15 @@ export default function LeftToolbar({
         })}
       </div>
 
-      {isSurfaceOpen ? (
+      {isSurfaceOpen && (isSelectionInspector || (tool !== "select" && tool !== "hand")) ? (
         <div className="wb-lefttool__surface-wrap">
           <div className="wb-lefttool__surface">
             <section className="wb-lefttool__section wb-lefttool__section--hero">
               <div className="wb-lefttool__surface-head">
                 <div className="wb-lefttool__surface-copy">
-                  <span>{isSelectionInspector ? "CONTEXT INSPECTOR" : "ACTIVE TOOL"}</span>
+                  <span>
+                    {isSelectionInspector ? "CONTEXT INSPECTOR" : "ACTIVE TOOL"}
+                  </span>
                   <strong>{heroTitle}</strong>
                   <p>{heroDescription}</p>
                 </div>
@@ -847,11 +1097,19 @@ export default function LeftToolbar({
               </div>
             </section>
 
-            {isSelectionInspector ? renderSelectionInspector() : renderActiveToolInspector()}
-
+            {isSelectionInspector
+              ? renderSelectionInspector()
+              : renderActiveToolInspector()}
           </div>
         </div>
       ) : null}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".jpg,.jpeg,.png,.gif,.ico,image/*"
+        onChange={handleImageFileSelect}
+        style={{ display: "none" }}
+      />
     </aside>
   );
 }

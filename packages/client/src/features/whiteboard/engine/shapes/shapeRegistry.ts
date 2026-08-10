@@ -1,18 +1,24 @@
 import type { Element, ElementType } from "../../models/element";
-import type { Shape } from "./Shape";
+import type { Shape, CanvasContext } from "./Shape";
 
 import { strokeShape } from "./strokeShape";
 import { rectangleShape } from "./rectangleShape";
+import { ellipseShape } from "./ellipseShape";
+import { pathShape } from "./pathShape";
 import { arrowShape } from "./arrowShape";
 import { textShape } from "./textShape";
+import { imageShape } from "./imageShape";
 
 type ShapeMap = Record<ElementType, Shape<Element>>;
 
 const registry: ShapeMap = {
-  stroke: strokeShape,
-  rectangle: rectangleShape,
-  arrow: arrowShape,
-  text: textShape,
+  stroke: strokeShape as Shape<Element>,
+  rectangle: rectangleShape as Shape<Element>,
+  ellipse: ellipseShape as Shape<Element>,
+  path: pathShape as Shape<Element>,
+  arrow: arrowShape as Shape<Element>,
+  text: textShape as Shape<Element>,
+  image: imageShape as Shape<Element>,
 };
 
 export function getShape(type: ElementType): Shape<Element> {
@@ -20,7 +26,7 @@ export function getShape(type: ElementType): Shape<Element> {
 }
 
 export function drawElement(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasContext,
   element: Element,
   selected = false,
 ) {

@@ -1,11 +1,21 @@
-import type { StrokeElement, RectangleElement } from "../../models/element";
+import type {
+  StrokeElement,
+  RectangleElement,
+  EllipseElement,
+  PathElement,
+} from "../../models/element";
 
 export function hitTestStroke(
   x: number,
   y: number,
   stroke: StrokeElement,
-  threshold = 6,
+  threshold = 12,
 ) {
+  const effectiveThreshold = Math.max(
+    (stroke.style?.strokeWidth ?? 2) / 2 + 10,
+    threshold,
+  );
+
   for (let i = 0; i < stroke.points.length - 1; i++) {
     const p1 = stroke.points[i];
     const p2 = stroke.points[i + 1];
@@ -27,7 +37,7 @@ export function hitTestStroke(
 
     const dist = Math.sqrt((x - closestX) ** 2 + (y - closestY) ** 2);
 
-    if (dist < threshold) return true;
+    if (dist < effectiveThreshold) return true;
   }
 
   return false;
@@ -45,7 +55,31 @@ export function hitTestRectangle(x: number, y: number, rect: RectangleElement) {
     return false;
   }
 
-  // For interaction (select/drag), treat the entire rectangle bounds as hittable.
-  // Stroke-only selection tends to feel broken in editors.
   return true;
 }
+
+export function hitTestEllipse(x: number, y: number, ellipse: EllipseElement) {
+  const cx = ellipse.x + ellipse.width / 2;
+  const cy = ellipse.y + ellipse.height / 2;
+  const rx = Math.abs(ellipse.width) / 2;
+  const ry = Math.abs(ellipse.height) / 2;
+
+  if (rx === 0 || ry === 0) return false;
+
+  const dx = (x - cx) / rx;
+  const dy = (y - cy) / ry;
+
+  return dx * dx + dy * dy <= 1;
+}
+
+export function hitTestPath(x: number, y: number, path: PathElement) {
+  if (!path.points || path.points.length === 0) return false;
+  const strokeProxy: StrokeElement = {
+    ...path,
+    type: "stroke",
+    points: path.points,
+  };
+  return hitTestStroke(x, y, strokeProxy, 10);
+}
+
+

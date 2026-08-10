@@ -7,7 +7,9 @@ import { useSelectionStore } from "../store/selectionStore";
 import { useTextEditorStore } from "../store/textEditorStore";
 import { useToolStore } from "../store/toolStore";
 import { useViewportStore } from "../store/viewportStore";
+import { socketService } from "../../../api/ws";
 import { resolveDoubleClick, resolvePointerDown } from "../tools/toolRegistry";
+import { eraserTool, type EraserSession } from "../tools/eraserTool";
 import type {
   PointerInput,
   ToolContext,
@@ -34,12 +36,33 @@ function buildContext(): ToolContext {
   };
 }
 
+function getCanvasScreenPoint(
+  e:
+    | React.PointerEvent<HTMLCanvasElement>
+    | React.MouseEvent<HTMLCanvasElement>,
+): { x: number; y: number } {
+  const canvas = e.currentTarget;
+  if (canvas && typeof canvas.getBoundingClientRect === "function") {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  }
+  return {
+    x: e.nativeEvent.offsetX,
+    y: e.nativeEvent.offsetY,
+  };
+}
+
 function buildInput(
-  e: React.PointerEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>,
+  e:
+    | React.PointerEvent<HTMLCanvasElement>
+    | React.MouseEvent<HTMLCanvasElement>,
 ): PointerInput {
   return {
     world: screenToWorld(
-      { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY },
+      getCanvasScreenPoint(e),
       useViewportStore.getState(),
     ),
     shiftKey: e.shiftKey,
@@ -124,12 +147,19 @@ export function useToolSession() {
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
+      const input = buildInput(e);
+      socketService.sendCursorMove(input.world.x, input.world.y, previewRef.current || undefined);
+
       const gesture = gestureRef.current;
       if (!gesture) return;
 
       apply(
         gesture.handler,
-        gesture.handler.onPointerMove(gesture.session, buildInput(e), buildContext()),
+        gesture.handler.onPointerMove(
+          gesture.session,
+          input,
+          buildContext(),
+        ),
       );
     },
     [apply],
@@ -142,7 +172,11 @@ export function useToolSession() {
 
       apply(
         gesture.handler,
-        gesture.handler.onPointerUp(gesture.session, buildInput(e), buildContext()),
+        gesture.handler.onPointerUp(
+          gesture.session,
+          buildInput(e),
+          buildContext(),
+        ),
       );
     },
     [apply],
@@ -163,8 +197,23 @@ export function useToolSession() {
     [],
   );
 
+  const getErasedIds = useCallback(() => {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.handler !== eraserTool) return [];
+
+    const session = gesture.session as EraserSession;
+    if (!session || !session.baseElements || !session.currentElements)
+      return [];
+
+    const touchedIds = new Set(session.currentElements.map((el) => el.id));
+    return session.baseElements
+      .filter((el) => !touchedIds.has(el.id))
+      .map((el) => el.id);
+  }, []);
+
   return {
     getPreview,
+    getErasedIds,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,

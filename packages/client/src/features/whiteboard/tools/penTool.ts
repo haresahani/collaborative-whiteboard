@@ -1,20 +1,23 @@
 import type { StrokeElement } from "../models/element";
 import type { ToolHandler } from "./types";
+import { samplePoint } from "../utils/sampling";
 
 export interface PenSession {
   stroke: StrokeElement;
+  rawPoints: { x: number; y: number }[];
 }
 
 export const penTool: ToolHandler<PenSession> = {
   onPointerDown(input, ctx) {
     const now = ctx.now();
+    const initialPoint = { x: input.world.x, y: input.world.y };
 
     const stroke: StrokeElement = {
       id: ctx.newId(),
       type: "stroke",
       x: input.world.x,
       y: input.world.y,
-      points: [input.world],
+      points: [initialPoint],
       style: {
         strokeColor: ctx.style.color,
         strokeWidth: ctx.style.width,
@@ -25,7 +28,10 @@ export const penTool: ToolHandler<PenSession> = {
       updatedAt: now,
     };
 
-    return { session: { stroke }, preview: stroke };
+    return {
+      session: { stroke, rawPoints: [initialPoint] },
+      preview: stroke,
+    };
   },
 
   onPointerMove(session, input, ctx) {
@@ -33,21 +39,37 @@ export const penTool: ToolHandler<PenSession> = {
       return { session, preview: session.stroke };
     }
 
+    const currentPoint = { x: input.world.x, y: input.world.y };
+    const sampledPoints = samplePoint(session.rawPoints, currentPoint, 1.2);
+
+    if (sampledPoints.length === session.rawPoints.length) {
+      return { session, preview: session.stroke };
+    }
+
     const stroke: StrokeElement = {
       ...session.stroke,
-      points: [...session.stroke.points, input.world],
+      points: sampledPoints,
       updatedAt: ctx.now(),
     };
 
-    return { session: { stroke }, preview: stroke };
+    return {
+      session: { stroke, rawPoints: sampledPoints },
+      preview: stroke,
+    };
   },
 
   onPointerUp(session, _input, ctx) {
+    const finalizedStroke: StrokeElement = {
+      ...session.stroke,
+      points: session.rawPoints,
+      updatedAt: ctx.now(),
+    };
+
     return {
       session: null,
       preview: null,
       effects: [
-        { type: "commit", elements: [...ctx.elements, session.stroke] },
+        { type: "commit", elements: [...ctx.elements, finalizedStroke] },
       ],
     };
   },

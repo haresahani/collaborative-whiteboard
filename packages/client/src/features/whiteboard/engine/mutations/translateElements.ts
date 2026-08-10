@@ -12,7 +12,7 @@ export function translateElement(
   dy: number,
   now = Date.now(),
 ): Element {
-  if (element.type === "stroke") {
+  if (element.type === "stroke" || element.type === "path") {
     return {
       ...element,
       x: element.x + dx,

@@ -40,3 +40,36 @@ export function getBounds(element: Element) {
     height: maxY - minY,
   };
 }
+
+/**
+ * Calculates whether an element's bounding box intersects the current visible screen area (Frustum Culling).
+ */
+export function isElementVisibleInViewport(
+  element: Element,
+  screenWidth: number,
+  screenHeight: number,
+  offsetX: number,
+  offsetY: number,
+  zoom: number,
+  padding = 50,
+): boolean {
+  const shape = getShape(element.type);
+  if (!shape) return true; // fallback to true if unknown shape
+
+  const bounds = shape.getBounds(element);
+
+  // Convert screen boundaries to world coordinates with safety padding
+  const worldMinX = (-offsetX - padding) / zoom;
+  const worldMinY = (-offsetY - padding) / zoom;
+  const worldMaxX = (screenWidth - offsetX + padding) / zoom;
+  const worldMaxY = (screenHeight - offsetY + padding) / zoom;
+
+  // AABB intersection check
+  return (
+    bounds.maxX >= worldMinX &&
+    bounds.minX <= worldMaxX &&
+    bounds.maxY >= worldMinY &&
+    bounds.minY <= worldMaxY
+  );
+}
+

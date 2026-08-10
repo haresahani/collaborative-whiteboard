@@ -15,7 +15,7 @@ export const rectangleShape: Shape<RectangleElement> = {
     ctx.beginPath();
     ctx.rect(rect.x, rect.y, rect.width, rect.height);
 
-    if (fillColor) {
+    if (fillColor && fillColor !== "transparent" && fillColor !== "none") {
       ctx.fillStyle = fillColor;
       ctx.fill();
     }

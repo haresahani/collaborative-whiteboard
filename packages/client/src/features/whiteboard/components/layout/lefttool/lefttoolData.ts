@@ -4,9 +4,13 @@ import {
   AlignLeft,
   AlignRight,
   ArrowRight,
+  Circle,
   Eraser,
+  Hand,
+  Image as ImageIcon,
   MousePointer2,
   Pen,
+  Minus,
   Square,
   Type,
 } from "lucide-react";
@@ -58,6 +62,15 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inspectorKind: "selection",
   },
   {
+    tool: "hand",
+    label: "Hand (Pan)",
+    description: "Click and drag to pan left, right, up, and down.",
+    Icon: Hand,
+    shortcut: "H",
+    placement: "persistent",
+    inspectorKind: "selection",
+  },
+  {
     tool: "pen",
     label: "Pen",
     description: "Draw freeform strokes that stay active while sketching.",
@@ -78,13 +91,34 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     tool: "rectangle",
-    label: "Shape",
+    label: "Rectangle",
     description: "Place rectangles, then return to selection.",
     Icon: Square,
     shortcut: "R",
     placement: "one-shot",
     inspectorKind: "shape",
     supportsFill: true,
+    supportsLineStyle: true,
+  },
+  {
+    tool: "ellipse",
+    label: "Ellipse",
+    description: "Place circles/ellipses, then return to selection.",
+    Icon: Circle,
+    shortcut: "O",
+    placement: "one-shot",
+    inspectorKind: "shape",
+    supportsFill: true,
+    supportsLineStyle: true,
+  },
+  {
+    tool: "path",
+    label: "Line",
+    description: "Draw straight lines, then return to selection.",
+    Icon: Minus,
+    shortcut: "L",
+    placement: "one-shot",
+    inspectorKind: "shape",
     supportsLineStyle: true,
   },
   {
@@ -107,24 +141,42 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inspectorKind: "text",
     supportsTextControls: true,
   },
+  {
+    tool: "image",
+    label: "Image",
+    description: "Upload an image (.jpg, .jpeg, .png, .gif, .ico).",
+    Icon: ImageIcon,
+    shortcut: "I",
+    placement: "one-shot",
+    inspectorKind: "shape",
+  },
 ];
 
 export const TOOL_RAIL_SECTIONS: RailSection[] = [
   {
     id: "core",
-    items: [TOOL_DEFINITIONS[0]],
+    items: [TOOL_DEFINITIONS[0], TOOL_DEFINITIONS[1]],
   },
   {
     id: "draw",
-    items: [TOOL_DEFINITIONS[1], TOOL_DEFINITIONS[2]],
+    items: [TOOL_DEFINITIONS[2], TOOL_DEFINITIONS[3]],
   },
   {
     id: "create",
-    items: [TOOL_DEFINITIONS[3], TOOL_DEFINITIONS[4], TOOL_DEFINITIONS[5]],
+    items: [
+      TOOL_DEFINITIONS[4],
+      TOOL_DEFINITIONS[5],
+      TOOL_DEFINITIONS[6],
+      TOOL_DEFINITIONS[7],
+      TOOL_DEFINITIONS[8],
+      TOOL_DEFINITIONS[9],
+    ],
   },
 ];
 
-export const TOOL_RAIL_ITEMS = TOOL_RAIL_SECTIONS.flatMap((section) => section.items);
+export const TOOL_RAIL_ITEMS = TOOL_RAIL_SECTIONS.flatMap(
+  (section) => section.items,
+);
 
 const TOOL_LOOKUP = Object.fromEntries(
   TOOL_DEFINITIONS.map((definition) => [definition.tool, definition]),
@@ -179,7 +231,7 @@ export const LINE_STYLE_OPTIONS: Array<{ label: string; value: LineStyle }> = [
 export const FONT_FAMILY_OPTIONS = [
   {
     label: "Plus Jakarta Sans",
-    value: "\"Plus Jakarta Sans\", sans-serif",
+    value: '"Plus Jakarta Sans", sans-serif',
   },
   {
     label: "Georgia",
@@ -191,7 +243,7 @@ export const FONT_FAMILY_OPTIONS = [
   },
   {
     label: "Times New Roman",
-    value: "\"Times New Roman\"",
+    value: '"Times New Roman"',
   },
   {
     label: "Monospace",
@@ -202,6 +254,6 @@ export const FONT_FAMILY_OPTIONS = [
 export const FONT_SIZE_OPTIONS = [14, 16, 20, 24, 32, 40];
 
 export const FUTURE_TOOL_HINTS = [
-  "Sticky notes, uploads, and layers can live in secondary panels once those features ship.",
+  "Uploads and layers can live in secondary panels once those features ship.",
   "Board actions like clear, undo, and redo should stay outside the drawing inspector.",
 ];

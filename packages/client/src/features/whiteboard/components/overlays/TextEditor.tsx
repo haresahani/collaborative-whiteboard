@@ -20,6 +20,8 @@ export default function TextEditor() {
   const fontFamily = useToolStore((s) => s.fontFamily);
   const fontSize = useToolStore((s) => s.fontSize);
   const setSelection = useSelectionStore((s) => s.setSelection);
+  const commit = useBoardStore((s) => s.commit);
+  const clearSelection = useSelectionStore((s) => s.clearSelection);
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -40,6 +42,10 @@ export default function TextEditor() {
 
   function commitText() {
     if (!value.trim()) {
+      if (elementId) {
+        commit(elements.filter((el) => el.id !== elementId));
+        clearSelection();
+      }
       stopEditing();
       return;
     }
@@ -75,11 +81,10 @@ export default function TextEditor() {
           x,
           y,
           text: value,
-          width,
-          height,
+          width: Math.max(10, width),
+          height: Math.max(10, height),
           fontSize: activeFontSize,
           fontFamily: activeFontFamily,
-          // keep existing style unless you want editing to recolor
           updatedAt: Date.now(),
         };
       });
@@ -92,8 +97,8 @@ export default function TextEditor() {
         x,
         y,
         text: value,
-        width,
-        height,
+        width: Math.max(10, width),
+        height: Math.max(10, height),
         fontSize: activeFontSize,
         fontFamily: activeFontFamily,
         style: {
@@ -113,6 +118,33 @@ export default function TextEditor() {
   // world → screen
   const screenLeft = x * zoom + offsetX;
   const screenTop = y * zoom + offsetY;
+
+  const currentFontSize = (editingElement?.fontSize ?? fontSize) * zoom;
+  const currentFontFamily = editingElement?.fontFamily ?? fontFamily;
+  const currentColor = editingElement?.style.strokeColor ?? color;
+
+  // Dynamic measurement for 1:1 auto-expanding textarea directly on board
+  const lines = (value || "").split("\n");
+  let maxLineWidth = 0;
+  if (typeof document !== "undefined") {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.font = `${currentFontSize}px ${currentFontFamily}`;
+      for (const line of lines) {
+        maxLineWidth = Math.max(
+          maxLineWidth,
+          ctx.measureText(line || " ").width,
+        );
+      }
+    }
+  }
+
+  const measuredWidth = Math.max(30 * zoom, maxLineWidth + 20 * zoom);
+  const measuredHeight = Math.max(
+    currentFontSize * 1.2,
+    lines.length * currentFontSize * 1.2 + 8 * zoom,
+  );
 
   return (
     <textarea
@@ -138,15 +170,23 @@ export default function TextEditor() {
         position: "absolute",
         left: screenLeft,
         top: screenTop,
-        zIndex: 10,
-        fontSize: editingElement?.fontSize ?? fontSize,
-        fontFamily: editingElement?.fontFamily ?? fontFamily,
+        width: measuredWidth,
+        height: measuredHeight,
+        zIndex: 100,
+        fontSize: currentFontSize,
+        fontFamily: currentFontFamily,
+        lineHeight: 1.2,
         outline: "none",
+        border: "none",
+        padding: 0,
+        margin: 0,
+        boxSizing: "border-box",
+        background: "transparent",
         resize: "none",
         overflow: "hidden",
-        color: editingElement?.style.strokeColor ?? color,
-        minWidth: 40,
-        minHeight: 20,
+        color: currentColor,
+        caretColor: currentColor || "#3b82f6",
+        whiteSpace: "pre",
       }}
     />
   );

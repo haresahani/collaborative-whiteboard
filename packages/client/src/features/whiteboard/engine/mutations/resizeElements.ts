@@ -88,12 +88,80 @@ function resizeArrow(
   };
 }
 
-/**
- * Resize the elements in `ids` by dragging `handle` by (dx, dy). Rectangles
- * resize edge-wise (flipping through zero size); arrows remap the endpoint
- * nearest the dragged edge and detach their bindings. Strokes and text keep
- * their size. Bound arrows follow resized shapes.
- */
+function resizeStrokeOrPath(
+  element: Element & ({ type: "stroke" } | { type: "path" }),
+  handle: Handle,
+  dx: number,
+  dy: number,
+  now: number,
+): Element {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const points = (element as any).points as { x: number; y: number }[] | undefined;
+  if (!points || points.length === 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return resizeRectangle(element as any, handle, dx, dy, now);
+  }
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const pt of points) {
+    if (pt.x < minX) minX = pt.x;
+    if (pt.y < minY) minY = pt.y;
+    if (pt.x > maxX) maxX = pt.x;
+    if (pt.y > maxY) maxY = pt.y;
+  }
+
+  const oldW = Math.max(1, maxX - minX);
+  const oldH = Math.max(1, maxY - minY);
+  const oldX = minX;
+  const oldY = minY;
+
+  let newX = oldX;
+  let newY = oldY;
+  let newW = oldW;
+  let newH = oldH;
+
+  if (handle.includes("w")) {
+    newX += dx;
+    newW -= dx;
+  }
+  if (handle.includes("e")) {
+    newW += dx;
+  }
+  if (handle.includes("n")) {
+    newY += dy;
+    newH -= dy;
+  }
+  if (handle.includes("s")) {
+    newH += dy;
+  }
+
+  if (newW < 2) newW = 2;
+  if (newH < 2) newH = 2;
+
+  const scaleX = newW / oldW;
+  const scaleY = newH / oldH;
+
+  const newPoints = points.map((pt) => ({
+    ...pt,
+    x: newX + (pt.x - oldX) * scaleX,
+    y: newY + (pt.y - oldY) * scaleY,
+  }));
+
+  return {
+    ...element,
+    x: newX,
+    y: newY,
+    width: newW,
+    height: newH,
+    points: newPoints,
+    updatedAt: now,
+  } as Element;
+}
+
 export function resizeElements(
   elements: Element[],
   ids: string[],
@@ -110,9 +178,29 @@ export function resizeElements(
   const next = elements.map((element) => {
     if (!idSet.has(element.id)) return element;
 
-    if (element.type === "rectangle") {
+    if (element.type === "stroke" || element.type === "path") {
       changed = true;
-      return resizeRectangle(element, handle, dx, dy, now);
+      return resizeStrokeOrPath(
+        element as Element & ({ type: "stroke" } | { type: "path" }),
+        handle,
+        dx,
+        dy,
+        now,
+      );
+    }
+
+    if (
+      element.type === "rectangle" ||
+      element.type === "image" ||
+      element.type === "ellipse"
+    ) {
+      changed = true;
+      return resizeRectangle(element as Element & { type: "rectangle" }, handle, dx, dy, now);
+    }
+
+    if (element.type === "text") {
+      changed = true;
+      return resizeText(element, handle, dx, dy, now);
     }
 
     if (element.type === "arrow") {
@@ -126,4 +214,102 @@ export function resizeElements(
   if (!changed) return elements;
 
   return updateAllArrowBindings(next);
+}
+
+function resizeText(
+  element: Element & { type: "text" },
+  handle: Handle,
+  dx: number,
+  dy: number,
+  now: number,
+): Element {
+  const oldWidth = Math.max(10, element.width || 20);
+  const oldHeight = Math.max(10, element.height || 20);
+
+  let scale = 1;
+  let newX = element.x;
+  let newY = element.y;
+
+  switch (handle) {
+    case "se": {
+      const scaleX = (oldWidth + dx) / oldWidth;
+      const scaleY = (oldHeight + dy) / oldHeight;
+      scale = Math.abs(dx) > Math.abs(dy) ? scaleX : scaleY;
+      break;
+    }
+    case "sw": {
+      const scaleX = (oldWidth - dx) / oldWidth;
+      const scaleY = (oldHeight + dy) / oldHeight;
+      scale = Math.abs(dx) > Math.abs(dy) ? scaleX : scaleY;
+      if (scale > 0) newX = element.x + (oldWidth - oldWidth * scale);
+      break;
+    }
+    case "ne": {
+      const scaleX = (oldWidth + dx) / oldWidth;
+      const scaleY = (oldHeight - dy) / oldHeight;
+      scale = Math.abs(dx) > Math.abs(dy) ? scaleX : scaleY;
+      if (scale > 0) newY = element.y + (oldHeight - oldHeight * scale);
+      break;
+    }
+    case "nw": {
+      const scaleX = (oldWidth - dx) / oldWidth;
+      const scaleY = (oldHeight - dy) / oldHeight;
+      scale = Math.abs(dx) > Math.abs(dy) ? scaleX : scaleY;
+      if (scale > 0) {
+        newX = element.x + (oldWidth - oldWidth * scale);
+        newY = element.y + (oldHeight - oldHeight * scale);
+      }
+      break;
+    }
+    case "e":
+    case "w": {
+      const delta = handle === "e" ? dx : -dx;
+      scale = (oldWidth + delta) / oldWidth;
+      if (handle === "w" && scale > 0) {
+        newX = element.x + (oldWidth - oldWidth * scale);
+      }
+      break;
+    }
+    case "n":
+    case "s": {
+      const delta = handle === "s" ? dy : -dy;
+      scale = (oldHeight + delta) / oldHeight;
+      if (handle === "n" && scale > 0) {
+        newY = element.y + (oldHeight - oldHeight * scale);
+      }
+      break;
+    }
+  }
+
+  if (!isFinite(scale) || scale <= 0) return element;
+
+  const rawFontSize = element.fontSize * scale;
+  const newFontSize = Math.max(8, Math.min(200, Math.round(rawFontSize)));
+
+  const canvas =
+    typeof document !== "undefined" ? document.createElement("canvas") : null;
+  const ctx = canvas?.getContext("2d");
+  let measuredWidth = oldWidth * scale;
+  let measuredHeight = oldHeight * scale;
+
+  if (ctx) {
+    ctx.font = `${newFontSize}px ${element.fontFamily || "sans-serif"}`;
+    const lines = (element.text || "").split("\n");
+    let maxLineWidth = 0;
+    for (const line of lines) {
+      maxLineWidth = Math.max(maxLineWidth, ctx.measureText(line || " ").width);
+    }
+    measuredWidth = Math.max(12, maxLineWidth);
+    measuredHeight = Math.max(12, lines.length * newFontSize * 1.2);
+  }
+
+  return {
+    ...element,
+    x: newX,
+    y: newY,
+    width: measuredWidth,
+    height: measuredHeight,
+    fontSize: newFontSize,
+    updatedAt: now,
+  };
 }

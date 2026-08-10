@@ -40,6 +40,11 @@ export function useKeyboardShortcuts() {
           setTool("select");
         }
 
+        if (key === "h") {
+          e.preventDefault();
+          setTool("hand");
+        }
+
         if (key === "p") {
           e.preventDefault();
           setTool("pen");
@@ -58,6 +63,11 @@ export function useKeyboardShortcuts() {
         if (key === "t") {
           e.preventDefault();
           setTool("text");
+        }
+
+        if (key === "i") {
+          e.preventDefault();
+          setTool("image");
         }
 
         if (key === "e") {

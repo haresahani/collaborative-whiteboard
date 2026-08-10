@@ -2,6 +2,8 @@ import { computeBindingAnchor } from "../engine/bindings/arrowBinding";
 import { findBindableElement } from "../engine/bindings/findBindableElement";
 import type {
   ArrowElement,
+  EllipseElement,
+  PathElement,
   Point,
   RectangleElement,
 } from "../models/element";
@@ -59,6 +61,126 @@ export const rectangleTool: ToolHandler<RectangleSession> = {
     };
   },
 };
+
+export interface EllipseSession {
+  ellipse: EllipseElement;
+}
+
+export const ellipseTool: ToolHandler<EllipseSession> = {
+  onPointerDown(input, ctx) {
+    const now = ctx.now();
+
+    const ellipse: EllipseElement = {
+      id: ctx.newId(),
+      type: "ellipse",
+      x: input.world.x,
+      y: input.world.y,
+      width: 0,
+      height: 0,
+      style: {
+        strokeColor: ctx.style.color,
+        strokeWidth: ctx.style.width,
+        fillColor: ctx.style.fillColor,
+        lineStyle: ctx.style.lineStyle,
+      },
+      zIndex: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    return { session: { ellipse }, preview: ellipse };
+  },
+
+  onPointerMove(session, input, ctx) {
+    const ellipse: EllipseElement = {
+      ...session.ellipse,
+      width: input.world.x - session.ellipse.x,
+      height: input.world.y - session.ellipse.y,
+      updatedAt: ctx.now(),
+    };
+
+    return { session: { ellipse }, preview: ellipse };
+  },
+
+  onPointerUp(session, _input, ctx) {
+    return {
+      session: null,
+      preview: null,
+      effects: [
+        { type: "commit", elements: [...ctx.elements, session.ellipse] },
+        { type: "setSelection", ids: [session.ellipse.id] },
+        { type: "switchTool", tool: "select" },
+      ],
+    };
+  },
+};
+
+export interface PathSession {
+  path: PathElement;
+}
+
+export const pathTool: ToolHandler<PathSession> = {
+  onPointerDown(input, ctx) {
+    const now = ctx.now();
+    const startPoint = { x: input.world.x, y: input.world.y };
+
+    const path: PathElement = {
+      id: ctx.newId(),
+      type: "path",
+      x: input.world.x,
+      y: input.world.y,
+      width: 0,
+      height: 0,
+      points: [startPoint, startPoint],
+      style: {
+        strokeColor: ctx.style.color,
+        strokeWidth: ctx.style.width,
+        lineStyle: ctx.style.lineStyle,
+      },
+      zIndex: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    return { session: { path }, preview: path };
+  },
+
+  onPointerMove(session, input, ctx) {
+    const startPoint = session.path.points[0];
+    const endPoint = { x: input.world.x, y: input.world.y };
+
+    const minX = Math.min(startPoint.x, endPoint.x);
+    const minY = Math.min(startPoint.y, endPoint.y);
+    const maxX = Math.max(startPoint.x, endPoint.x);
+    const maxY = Math.max(startPoint.y, endPoint.y);
+
+    const path: PathElement = {
+      ...session.path,
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+      points: [startPoint, endPoint],
+      updatedAt: ctx.now(),
+    };
+
+    return { session: { path }, preview: path };
+  },
+
+  onPointerUp(session, _input, ctx) {
+    return {
+      session: null,
+      preview: null,
+      effects: [
+        { type: "commit", elements: [...ctx.elements, session.path] },
+        { type: "setSelection", ids: [session.path.id] },
+        { type: "switchTool", tool: "select" },
+      ],
+    };
+  },
+};
+
+
 
 export interface ArrowSession {
   arrow: ArrowElement;
