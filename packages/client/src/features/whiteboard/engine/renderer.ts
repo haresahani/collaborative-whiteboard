@@ -1,6 +1,6 @@
 import type { Element } from "../models/element";
 // import { drawSmoothStroke } from "./smoothing";
-import { renderGrid } from "./grid";
+import { renderGrid, type GridStyle } from "./grid";
 import { getSelectionBounds, isElementVisibleInViewport } from "./geometry/bounds";
 import { drawElement } from "./shapes/shapeRegistry";
 
@@ -113,7 +113,6 @@ function drawResizeHandles(
 Main Renderer
 ----------------------------------------
 */
-import { renderGrid, type GridStyle } from "./grid";
 
 export function renderElements(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
