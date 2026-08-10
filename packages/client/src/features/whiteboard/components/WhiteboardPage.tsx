@@ -200,6 +200,9 @@ export default function WhiteboardPage() {
         onBoardNameChange={handleBoardNameChange}
         onExport={handleExport}
         onShare={handleShareClick}
+        onToggleChat={() =>
+          setActivePanel((current) => (current === "chat" ? null : "chat"))
+        }
         onToggleSettings={() =>
           setActivePanel((current) =>
             current === "settings" ? null : "settings",

@@ -1,5 +1,6 @@
 import {
   Download,
+  MessageSquare,
   Settings2,
   Share2,
 } from "lucide-react";
@@ -13,6 +14,7 @@ interface TopNavigationProps {
   onBoardNameChange?: (name: string) => void;
   onExport: () => void;
   onShare: () => void;
+  onToggleChat?: () => void;
   onToggleSettings: () => void;
   onToggleTools?: () => void;
 }
@@ -21,6 +23,7 @@ export default function TopNavigation({
   activePanel,
   onExport,
   onShare,
+  onToggleChat,
   onToggleSettings,
 }: TopNavigationProps) {
   return (
@@ -45,6 +48,20 @@ export default function TopNavigation({
           <Download size={16} />
           <span>Export</span>
         </button>
+
+        {onToggleChat && (
+          <button
+            type="button"
+            className="wb-icon-button wb-icon-button--round"
+            onClick={onToggleChat}
+            aria-controls="board-chat-panel"
+            aria-expanded={activePanel === "chat"}
+            aria-label="Open collaborative chat"
+            title="Collaborative Chat"
+          >
+            <MessageSquare size={16} />
+          </button>
+        )}
 
         <button
           type="button"
