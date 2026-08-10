@@ -354,10 +354,24 @@ class SocketService {
 
       // --- Chat listeners ---
       this.socket.on("chat.history", (messages: any[]) => {
-        useCollaborationStore.getState().setChatMessages(messages);
+        const normalized = (messages || []).map((m) => ({
+          id: String(m.id || m._id || m.messageId || Math.random()),
+          userId: String(m.userId || ""),
+          displayName: String(m.displayName || "Anonymous"),
+          message: String(m.message || ""),
+          timestamp: String(m.timestamp || m.createdAt || new Date().toISOString()),
+        }));
+        useCollaborationStore.getState().setChatMessages(normalized);
       });
 
-      this.socket.on("chat.broadcast", (message: ChatMessage) => {
+      this.socket.on("chat.broadcast", (raw: any) => {
+        const message: ChatMessage = {
+          id: String(raw.id || raw._id || raw.messageId || Math.random()),
+          userId: String(raw.userId || ""),
+          displayName: String(raw.displayName || "Anonymous"),
+          message: String(raw.message || ""),
+          timestamp: String(raw.timestamp || raw.createdAt || new Date().toISOString()),
+        };
         useCollaborationStore.getState().addChatMessage(message);
       });
 
