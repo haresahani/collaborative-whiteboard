@@ -24,8 +24,32 @@ import {
   useCollaborationStore,
   type ChatMessage,
 } from "../features/whiteboard/store/collaborationStore";
-import { getUserAccent } from "@shared/utils/accent";
-import { chatSendSchema } from "@shared/schemas/collab";
+
+// Inline accent mapper — deterministic color per userId
+const ACCENT_PALETTE = [
+  "#6366f1", "#ec4899", "#f59e0b", "#10b981",
+  "#3b82f6", "#ef4444", "#8b5cf6", "#14b8a6",
+];
+function getUserAccent(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+  }
+  return ACCENT_PALETTE[hash % ACCENT_PALETTE.length];
+}
+
+// Inline chat message validator
+const chatSendSchema = {
+  safeParse(data: { message: string; messageId: string }) {
+    if (!data.message || data.message.trim().length === 0) {
+      return { success: false as const, error: { errors: [{ message: "Message cannot be empty" }] } };
+    }
+    if (data.message.length > 2000) {
+      return { success: false as const, error: { errors: [{ message: "Message too long" }] } };
+    }
+    return { success: true as const, data };
+  },
+};
 
 export interface RemoteStrokeData {
   points: [number, number][];
