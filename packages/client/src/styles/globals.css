@@ -1806,6 +1806,10 @@ button {
     z-index: 25 !important;
   }
 
+  .wb-bottom-dock__action span {
+    display: none !important;
+  }
+
   .wb-toast {
     bottom: 82px;
   }

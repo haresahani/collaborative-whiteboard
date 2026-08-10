@@ -176,7 +176,7 @@ export default function BottomToolbar({ onNotify }: BottomToolbarProps) {
             title="Delete selection"
           >
             <Trash2 size={16} />
-            <span>Delete</span>
+            <span className="wb-desktop-only">Delete</span>
           </button>
         </>
       ) : null}
@@ -191,7 +191,7 @@ export default function BottomToolbar({ onNotify }: BottomToolbarProps) {
             title="Clear board"
           >
             <Trash2 size={16} />
-            <span>Clear Board</span>
+            <span className="wb-desktop-only">Clear Board</span>
           </button>
         </>
       ) : null}
