@@ -31,5 +31,6 @@ export const chatSendSchema = z.object({
 });
 
 export type CursorMovePayload = z.infer<typeof cursorMoveSchema>;
+export type CursorMove = CursorMovePayload;
 export type CursorBatchPayload = z.infer<typeof cursorBatchSchema>;
 export type ChatSendPayload = z.infer<typeof chatSendSchema>;
