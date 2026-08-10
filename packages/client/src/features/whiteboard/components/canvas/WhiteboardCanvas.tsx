@@ -166,15 +166,16 @@ function getElementGeometryHash(el: Element | null): string {
     let lastStateHash: string | null = null;
 
     const renderLoop = () => {
-      const cursors = useCollaborationStore.getState().cursors;
-      const otherPreviews = Object.values(cursors)
+      const cursorsMap = useCollaborationStore.getState().cursors;
+      const cursorList = Array.from(cursorsMap.values());
+      const otherPreviews = cursorList
         .map((c) => c.previewElement)
         .filter(Boolean) as Element[];
 
       const localErasedIds = getErasedIds();
       const allErasedIds = new Set([
         ...localErasedIds,
-        ...Object.values(cursors).flatMap((c) => c.erasedIds || []),
+        ...cursorList.flatMap((c) => c.erasedIds || []),
       ]);
 
       const preview = getPreview();

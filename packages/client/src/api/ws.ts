@@ -624,9 +624,7 @@ class SocketService {
       };
 
       this.pendingOpsQueue.push(opItem);
-      if (this.pendingOpsQueue.length >= this.MAX_BATCH_SIZE) {
-        this.flushBatches();
-      }
+      this.flushBatches();
 
       resolve({ ok: true, opId });
     });
