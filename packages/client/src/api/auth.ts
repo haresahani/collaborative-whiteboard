@@ -290,3 +290,26 @@ export async function deleteBoardApi(boardId: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Updates board title in backend MongoDB database.
+ */
+export async function updateBoardTitleApi(boardId: string, title: string): Promise<boolean> {
+  const token = getStoredToken();
+  if (!token) return true;
+
+  try {
+    const res = await fetch(`/api/boards/${boardId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ title }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("Failed to update board title in backend database:", err);
+    return false;
+  }
+}

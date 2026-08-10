@@ -3,6 +3,7 @@ import {
   createBoard,
   getBoard,
   getMyBoards,
+  updateBoard,
   deleteBoard,
   getSnapshot,
   getBoardJoinToken,
@@ -22,6 +23,7 @@ const router: Router = Router();
 router.post("/", authMiddleware, validate(createBoardSchema), createBoard);
 router.get("/", authMiddleware, getMyBoards);
 router.get("/:id", optionalAuthMiddleware, getBoard);
+router.patch("/:id", authMiddleware, updateBoard);
 router.delete("/:id", authMiddleware, deleteBoard);
 
 // Realtime Join Token

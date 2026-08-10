@@ -60,6 +60,20 @@ export const getMyBoards = asyncHandler(async (req: Request, res: Response) => {
   ApiResponse.success(res, result);
 });
 
+/** PATCH /api/boards/:id — Update board title and metadata. */
+export const updateBoard = asyncHandler(async (req: Request, res: Response) => {
+  const { title } = req.body;
+  const boardId = req.params.id;
+  const sanitizedTitle = sanitizeText(title || "Untitled Whiteboard");
+
+  const updated = await boardService.updateTitle(
+    boardId,
+    req.user!.id,
+    sanitizedTitle,
+  );
+  ApiResponse.success(res, updated);
+});
+
 /** DELETE /api/boards/:id — Delete a board and cascade-remove related data. */
 export const deleteBoard = asyncHandler(async (req: Request, res: Response) => {
   await boardService.remove(req.params.id, req.user!.id);

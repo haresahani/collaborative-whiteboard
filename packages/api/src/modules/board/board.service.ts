@@ -115,6 +115,34 @@ class BoardService {
   }
 
   /**
+   * Update board title by boardId and ownerId.
+   */
+  async updateTitle(
+    boardId: string,
+    userId: string,
+    title: string,
+  ): Promise<IBoard> {
+    if (mongoose.Types.ObjectId.isValid(boardId)) {
+      const board = await Board.findOneAndUpdate(
+        { _id: boardId, ownerId: userId },
+        { title, updatedAt: new Date() },
+        { new: true },
+      ).lean();
+
+      if (board) return board as IBoard;
+    }
+
+    // Try finding by custom string ID or create/update document
+    const updated = await Board.findOneAndUpdate(
+      { _id: boardId, ownerId: userId },
+      { title, updatedAt: new Date() },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
+    ).lean();
+
+    return updated as IBoard;
+  }
+
+  /**
    * Delete a board and cascade-delete all related data.
    *
    * Removes: board → snapshots → operation log entries.

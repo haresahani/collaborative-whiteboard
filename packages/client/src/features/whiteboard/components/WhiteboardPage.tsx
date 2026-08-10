@@ -14,7 +14,14 @@ import { socketService } from "../../../api/ws";
 import LiveCursorsOverlay from "./canvas/LiveCursorsOverlay";
 import ChatPanel from "./layout/ChatPanel";
 import { exportToPNG } from "../engine/exporter";
+import { useAuthStore } from "../../../store/authStore";
+import { updateBoardTitleApi } from "../../../api/auth";
 
+function getStorageKey(userId?: string | null): string {
+  return userId
+    ? `collab_whiteboard_recent_boards_${userId}`
+    : "collab_whiteboard_recent_boards_guest";
+}
 
 function sanitizeFileName(value: string) {
   return value
@@ -23,7 +30,7 @@ function sanitizeFileName(value: string) {
     .replace(/^-|-$/g, "");
 }
 
-type NoticeTone = "success" | "info" | "warning";
+type NoticeTone = "success" | "warning" | "info" | "error";
 
 type WhiteboardNotice = {
   id: number;
@@ -33,16 +40,16 @@ type WhiteboardNotice = {
 
 type ActivePanel = "info" | "settings" | "chat" | null;
 
-const RECENT_BOARDS_KEY = "collab_whiteboard_recent_boards";
-
 export default function WhiteboardPage() {
   const { id } = useParams<{ id: string }>();
+  const currentUser = useAuthStore((state) => state.user);
 
   const boardId = id ?? "local-board";
+  const storageKey = getStorageKey(currentUser?.id);
 
   const [boardName, setBoardName] = useState(() => {
     try {
-      const saved = localStorage.getItem(RECENT_BOARDS_KEY);
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const list = JSON.parse(saved);
         const found = list.find((b: { id: string; name: string }) => b.id === boardId);
@@ -75,7 +82,8 @@ export default function WhiteboardPage() {
   const handleBoardNameChange = useCallback((newName: string) => {
     setBoardName(newName);
     try {
-      const saved = localStorage.getItem(RECENT_BOARDS_KEY);
+      const key = getStorageKey(useAuthStore.getState().user?.id);
+      const saved = localStorage.getItem(key);
       const list = saved ? JSON.parse(saved) : [];
       const index = list.findIndex((b: { id: string }) => b.id === boardId);
       if (index >= 0) {
@@ -89,12 +97,13 @@ export default function WhiteboardPage() {
           itemCount: 0,
         });
       }
-      localStorage.setItem(RECENT_BOARDS_KEY, JSON.stringify(list));
+      localStorage.setItem(key, JSON.stringify(list));
     } catch {
       // ignore
     }
 
     socketService.emitBoardTitleUpdate(boardId, newName);
+    void updateBoardTitleApi(boardId, newName);
   }, [boardId]);
 
   useEffect(() => {
