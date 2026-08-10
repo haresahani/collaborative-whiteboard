@@ -23,6 +23,7 @@
     "infra-utils": "workspace:*",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.4",
+    "nodemailer": "^6.9.16",
     "rate-limiter-flexible": "^5.0.5",
     "shared": "workspace:*",
     "zod": "^3.25.76"
@@ -35,6 +36,7 @@
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.18.3",
+    "@types/nodemailer": "^6.4.17",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",

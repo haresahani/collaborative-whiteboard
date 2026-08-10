@@ -77,8 +77,8 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}/client:production-latest
 
-  deploy-to-k8s:
-    name: Deploy to Production Kubernetes Cluster
+  validate-helm-chart:
+    name: Validate Production Helm Chart (offline)
     needs: build-and-push-docker
     runs-on: ubuntu-latest
     steps:
@@ -88,24 +88,13 @@ jobs:
         with:
           version: 'v3.14.0'
 
-      - name: Template & Validate Helm Production Release
+      - name: Lint & Template Production Helm Chart
         run: |
-          echo "Validating Helm production release template..."
+          echo "Validating production Helm chart (no cluster required)..."
+          helm lint deployment/helm/collaborative-whiteboard \
+            --values deployment/helm/collaborative-whiteboard/values-production.yaml
           helm dependency update deployment/helm/collaborative-whiteboard || true
           helm template whiteboard-prod deployment/helm/collaborative-whiteboard \
             --namespace whiteboard-production \
-            --values deployment/helm/collaborative-whiteboard/values-production.yaml --debug > /dev/null
-
-      - name: Deploy to Live Kubernetes Cluster (Optional)
-        if: ${{ secrets.KUBECONFIG_DATA != '' }}
-        run: |
-          echo "KUBECONFIG_DATA secret detected. Setting up cluster credentials..."
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
-          
-          echo "Upgrading Helm production release..."
-          helm upgrade --install whiteboard-prod deployment/helm/collaborative-whiteboard \
-            --namespace whiteboard-production \
-            --create-namespace \
-            --values deployment/helm/collaborative-whiteboard/values-production.yaml
+            --values deployment/helm/collaborative-whiteboard/values-production.yaml > /dev/null
+          echo "Production Helm chart is valid."

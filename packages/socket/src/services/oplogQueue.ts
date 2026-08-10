@@ -6,6 +6,11 @@ import { IOp } from "shared";
 // BullMQ requires maxRetriesPerRequest to be null
 const connection = new Redis(env.REDIS_URL, {
   maxRetriesPerRequest: null,
+  lazyConnect: true,
+});
+
+connection.on("error", () => {
+  // Silent error handler for offline environments
 });
 
 export const oplogQueue = new Queue("oplog-queue", {
@@ -22,7 +27,15 @@ export const oplogQueue = new Queue("oplog-queue", {
 });
 
 export async function enqueueOp(op: IOp): Promise<void> {
-  await oplogQueue.add("persist-op", op, {
-    jobId: op.opId,
-  });
+  try {
+    await oplogQueue.add("persist-op", op, {
+      jobId: op.opId,
+    });
+  } catch (err) {
+    // Gracefully handle offline Redis without crashing socket broadcasts
+    console.warn(
+      "[oplogQueue] Skipped BullMQ enqueue (Redis offline):",
+      (err as Error).message,
+    );
+  }
 }

@@ -101,8 +101,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy-staging:
-    name: Deploy to Staging Environment
+  validate-staging-helm:
+    name: Validate Staging Helm Chart (offline)
     needs: docker-build-and-push
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -116,15 +116,13 @@ jobs:
         with:
           version: 'v3.14.0'
 
-      - name: Lint Helm Chart
-        run: helm lint infra/helm/collaborative-whiteboard
-
-      - name: Template & Validate Helm Staging Release
+      - name: Lint & Template Staging Helm Chart
         run: |
+          echo "Validating staging Helm chart (no cluster required)..."
+          helm lint infra/helm/collaborative-whiteboard \
+            --values infra/helm/collaborative-whiteboard/values-staging.yaml
           helm dependency update infra/helm/collaborative-whiteboard || true
           helm template whiteboard-staging infra/helm/collaborative-whiteboard \
             --values infra/helm/collaborative-whiteboard/values-staging.yaml \
-            --namespace whiteboard-staging --debug > /dev/null
-
-      - name: Notify Deployment Success
-        run: echo "Successfully deployed release whiteboard-staging to Kubernetes staging environment!"
+            --namespace whiteboard-staging > /dev/null
+          echo "Staging Helm chart is valid."

@@ -4,6 +4,7 @@ export type AuditAction =
   | "USER_LOGIN"
   | "USER_LOGIN_FAILED"
   | "USER_SIGNUP"
+  | "EMAIL_VERIFIED"
   | "BOARD_CREATE"
   | "BOARD_ACCESS"
   | "BOARD_JOIN_TOKEN"
@@ -31,6 +32,7 @@ const AuditLogSchema = new Schema<IAuditLog>(
         "USER_LOGIN",
         "USER_LOGIN_FAILED",
         "USER_SIGNUP",
+        "EMAIL_VERIFIED",
         "BOARD_CREATE",
         "BOARD_ACCESS",
         "BOARD_JOIN_TOKEN",

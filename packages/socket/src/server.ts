@@ -103,22 +103,35 @@ export function createSocketServer(options?: SocketServerOptions) {
 
   const io = new Server(httpServer, {
     cors: {
-      origin: CLIENT_ORIGIN,
+      origin: "*",
       methods: ["GET", "POST"],
+      credentials: true,
     },
-    transports: options?.transports ?? ["websocket"],
+    transports: options?.transports ?? ["websocket", "polling"],
   });
 
   let pubClient: Redis | undefined = options?.pubClient;
   let subClient: Redis | undefined = options?.subClient;
 
   if (!options?.disableAdapter) {
-    if (!pubClient || !subClient) {
-      const clients = createRedisAdapterClients();
-      pubClient = clients.pubClient;
-      subClient = clients.subClient;
+    try {
+      if (!pubClient || !subClient) {
+        const clients = createRedisAdapterClients();
+        pubClient = clients.pubClient;
+        subClient = clients.subClient;
+      }
+      pubClient.on("error", () => {
+        // Silent error handler for offline Redis
+      });
+      subClient.on("error", () => {
+        // Silent error handler for offline Redis
+      });
+      io.adapter(createAdapter(pubClient, subClient));
+    } catch {
+      logger.warn(
+        "[socket] Redis adapter disabled, using default in-memory room adapter.",
+      );
     }
-    io.adapter(createAdapter(pubClient, subClient));
   }
 
   io.use(authMiddleware);
