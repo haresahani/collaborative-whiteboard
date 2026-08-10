@@ -25,3 +25,25 @@ export const authMiddleware = (
     return res.status(401).json({ message: "Invalid token" });
   }
 };
+
+export const optionalAuthMiddleware = (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (token) {
+    try {
+      const decode = jwt.verify(
+        token,
+        process.env.JWT_SECRET!,
+      ) as JwtUserPayload;
+      req.user = {
+        id: decode.userId,
+      };
+    } catch {
+      // ignore invalid token
+    }
+  }
+  next();
+};

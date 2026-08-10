@@ -87,22 +87,23 @@ export const getSnapshot = asyncHandler(async (req: Request, res: Response) => {
 /** GET /api/boards/:id/join-token — Issue a short-lived board join token for socket auth. */
 export const getBoardJoinToken = asyncHandler(
   async (req: Request, res: Response) => {
-    const userId = req.user!.id;
+    const rawUserId = req.user?.id;
     const boardId = req.params.id;
 
-    // Verify access if valid Mongo ObjectId; for local/dev boards like "local-board", issue token directly
-    if (mongoose.Types.ObjectId.isValid(boardId)) {
-      await boardService.findById(boardId, userId);
-    }
+    // Use user ID if authenticated, or generate a guest user ID
+    const userId = rawUserId || `guest_${crypto.randomUUID().slice(0, 8)}`;
 
-    const user = await User.findById(userId).select("displayName").lean();
-    const displayName =
-      (user as { displayName?: string } | null)?.displayName ||
-      `Guest ${userId.slice(-4)}`;
+    let displayName = `Guest ${userId.slice(-4)}`;
+    if (rawUserId && mongoose.Types.ObjectId.isValid(rawUserId)) {
+      const user = await User.findById(rawUserId).select("displayName").lean();
+      if ((user as { displayName?: string } | null)?.displayName) {
+        displayName = (user as { displayName?: string }).displayName!;
+      }
+    }
 
     const token = issueBoardJoinToken(
       { userId, boardId, displayName },
-      process.env.JWT_SECRET!,
+      process.env.JWT_SECRET || "dev-jwt-secret-key-change-in-production",
       "2h",
     );
 

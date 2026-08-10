@@ -28,6 +28,7 @@ import {
 } from "../middleware/rateLimiter";
 
 const tracer = getTracer("socket-events");
+const boardTitlesMap = new Map<string, string>();
 
 const StrokeCommitSchema = z.object({
   opId: z.string().uuid(),
@@ -147,6 +148,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
           snapshotJson,
         },
         oplogs: mergedOps,
+        title: boardTitlesMap.get(boardId) || "",
       });
 
       try {
@@ -613,6 +615,26 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
   socket.on("yjs.awareness", (data: { update: unknown }) => {
     socket.to(roomName(boardId)).emit("yjs.awareness", { update: data.update });
   });
+
+  socket.on(
+    "board.title.update",
+    (data: { boardId: string; title: string }) => {
+      try {
+        const { boardId: targetBoardId, title } = data;
+        if (!title || typeof title !== "string") return;
+        const sanitizedTitle = sanitizeText(title.trim().slice(0, 100));
+
+        boardTitlesMap.set(targetBoardId, sanitizedTitle);
+
+        io.to(roomName(targetBoardId)).emit("board.title.broadcast", {
+          boardId: targetBoardId,
+          title: sanitizedTitle,
+        });
+      } catch (err) {
+        console.error("[socket] Error handling board.title.update:", err);
+      }
+    },
+  );
 
   socket.on("disconnect", async (reason) => {
     console.log(
