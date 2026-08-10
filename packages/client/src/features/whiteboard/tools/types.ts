@@ -70,10 +70,6 @@ export type ToolEffect =
       elementId?: string | null;
       initial?: string;
     }
-  | {
-      type: "openStickyEditor";
-      sticky: import("../models/element").StickyElement;
-    }
   | { type: "switchTool"; tool: ToolType };
 
 export interface ToolResult<S> {

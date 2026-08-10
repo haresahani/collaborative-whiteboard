@@ -54,21 +54,15 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     for (const el of addedElements) {
       if (el.type === "stroke") {
         socketService.emitStroke(el);
-        historyOps.push({
-          targetOpId: el.id,
-          targetOpType: "stroke.commit",
-          tombstoneId: el.id,
-        });
-      } else {
-        socketService.emitOp("element.create", {
-          element: el as unknown as Record<string, unknown>,
-        });
-        historyOps.push({
-          targetOpId: el.id,
-          targetOpType: "element.create",
-          tombstoneId: el.id,
-        });
       }
+      socketService.emitOp("element.create", {
+        element: el as unknown as Record<string, unknown>,
+      });
+      historyOps.push({
+        targetOpId: el.id,
+        targetOpType: el.type === "stroke" ? "stroke.commit" : "element.create",
+        tombstoneId: el.id,
+      });
     }
 
     // Identify deleted elements to emit to Socket.IO

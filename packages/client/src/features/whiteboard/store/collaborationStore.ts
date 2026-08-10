@@ -56,7 +56,10 @@ export const useCollaborationStore = create<CollaborationState>((set) => ({
   setChatMessages: (messages) => set({ chatMessages: messages }),
 
   addChatMessage: (message) =>
-    set((state) => ({
-      chatMessages: [...state.chatMessages, message],
-    })),
+    set((state) => {
+      if (state.chatMessages.some((m) => m.id === message.id)) {
+        return state;
+      }
+      return { chatMessages: [...state.chatMessages, message] };
+    }),
 }));

@@ -131,7 +131,8 @@ class SocketService {
         this.myUserId = claims.userId;
       }
 
-      this.socket = io({
+      const socketUrl = (import.meta.env.VITE_SOCKET_URL as string) || undefined;
+      this.socket = io(socketUrl, {
         auth: {
           token: joinToken,
         },
@@ -304,6 +305,7 @@ class SocketService {
       this.socket.on(
         "op.stroke.broadcast",
         (payload: StrokeBroadcastPayload) => {
+          if (payload.userId === this.myUserId) return;
           console.log("[Socket] Received op.stroke.broadcast:", payload);
           const op: import("shared").IOp = {
             opId: payload.opId,
@@ -325,6 +327,43 @@ class SocketService {
           useBoardStore.getState().setElements(newElements);
         },
       );
+
+      // Handle single op broadcast (rectangle, ellipse, pen, text, delete, etc.)
+      this.socket.on("op.broadcast", (op: import("shared").IOp) => {
+        if (!op || op.actorId === this.myUserId) return;
+        console.log("[Socket] Received op.broadcast:", op);
+        const currentElements = useBoardStore.getState().elements;
+        const newElements = applyOperation(
+          currentElements as unknown as ISharedElement[],
+          op,
+        ) as unknown as Element[];
+        useBoardStore.getState().setElements(newElements);
+      });
+
+      // Handle batched ops broadcast
+      this.socket.on("op.batch", (raw: unknown) => {
+        try {
+          const ops: import("shared").IOp[] =
+            raw instanceof ArrayBuffer || raw instanceof Uint8Array || Buffer.isBuffer(raw)
+              ? decodeOpBatch(raw as ArrayBuffer)
+              : Array.isArray(raw)
+                ? raw
+                : (raw as any)?.ops || [];
+
+          let currentElements = useBoardStore.getState().elements as unknown as ISharedElement[];
+          let changed = false;
+          for (const op of ops) {
+            if (op.actorId === this.myUserId) continue;
+            currentElements = applyOperation(currentElements, op);
+            changed = true;
+          }
+          if (changed) {
+            useBoardStore.getState().setElements(currentElements as unknown as Element[]);
+          }
+        } catch (err) {
+          console.error("[Socket] Failed to process incoming op.batch:", err);
+        }
+      });
 
       // --- Presence listeners ---
       this.socket.on("presence.list", (users: any[]) => {
@@ -353,10 +392,24 @@ class SocketService {
 
       // --- Chat listeners ---
       this.socket.on("chat.history", (messages: any[]) => {
-        useCollaborationStore.getState().setChatMessages(messages);
+        const normalized = (messages || []).map((m) => ({
+          id: String(m.id || m._id || m.messageId || Math.random()),
+          userId: String(m.userId || ""),
+          displayName: String(m.displayName || "Anonymous"),
+          message: String(m.message || ""),
+          timestamp: String(m.timestamp || m.createdAt || new Date().toISOString()),
+        }));
+        useCollaborationStore.getState().setChatMessages(normalized);
       });
 
-      this.socket.on("chat.broadcast", (message: ChatMessage) => {
+      this.socket.on("chat.broadcast", (raw: any) => {
+        const message: ChatMessage = {
+          id: String(raw.id || raw._id || raw.messageId || Math.random()),
+          userId: String(raw.userId || ""),
+          displayName: String(raw.displayName || "Anonymous"),
+          message: String(raw.message || ""),
+          timestamp: String(raw.timestamp || raw.createdAt || new Date().toISOString()),
+        };
         useCollaborationStore.getState().addChatMessage(message);
       });
 
@@ -571,9 +624,7 @@ class SocketService {
       };
 
       this.pendingOpsQueue.push(opItem);
-      if (this.pendingOpsQueue.length >= this.MAX_BATCH_SIZE) {
-        this.flushBatches();
-      }
+      this.flushBatches();
 
       resolve({ ok: true, opId });
     });

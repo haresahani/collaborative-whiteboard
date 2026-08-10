@@ -29,7 +29,7 @@ export default function LiveCursorsOverlay() {
         position: "absolute",
         inset: 0,
         pointerEvents: "none",
-        zIndex: 50,
+        zIndex: 10,
         overflow: "hidden",
       }}
     >

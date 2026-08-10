@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { Plus, Search, Clock, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
-import { deleteBoardApi } from "../api/auth";
+import { deleteBoardApi, fetchMyBoardsApi } from "../api/auth";
 
 interface BoardMetadata {
   id: string;
@@ -12,36 +12,67 @@ interface BoardMetadata {
   itemCount: number;
 }
 
-const STORAGE_KEY = "collab_whiteboard_recent_boards";
+const LEGACY_STORAGE_KEY = "collab_whiteboard_recent_boards";
+
+function getStorageKey(userId?: string | null): string {
+  return userId
+    ? `collab_whiteboard_recent_boards_${userId}`
+    : "collab_whiteboard_recent_boards_guest";
+}
+
+function loadInitialBoards(userId?: string | null): BoardMetadata[] {
+  try {
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+  const key = getStorageKey(userId);
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function IndexPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [search, setSearch] = useState("");
-  const [recentBoards, setRecentBoards] = useState<BoardMetadata[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // ignore storage errors
+  const [recentBoards, setRecentBoards] = useState<BoardMetadata[]>(() =>
+    loadInitialBoards(user?.id),
+  );
+
+  // Sync authenticated user's real boards from REST API
+  useEffect(() => {
+    let isMounted = true;
+    if (isAuthenticated && user?.id) {
+      void fetchMyBoardsApi().then((apiBoards) => {
+        if (!isMounted) return;
+        if (apiBoards && apiBoards.length > 0) {
+          setRecentBoards(apiBoards);
+          try {
+            localStorage.setItem(getStorageKey(user.id), JSON.stringify(apiBoards));
+          } catch {
+            // ignore
+          }
+        }
+      });
     }
-    const initial: BoardMetadata[] = [
-      {
-        id: "local-board",
-        name: "Main Collaborative Canvas",
-        updatedAt: new Date().toISOString(),
-        itemCount: 12,
-      },
-      {
-        id: "sprint-planning",
-        name: "Sprint Planning - Q3",
-        updatedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-        itemCount: 8,
-      },
-    ];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-    return initial;
-  });
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, isAuthenticated]);
+
+  const saveBoards = (updated: BoardMetadata[]) => {
+    setRecentBoards(updated);
+    const key = getStorageKey(user?.id);
+    try {
+      localStorage.setItem(key, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
 
   const handleCreateBoard = () => {
     const newId = `board-${uuidv4().slice(0, 8)}`;
@@ -53,28 +84,22 @@ export default function IndexPage() {
     };
 
     const updated = [newBoard, ...recentBoards];
-    setRecentBoards(updated);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
-
+    saveBoards(updated);
     navigate(`/${newId}`);
   };
 
   const handleDeleteBoard = (e: React.MouseEvent, boardIdToDelete: string) => {
     e.stopPropagation();
     const updated = recentBoards.filter((b) => b.id !== boardIdToDelete);
-    setRecentBoards(updated);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    saveBoards(updated);
 
-    // Delete from MongoDB database via API
+    // Delete from MongoDB database via API if authenticated
     void deleteBoardApi(boardIdToDelete);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setRecentBoards([]);
   };
 
   const filteredBoards = recentBoards.filter((b) =>
@@ -82,41 +107,54 @@ export default function IndexPage() {
   );
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      backgroundColor: "#090d16",
-      color: "#f8fafc",
-      fontFamily: "Inter, system-ui, sans-serif",
-      padding: "2.5rem 2rem",
-    }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#090d16",
+        color: "#f8fafc",
+        fontFamily: "Inter, system-ui, sans-serif",
+        padding: "2.5rem 2rem",
+      }}
+    >
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         {/* Header */}
-        <header style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "3rem",
-          paddingBottom: "1.5rem",
-          borderBottom: "1px solid #1e293b",
-        }}>
+        <header
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "3rem",
+            paddingBottom: "1.5rem",
+            borderBottom: "1px solid #1e293b",
+          }}
+        >
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{
-              width: "42px",
-              height: "42px",
-              borderRadius: "10px",
-              background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              fontWeight: "bold",
-              fontSize: "1.2rem",
-              boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
-            }}>
+            <div
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "10px",
+                background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                fontWeight: "bold",
+                fontSize: "1.2rem",
+                boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+              }}
+            >
               <Pencil size={22} />
             </div>
             <div>
-              <h1 style={{ fontSize: "1.4rem", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
+              <h1
+                style={{
+                  fontSize: "1.4rem",
+                  fontWeight: 700,
+                  margin: 0,
+                  letterSpacing: "-0.02em",
+                }}
+              >
                 Collaborative Whiteboard
               </h1>
               <p style={{ margin: 0, color: "#64748b", fontSize: "0.85rem" }}>
@@ -128,8 +166,30 @@ export default function IndexPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
             {isAuthenticated && user ? (
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#1e293b", padding: "6px 12px", borderRadius: "8px" }}>
-                  <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "#3b82f6", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 700 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    background: "#1e293b",
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      background: "#3b82f6",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                    }}
+                  >
                     {user.displayName.slice(0, 1).toUpperCase()}
                   </div>
                   <span style={{ fontSize: "0.88rem", fontWeight: 600, color: "#e2e8f0" }}>
@@ -138,7 +198,7 @@ export default function IndexPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={logout}
+                  onClick={handleLogout}
                   style={{
                     background: "none",
                     border: "1px solid #334155",
@@ -217,18 +277,22 @@ export default function IndexPage() {
         </header>
 
         {/* Controls Bar */}
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "2rem",
-          gap: "1rem",
-        }}>
-          <div style={{
-            position: "relative",
-            flex: "1",
-            maxWidth: "380px",
-          }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "2rem",
+            gap: "1rem",
+          }}
+        >
+          <div
+            style={{
+              position: "relative",
+              flex: "1",
+              maxWidth: "380px",
+            }}
+          >
             <Search
               size={18}
               style={{
@@ -263,11 +327,13 @@ export default function IndexPage() {
         </div>
 
         {/* Boards Grid */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: "1.5rem",
-        }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "1.5rem",
+          }}
+        >
           {filteredBoards.map((board) => (
             <div
               key={board.id}
@@ -334,14 +400,16 @@ export default function IndexPage() {
                 </h3>
               </div>
 
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                fontSize: "0.78rem",
-                color: "#64748b",
-                marginTop: "1.2rem",
-              }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "0.78rem",
+                  color: "#64748b",
+                  marginTop: "1.2rem",
+                }}
+              >
                 <Clock size={14} />
                 <span>Updated {new Date(board.updatedAt).toLocaleDateString()}</span>
               </div>
