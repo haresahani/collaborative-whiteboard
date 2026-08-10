@@ -1,32 +1,35 @@
-/**
- * Lightweight chat send schema compatible with zod API.
- * Uses the client's zod instance by re-exporting a factory so the
- * schema is created in the consumer context.
- */
+import { z } from "zod";
 
-// This file is consumed by the client which has zod available.
-// We export a function that builds the schema to avoid a hard zod dependency in shared.
-export function buildChatSendSchema(z: {
-  object: (shape: Record<string, unknown>) => unknown;
-  string: () => {
-    min: (
-      n: number,
-      msg: string,
-    ) => { max: (n: number, msg: string) => unknown };
-  };
-}) {
-  return z.object({
-    message: z
-      .string()
-      .min(1, "Message cannot be empty")
-      .max(2000, "Message too long"),
-    messageId: (z as unknown as { string: () => { uuid: () => unknown } })
-      .string()
-      .uuid(),
-  });
-}
+export const cursorMoveSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  previewElement: z.unknown().optional(),
+  erasedIds: z.array(z.string()).optional(),
+  tool: z.string().optional(),
+});
 
-export type ChatSendPayload = {
-  message: string;
-  messageId: string;
-};
+export const cursorBatchSchema = z.object({
+  cursors: z.array(
+    z.object({
+      userId: z.string().optional(),
+      displayName: z.string().optional(),
+      x: z.number(),
+      y: z.number(),
+      previewElement: z.unknown().optional(),
+      erasedIds: z.array(z.string()).optional(),
+      tool: z.string().optional(),
+    }),
+  ),
+});
+
+export const chatSendSchema = z.object({
+  message: z
+    .string()
+    .min(1, "Message cannot be empty")
+    .max(2000, "Message too long"),
+  messageId: z.string().uuid(),
+});
+
+export type CursorMovePayload = z.infer<typeof cursorMoveSchema>;
+export type CursorBatchPayload = z.infer<typeof cursorBatchSchema>;
+export type ChatSendPayload = z.infer<typeof chatSendSchema>;

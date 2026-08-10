@@ -1,0 +1,13 @@
+[
+  {
+    "type": "element.create",
+    "payload": {
+      "id": "rect-k6-1",
+      "type": "rectangle",
+      "x": 100,
+      "y": 150,
+      "width": 200,
+      "height": 100
+    }
+  }
+]

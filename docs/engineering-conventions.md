@@ -60,12 +60,15 @@ Rules:
 - document required variables in `env/.env.example`
 - use uppercase snake case names
 - keep variable names consistent across packages
+- validate environment configuration at startup using `envSchema` from `shared` (enforced in the `socket` and `worker` packages)
+- `JWT_SECRET` must be a secure string of at least 32 characters in development and production (automatically mocked with a fallback key during testing)
 
-Current required local API variables:
+Current required local variables:
 
 - `PORT`
 - `MONGO_URL`
 - `JWT_SECRET`
+- `REDIS_URL` (used by socket/worker packages, defaults to `redis://127.0.0.1:6379`)
 
 ## Logging
 

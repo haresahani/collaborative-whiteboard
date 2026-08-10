@@ -2,17 +2,17 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
+    "ignoreDeprecations": "5.0",
     "paths": {
-      "@collab/*": ["packages/*/src"]
+      "@collab/*": ["./packages/*/src"]
     }
   },
-  "files": [], // 👈 explicitly empty (no direct files in root)
+  "files": [],
   "references": [
     { "path": "packages/client" },
     { "path": "packages/api" },

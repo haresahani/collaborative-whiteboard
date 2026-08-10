@@ -90,6 +90,7 @@ This path matches the repo better than a CRDT-heavy distributed design.
 - The API already has board, snapshot, and oplog concepts, so Mongo-backed replay is a natural V1.
 - A single Socket.IO service with server sequencing is easier to build, test, and explain than Redis plus CRDT plus worker orchestration.
 - Interviewers usually respond better to one clean, finished system than to many unimplemented claims.
+- **Client Undo Lifetime**: The local undo/redo stack is in-memory per session. Reloading or reconnecting resets the client's local undo stack, while the global board state remains consistent via the MongoDB oplog.
 
 ## V1 Data Flow
 

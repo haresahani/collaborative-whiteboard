@@ -1,0 +1,12 @@
+[
+  {
+    "email": "k6_user_1@example.com",
+    "password": "Password123!",
+    "displayName": "k6 User 1"
+  },
+  {
+    "email": "k6_user_2@example.com",
+    "password": "Password123!",
+    "displayName": "k6 User 2"
+  }
+]

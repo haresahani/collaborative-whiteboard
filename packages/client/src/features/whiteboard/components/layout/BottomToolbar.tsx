@@ -22,8 +22,12 @@ export default function BottomToolbar({ onNotify }: BottomToolbarProps) {
   const zoom = useViewportStore((state) => state.zoom);
   const zoomAt = useViewportStore((state) => state.zoomAt);
 
-  const canUndo = useHistoryStore((state) => state.past.length > 0);
-  const canRedo = useHistoryStore((state) => state.future.length > 0);
+  const canUndo = useHistoryStore(
+    (state) => state.past.length > 0 || state.undoStack.length > 0,
+  );
+  const canRedo = useHistoryStore(
+    (state) => state.future.length > 0 || state.redoStack.length > 0,
+  );
   const hasSelection = selectedIds.length > 0;
   const hasElements = elements.length > 0;
 

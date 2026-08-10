@@ -2,7 +2,7 @@ import getStroke from "perfect-freehand";
 import type { Point } from "../models/element";
 
 export function drawSmoothStroke(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   points: Point[],
   strokeWidth = 2,
   strokeColor = "#000000",

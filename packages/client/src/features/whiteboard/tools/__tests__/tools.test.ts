@@ -13,7 +13,13 @@ import { rectangleTool, textTool } from "../shapeTool";
 import { resolvePointerDown } from "../toolRegistry";
 import type { PointerInput, ToolContext, ToolEffect } from "../types";
 
-function rect(id: string, x = 0, y = 0, width = 100, height = 50): RectangleElement {
+function rect(
+  id: string,
+  x = 0,
+  y = 0,
+  width = 100,
+  height = 50,
+): RectangleElement {
   return {
     id,
     type: "rectangle",
@@ -47,7 +53,11 @@ function makeCtx(overrides: Partial<ToolContext> = {}): ToolContext {
   };
 }
 
-function input(x: number, y: number, opts: Partial<PointerInput> = {}): PointerInput {
+function input(
+  x: number,
+  y: number,
+  opts: Partial<PointerInput> = {},
+): PointerInput {
   return { world: { x, y }, shiftKey: false, buttons: 1, ...opts };
 }
 
@@ -84,7 +94,11 @@ describe("penTool", () => {
     const ctx = makeCtx();
     const down = penTool.onPointerDown(input(1, 1), ctx);
 
-    const move = penTool.onPointerMove(down.session!, input(9, 9, { buttons: 0 }), ctx);
+    const move = penTool.onPointerMove(
+      down.session!,
+      input(9, 9, { buttons: 0 }),
+      ctx,
+    );
 
     expect((move.preview as StrokeElement).points).toHaveLength(1);
   });
@@ -124,7 +138,10 @@ describe("textTool", () => {
 
 describe("moveTool", () => {
   it("declines when nothing is hit", () => {
-    const result = moveTool.onPointerDown(input(500, 500), makeCtx({ elements: [rect("r")] }));
+    const result = moveTool.onPointerDown(
+      input(500, 500),
+      makeCtx({ elements: [rect("r")] }),
+    );
 
     expect(result.session).toBeNull();
   });
@@ -206,31 +223,48 @@ describe("marqueeTool", () => {
 });
 
 describe("eraserTool", () => {
-  it("commits history on the first hit only, then emits live frames", () => {
+  it("uses a session and commits history on pointerUp", () => {
     const a = rect("a", 0, 0, 10, 10);
     const b = rect("b", 100, 0, 10, 10);
 
     const downCtx = makeCtx({ elements: [a, b], selectedIds: ["a"] });
     const down = eraserTool.onPointerDown(input(5, 5), downCtx);
 
-    const firstErase = effectOfType(down.effects, "commit");
-    expect(firstErase?.elements.map((el: Element) => el.id)).toEqual(["b"]);
-    expect(effectOfType(down.effects, "setSelection")?.ids).toEqual([]);
+    expect(down.effects).toEqual([]);
+    expect(down.session?.baseElements).toEqual([a, b]);
+    expect(down.session?.currentElements.map((el: Element) => el.id)).toEqual([
+      "b",
+    ]);
 
-    const moveCtx = makeCtx({ elements: [b], selectedIds: [] });
-    const move = eraserTool.onPointerMove(down.session!, input(105, 5), moveCtx);
+    const moveCtx = makeCtx({ elements: [a, b], selectedIds: ["a"] });
+    const move = eraserTool.onPointerMove(
+      down.session!,
+      input(105, 5),
+      moveCtx,
+    );
 
-    expect(effectOfType(move.effects, "commit")).toBeUndefined();
-    expect(effectOfType(move.effects, "setElements")?.elements).toEqual([]);
+    expect(move.effects).toEqual([]);
+    expect(move.session?.currentElements).toEqual([]);
+
+    const up = eraserTool.onPointerUp(move.session!, input(105, 5), moveCtx);
+    const commitEffect = effectOfType(up.effects, "commit");
+    expect(commitEffect).toBeDefined();
+    expect(commitEffect?.elements).toEqual([]);
+    expect(commitEffect?.base).toEqual([a, b]);
+
+    const selectionEffect = effectOfType(up.effects, "setSelection");
+    expect(selectionEffect?.ids).toEqual([]);
   });
 
   it("keeps the session alive over empty space without effects", () => {
-    const ctx = makeCtx({ elements: [rect("a", 500, 500)] });
+    const a = rect("a", 500, 500);
+    const ctx = makeCtx({ elements: [a] });
 
     const down = eraserTool.onPointerDown(input(5, 5), ctx);
 
-    expect(down.session).toEqual({ committed: false });
-    expect(down.effects).toBeUndefined();
+    expect(down.session?.baseElements).toEqual([a]);
+    expect(down.session?.currentElements).toEqual([a]);
+    expect(down.effects).toEqual([]);
   });
 });
 

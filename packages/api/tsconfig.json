@@ -1,16 +1,7 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "module": "ESNext",
-    "outDir": "dist",
-    "rootDir": "src",
-    "composite": true,
-    "esModuleInterop": true,
-    "strict": true,
-    "moduleResolution": "Node",
-    "allowSyntheticDefaultImports": true,
-    "types": ["node"]
-  },
-  "include": ["src/**/*"],
-  "references": [{ "path": "../shared" }, { "path": "../infra-utils" }]
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.build.json" },
+    { "path": "./tsconfig.test.json" }
+  ]
 }

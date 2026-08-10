@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "token",
+          "value": "e2e_mock_storage_state_token"
+        },
+        {
+          "name": "user",
+          "value": "{\"id\":\"e2e-user\",\"displayName\":\"E2E Test User\"}"
+        }
+      ]
+    }
+  ]
+}

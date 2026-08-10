@@ -19,16 +19,17 @@ The repo is being shaped for depth, clarity, and credibility rather than inflate
 
 ## Current Status
 
-| Area                    | Status          | Notes                                                                        |
-| ----------------------- | --------------- | ---------------------------------------------------------------------------- |
-| Whiteboard editor UI    | Implemented     | Local whiteboard tools and interactions are the strongest part of the repo.  |
-| Client routing          | Partial         | The active route is `/board/:id`. Old auth and landing pages are not active. |
-| Auth API                | Implemented     | Signup, login, and `GET /api/auth/me` exist in the API package.              |
-| Board API               | Implemented     | Create, list, fetch, delete board, and append operation endpoints exist.     |
-| Persistence from client | Not wired       | The new client does not yet call the API.                                    |
-| Realtime collaboration  | Not implemented | Socket and worker packages are still stubs.                                  |
-| Export pipeline         | Partial         | Client-side PNG export exists. Background export jobs do not.                |
-| Automated tests         | Minimal         | API has a smoke test. Client interaction tests are still missing.            |
+| Area                    | Status      | Notes                                                                                  |
+| ----------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| Whiteboard editor UI    | Implemented | Local whiteboard tools and interactions are the strongest part of the repo.            |
+| Client routing          | Partial     | The active route is `/board/:id`. Old auth and landing pages are not active.           |
+| Auth API                | Implemented | Standardized signup, login, and profile fetching endpoints are implemented.            |
+| Board API               | Implemented | Create, list, fetch, delete board, and append operation endpoints exist.               |
+| Persistence from client | Not wired   | The new client does not yet call the API.                                              |
+| Realtime collaboration  | Implemented | Realtime Socket.IO room gateway and BullMQ-backed snapshot compaction jobs.            |
+| Observability & Tracing | Implemented | Prometheus metrics (/metrics), Grafana dashboard, Pino logging, OTel & Jaeger tracing. |
+| Export pipeline         | Partial     | Client-side PNG export exists. Background export jobs do not.                          |
+| Automated tests         | Implemented | Over 80 robust integration tests across API, client, socket, worker, and infra-utils.  |
 
 ## V1 Scope
 
@@ -73,9 +74,9 @@ This is a simpler and more defensible V1 than claiming CRDTs before they exist. 
 
 - `packages/client`: React + Vite whiteboard client. This is the most complete package today.
 - `packages/api`: Express + MongoDB API for auth, boards, snapshots, and oplog persistence.
-- `packages/socket`: reserved for the realtime gateway. Currently a stub.
-- `packages/worker`: reserved for async jobs such as export/snapshot work. Currently a stub.
-- `packages/shared`: shared package for code used by more than one package.
+- `packages/socket`: Socket.IO gateway server for room management and operation synchronization.
+- `packages/worker`: BullMQ background worker for oplog persistence deduplication and snapshot compaction.
+- `packages/shared`: Shared utilities, schemas, and configurations used by multiple packages.
 - `packages/infra-utils`: helper package for repo and infra-adjacent utilities.
 
 Package boundaries are written down in [docs/package-responsibilities.md](docs/package-responsibilities.md).
@@ -119,7 +120,7 @@ pnpm --filter client lint
 - client: `http://localhost:5173`
 - active board route example: `http://localhost:5173/board/local-demo`
 - API: `http://localhost:1234`
-- socket stub: logs as port `3001`
+- Socket.IO gateway: port `3001`
 
 ### Quality Commands
 
@@ -141,16 +142,14 @@ The foundation standards for this repo are now documented and should guide all f
 - testing expectations: [docs/testing-guide.md](docs/testing-guide.md)
 - architecture baseline: [docs/architecture.md](docs/architecture.md)
 - protocol and sync baseline: [docs/protocol.md](docs/protocol.md)
+- project folder structure: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
 
 ## Current Limitations
 
 This repo is not yet a true collaborative product. Important limitations today:
 
 - the client is mostly local-first and not connected to the backend
-- realtime sync is not implemented
-- socket and worker packages are placeholders
-- API response shapes are partially standardized and need one cleanup pass during V1 work
-- the automated test suite is still too light for a finished product
+- background export jobs are not yet wired up
 
 Those gaps are acceptable right now because they are explicitly acknowledged and planned, not hidden.
 

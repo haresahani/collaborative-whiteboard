@@ -1,0 +1,9 @@
+apiVersion: v2
+name: collaborative-whiteboard
+description: Production Helm chart for Collaborative Whiteboard Microservices (API, Socket, Worker, Client)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: DevOps Team
+    email: devops@whiteboard.local

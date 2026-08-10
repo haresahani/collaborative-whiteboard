@@ -158,8 +158,18 @@ describe("materializeClipboard", () => {
     const payload = serializeSelection([rect("r")], ["r"])!;
 
     let counter = 0;
-    const first = materializeClipboard(payload, { x: 20, y: 20 }, () => `p-${++counter}`, NOW);
-    const second = materializeClipboard(payload, { x: 40, y: 40 }, () => `p-${++counter}`, NOW);
+    const first = materializeClipboard(
+      payload,
+      { x: 20, y: 20 },
+      () => `p-${++counter}`,
+      NOW,
+    );
+    const second = materializeClipboard(
+      payload,
+      { x: 40, y: 40 },
+      () => `p-${++counter}`,
+      NOW,
+    );
 
     expect(first[0].id).not.toBe(second[0].id);
     expect((second[0] as RectangleElement).x).toBe(40);

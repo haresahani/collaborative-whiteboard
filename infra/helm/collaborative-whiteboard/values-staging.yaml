@@ -1,0 +1,62 @@
+global:
+  environment: staging
+  domain: staging.whiteboard.local
+
+imageTag: staging-latest
+imagePullPolicy: Always
+
+api:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  env:
+    NODE_ENV: "staging"
+    LOG_LEVEL: "debug"
+
+socket:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  env:
+    NODE_ENV: "staging"
+    LOG_LEVEL: "debug"
+
+worker:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+client:
+  replicaCount: 1
+
+ingress:
+  hosts:
+    - host: staging.whiteboard.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: client
+        - path: /api
+          pathType: Prefix
+          service: api
+        - path: /socket.io
+          pathType: Prefix
+          service: socket
+
+autoscaling:
+  enabled: false

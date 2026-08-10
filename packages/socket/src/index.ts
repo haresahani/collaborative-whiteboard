@@ -1,5 +1,19 @@
-// Entrypoint — Socket.IO server (stub until backend implementation)
-console.log("[socket] Socket server stub — listening on port 3001");
+import { initTelemetry } from "infra-utils";
+initTelemetry("whiteboard-socket");
 
-// Keep process alive; replace with real Socket.IO server during backend work
-setInterval(() => {}, 10_000);
+async function start() {
+  const { PORT } = await import("./config/env");
+  const { connectDB } = await import("./config/db");
+  const { createSocketServer } = await import("./server");
+
+  await connectDB();
+  const { httpServer } = createSocketServer();
+  httpServer.listen(PORT, () => {
+    console.log(`[socket] Real-time socket server running on port ${PORT}`);
+  });
+}
+
+start().catch((err) => {
+  console.error("[socket] Failed to start:", err);
+  process.exit(1);
+});

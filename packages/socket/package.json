@@ -8,19 +8,34 @@
     "dev": "tsx watch src/index.ts",
     "start:dev": "tsx watch src/index.ts",
     "build": "tsc -b",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "test": "vitest run"
   },
   "dependencies": {
-    "socket.io": "^4.8.1"
+    "@socket.io/redis-adapter": "^8.3.0",
+    "bullmq": "^5.80.11",
+    "dotenv": "^17.2.3",
+    "infra-utils": "workspace:*",
+    "ioredis": "^5.11.1",
+    "mongoose": "^9.2.4",
+    "rate-limiter-flexible": "^5.0.5",
+    "shared": "workspace:*",
+    "socket.io": "^4.8.1",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.31",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^25.3.2",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
     "eslint": "^9.32.0",
+    "ioredis-mock": "^8.9.0",
     "prettier": "^3.0.0",
+    "socket.io-client": "^4.8.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^4.0.8"
   }
 }

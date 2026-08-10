@@ -1,145 +1,127 @@
 import { Request, Response } from "express";
-import { Board } from "./board.model";
-import { Snapshot } from "./snapshot.model";
 import mongoose from "mongoose";
+import { User } from "../user/user.model";
+import { issueBoardJoinToken } from "shared/jwt";
+import { sanitizeText } from "shared";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { ApiResponse } from "../../utils/ApiResponse";
+import { boardService } from "./board.service";
+import { auditService } from "../audit/audit.service";
 
-//createboard
-export const createBoard = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    const { title } = req.body;
+/**
+ * Board controllers — thin HTTP handlers.
+ */
 
-    const board = await Board.create({
-      ownerId: userId,
-      title: title?.trim() || "Untitled Board",
-    });
-
-    const snapshot = await Snapshot.create({
-      boardId: board._id,
-      opIndex: 0,
-      snapshotJson: {
-        strokes: [],
-        shapes: [],
-        notes: [],
-      },
-    });
-
-    board.lastSnapshotId = snapshot._id;
-    await board.save({ validateBeforeSave: false });
-
-    res.status(201).json({
-      success: true,
-      data: board,
-    });
-  } catch (error) {
-    console.error("Create board error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Error creating board",
-    });
+/** POST /api/boards — Create a new board with an initial empty snapshot. */
+export const createBoard = asyncHandler(async (req: Request, res: Response) => {
+  const body = req.body;
+  if (body && typeof body.title === "string") {
+    body.title = sanitizeText(body.title);
   }
-};
 
-//get Board by ID
-export const getBoard = async (req: Request, res: Response) => {
-  try {
+  const board = await boardService.create(req.user!.id, body);
+
+  void auditService.logEvent({
+    userId: req.user!.id,
+    action: "BOARD_CREATE",
+    resourceId: String(board._id),
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+    details: { title: board.title },
+  });
+
+  ApiResponse.created(res, board);
+});
+
+/** GET /api/boards/:id — Fetch a single board by ID. */
+export const getBoard = asyncHandler(async (req: Request, res: Response) => {
+  const board = await boardService.findById(req.params.id, req.user!.id);
+
+  void auditService.logEvent({
+    userId: req.user!.id,
+    action: "BOARD_ACCESS",
+    resourceId: req.params.id,
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+  });
+
+  ApiResponse.success(res, board);
+});
+
+/** GET /api/boards — List boards owned by the authenticated user (paginated). */
+export const getMyBoards = asyncHandler(async (req: Request, res: Response) => {
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(
+    50,
+    Math.max(1, parseInt(req.query.limit as string) || 20),
+  );
+
+  const result = await boardService.findByOwner(req.user!.id, { page, limit });
+  ApiResponse.success(res, result);
+});
+
+/** DELETE /api/boards/:id — Delete a board and cascade-remove related data. */
+export const deleteBoard = asyncHandler(async (req: Request, res: Response) => {
+  await boardService.remove(req.params.id, req.user!.id);
+
+  void auditService.logEvent({
+    userId: req.user!.id,
+    action: "BOARD_DELETE",
+    resourceId: req.params.id,
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+  });
+
+  ApiResponse.message(res, "Board deleted");
+});
+
+/** GET /api/boards/:id/snapshot — Fetch the latest snapshot for initial canvas load. */
+export const getSnapshot = asyncHandler(async (req: Request, res: Response) => {
+  const snapshot = await boardService.getLatestSnapshot(
+    req.params.id,
+    req.user!.id,
+  );
+  ApiResponse.success(res, snapshot);
+});
+
+/** GET /api/boards/:id/join-token — Issue a short-lived board join token for socket auth. */
+export const getBoardJoinToken = asyncHandler(
+  async (req: Request, res: Response) => {
+    const rawUserId = req.user?.id;
     const boardId = req.params.id;
-    const userId = req.user!.id;
 
-    if (!mongoose.Types.ObjectId.isValid(boardId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid board ID",
-      });
+    // Use user ID if authenticated, or generate a guest user ID
+    const userId = rawUserId || `guest_${crypto.randomUUID().slice(0, 8)}`;
+
+    let displayName = `Guest ${userId.slice(-4)}`;
+    if (rawUserId && mongoose.Types.ObjectId.isValid(rawUserId)) {
+      const user = await User.findById(rawUserId).select("displayName").lean();
+      if ((user as { displayName?: string } | null)?.displayName) {
+        displayName = (user as { displayName?: string }).displayName!;
+      }
     }
 
-    const board = await Board.findOne({
-      _id: boardId,
-      ownerId: userId,
-    }).lean();
+    const token = issueBoardJoinToken(
+      { userId, boardId, displayName },
+      process.env.JWT_SECRET || "dev-jwt-secret-key-change-in-production",
+      "2h",
+    );
 
-    if (!board) {
-      return res.status(404).json({
-        success: false,
-        message: "Board not found",
-      });
-    }
-
-    res.json({
-      success: true,
-      data: board,
-    });
-  } catch (error) {
-    console.error("Get board error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Error fetching board",
-    });
-  }
-};
-
-//get My Boards
-export const getMyBoards = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user!.id;
-
-    const boards = await Board.find({
-      ownerId: userId,
-    })
-      .select("_id title visibility createdAt updatedAt")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    res.json({
-      success: true,
-      data: boards,
-    });
-  } catch (error) {
-    console.error("Get boards error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Error fetching boards",
-    });
-  }
-};
-
-//Delete board
-export const deleteBoard = async (req: Request, res: Response) => {
-  try {
-    const boardId = req.params.id;
-    const userId = req.user!.id;
-
-    if (!mongoose.Types.ObjectId.isValid(boardId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid board ID",
-      });
-    }
-
-    const board = await Board.findOneAndDelete({
-      _id: boardId,
-      ownerId: userId,
+    void auditService.logEvent({
+      userId,
+      action: "BOARD_JOIN_TOKEN",
+      resourceId: boardId,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
     });
 
-    if (!board) {
-      return res.status(404).json({
-        success: false,
-        message: "Board not found",
-      });
-    }
+    ApiResponse.success(res, { token });
+  },
+);
 
-    res.json({
-      success: true,
-      message: "Board deleted",
-    });
-  } catch (error) {
-    console.error("Delete board error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error deleting board",
-    });
-  }
-};
+/** GET /api/boards/:id/yjs-state — Fetch merged Yjs state for initial sticky note CRDT sync. */
+export const getYjsState = asyncHandler(async (req: Request, res: Response) => {
+  const yjsBuffer = await boardService.getYjsState(req.params.id, req.user!.id);
+  res.setHeader("Content-Type", "application/octet-stream");
+  res.send(yjsBuffer);
+});

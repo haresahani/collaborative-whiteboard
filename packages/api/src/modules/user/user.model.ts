@@ -5,6 +5,10 @@ export interface Iuser extends Document {
   password: string;
   displayName: string;
   avatar?: string;
+  googleId?: string;
+  isEmailVerified: boolean;
+  verificationCode?: string;
+  verificationCodeExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +30,19 @@ const userSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
+    },
+    googleId: {
+      type: String,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationCode: {
+      type: String,
+    },
+    verificationCodeExpires: {
+      type: Date,
     },
   },
   { timestamps: true },

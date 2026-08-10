@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: whiteboard-api
+  namespace: whiteboard-production
+  labels:
+    app: whiteboard-api
+    app.kubernetes.io/component: backend-api
+spec:
+  type: ClusterIP
+  ports:
+    - port: 1234
+      targetPort: 1234
+      protocol: TCP
+      name: http
+  selector:
+    app: whiteboard-api

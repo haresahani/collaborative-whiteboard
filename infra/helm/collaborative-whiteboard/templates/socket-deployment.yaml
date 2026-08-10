@@ -1,0 +1,45 @@
+{{- if .Values.socket.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "whiteboard.fullname" . }}-socket
+  labels:
+    app.kubernetes.io/component: socket
+    {{- include "whiteboard.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.socket.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: socket
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: socket
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: socket
+          image: "{{ .Values.socket.image.repository }}:{{ .Values.imageTag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.socket.service.port }}
+              name: ws
+          envFrom:
+            - configMapRef:
+                name: {{ include "whiteboard.fullname" . }}-config
+          resources:
+            {{- toYaml .Values.socket.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: ws
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: ws
+            initialDelaySeconds: 15
+            periodSeconds: 20
+{{- end }}

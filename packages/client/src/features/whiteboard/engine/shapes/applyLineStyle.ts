@@ -1,7 +1,8 @@
 import type { LineStyle } from "../../models/element";
+import type { CanvasContext } from "./Shape";
 
 export function applyLineStyle(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasContext,
   lineStyle: LineStyle | undefined,
   strokeWidth: number,
 ) {

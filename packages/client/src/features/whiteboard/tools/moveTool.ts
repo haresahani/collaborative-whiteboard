@@ -73,16 +73,15 @@ export const moveTool: ToolHandler<MoveSession> = {
 
     return {
       session: { ...session, lastPoint: input.world },
-      effects: next === ctx.elements ? [] : [{ type: "setElements", elements: next }],
+      effects:
+        next === ctx.elements ? [] : [{ type: "setElements", elements: next }],
     };
   },
 
   onPointerUp(session, _input, ctx) {
     return {
       session: null,
-      effects: [
-        { type: "commit", elements: ctx.elements, base: session.base },
-      ],
+      effects: [{ type: "commit", elements: ctx.elements, base: session.base }],
     };
   },
 };
