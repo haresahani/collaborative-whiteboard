@@ -5,9 +5,9 @@ import type { Element } from "../models/element";
 import { useBoardStore } from "../store/boardStore";
 import { useSelectionStore } from "../store/selectionStore";
 import { useTextEditorStore } from "../store/textEditorStore";
-import { useStickyEditorStore } from "../store/stickyEditorStore";
 import { useToolStore } from "../store/toolStore";
 import { useViewportStore } from "../store/viewportStore";
+import { socketService } from "../../../api/ws";
 import { resolveDoubleClick, resolvePointerDown } from "../tools/toolRegistry";
 import { eraserTool, type EraserSession } from "../tools/eraserTool";
 import type {
@@ -36,6 +36,25 @@ function buildContext(): ToolContext {
   };
 }
 
+function getCanvasScreenPoint(
+  e:
+    | React.PointerEvent<HTMLCanvasElement>
+    | React.MouseEvent<HTMLCanvasElement>,
+): { x: number; y: number } {
+  const canvas = e.currentTarget;
+  if (canvas && typeof canvas.getBoundingClientRect === "function") {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  }
+  return {
+    x: e.nativeEvent.offsetX,
+    y: e.nativeEvent.offsetY,
+  };
+}
+
 function buildInput(
   e:
     | React.PointerEvent<HTMLCanvasElement>
@@ -43,7 +62,7 @@ function buildInput(
 ): PointerInput {
   return {
     world: screenToWorld(
-      { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY },
+      getCanvasScreenPoint(e),
       useViewportStore.getState(),
     ),
     shiftKey: e.shiftKey,
@@ -78,9 +97,6 @@ function runEffects(effects: ToolEffect[]) {
           elementId: effect.elementId,
           initial: effect.initial,
         });
-        break;
-      case "openStickyEditor":
-        useStickyEditorStore.getState().startEditing(effect.sticky);
         break;
       case "switchTool":
         useToolStore.getState().setTool(effect.tool);
@@ -131,6 +147,9 @@ export function useToolSession() {
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
+      const input = buildInput(e);
+      socketService.sendCursorMove(input.world.x, input.world.y, previewRef.current || undefined);
+
       const gesture = gestureRef.current;
       if (!gesture) return;
 
@@ -138,7 +157,7 @@ export function useToolSession() {
         gesture.handler,
         gesture.handler.onPointerMove(
           gesture.session,
-          buildInput(e),
+          input,
           buildContext(),
         ),
       );

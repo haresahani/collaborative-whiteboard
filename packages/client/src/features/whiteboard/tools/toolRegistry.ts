@@ -10,7 +10,6 @@ import {
   ellipseTool,
   pathTool,
   rectangleTool,
-  stickyTool,
   textTool,
 } from "./shapeTool";
 import type {
@@ -20,6 +19,8 @@ import type {
   ToolResult,
 } from "./types";
 
+import { handTool } from "./handTool";
+
 /**
  * Pointer-down candidates per tool, tried in order. A handler that returns a
  * null session declines the gesture and the next candidate is asked — for
@@ -28,14 +29,15 @@ import type {
  */
 const POINTER_DOWN_CANDIDATES: Record<ToolType, ToolHandler<never>[]> = {
   select: [resizeTool, moveTool, marqueeTool] as ToolHandler<never>[],
+  hand: [handTool] as ToolHandler<never>[],
   pen: [penTool] as ToolHandler<never>[],
   eraser: [eraserTool] as ToolHandler<never>[],
   rectangle: [rectangleTool] as ToolHandler<never>[],
   ellipse: [ellipseTool] as ToolHandler<never>[],
   path: [pathTool] as ToolHandler<never>[],
-  sticky: [stickyTool] as ToolHandler<never>[],
   arrow: [arrowTool] as ToolHandler<never>[],
   text: [textTool] as ToolHandler<never>[],
+  image: [] as ToolHandler<never>[],
 };
 
 export interface ResolvedPointerDown {
@@ -60,7 +62,7 @@ export function resolvePointerDown(
 }
 
 /**
- * Double-click with the select tool starts inline editing of a text or sticky element.
+ * Double-click with the select tool starts inline editing of a text element.
  * Pure: returns effects for the host to dispatch, or null when nothing was
  * hit.
  */
@@ -76,16 +78,6 @@ export function resolveDoubleClick(
     .find((el) => hitTestElement(input.world.x, input.world.y, el));
 
   if (!hit) return null;
-
-  if (hit.type === "sticky") {
-    return {
-      session: null,
-      effects: [
-        { type: "setSelection", ids: [hit.id] },
-        { type: "openStickyEditor", sticky: hit },
-      ],
-    };
-  }
 
   if (hit.type === "text") {
     return {

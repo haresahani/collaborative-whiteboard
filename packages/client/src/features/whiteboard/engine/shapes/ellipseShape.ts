@@ -22,7 +22,7 @@ export const ellipseShape: Shape<EllipseElement> = {
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
 
-    if (fillColor) {
+    if (fillColor && fillColor !== "transparent" && fillColor !== "none") {
       ctx.fillStyle = fillColor;
       ctx.fill();
     }

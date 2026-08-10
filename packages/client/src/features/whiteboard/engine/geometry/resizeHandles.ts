@@ -27,7 +27,7 @@ export function getHandleUnderPoint(
   x: number,
   y: number,
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
-  size = 10,
+  size = 14,
 ): Handle | null {
   const handles: Record<Handle, [number, number]> = {
     nw: [bounds.minX, bounds.minY],
@@ -45,7 +45,7 @@ export function getHandleUnderPoint(
   for (const key in handles) {
     const [hx, hy] = handles[key as Handle];
 
-    if (Math.abs(x - hx) < size && Math.abs(y - hy) < size) {
+    if (Math.abs(x - hx) <= size && Math.abs(y - hy) <= size) {
       return key as Handle;
     }
   }

@@ -54,14 +54,15 @@ export const arrowShape: Shape<ArrowElement> = {
 
     if (length === 0) return false;
 
-    const t = ((x - x1) * dx + (y - y1) * dy) / (length * length);
+    const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / (length * length)));
 
     const closestX = x1 + t * dx;
     const closestY = y1 + t * dy;
 
     const dist = Math.sqrt((x - closestX) ** 2 + (y - closestY) ** 2);
+    const threshold = Math.max((arrow.style?.strokeWidth ?? 2) / 2 + 10, 14);
 
-    return dist < 6;
+    return dist < threshold;
   },
 
   getBounds(arrow) {

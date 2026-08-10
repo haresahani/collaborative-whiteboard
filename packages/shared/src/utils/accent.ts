@@ -1,20 +1,23 @@
-const ACCENT_COLORS = [
-  "#5146e5", // Indigo
-  "#0ea5e9", // Sky
-  "#10b981", // Emerald
-  "#f59e0b", // Amber
-  "#ef4444", // Red
-  "#ec4899", // Pink
-  "#8b5cf6", // Purple
-  "#f97316", // Orange
+const ACCENT_PALETTE = [
+  "#6366f1",
+  "#ec4899",
+  "#f59e0b",
+  "#10b981",
+  "#3b82f6",
+  "#ef4444",
+  "#8b5cf6",
+  "#14b8a6",
+  "#f97316",
+  "#06b6d4",
 ];
 
+/**
+ * Deterministically maps a userId to a color accent.
+ */
 export function getUserAccent(userId: string): string {
-  if (!userId) return ACCENT_COLORS[0];
   let hash = 0;
   for (let i = 0; i < userId.length; i++) {
-    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
   }
-  const index = Math.abs(hash) % ACCENT_COLORS.length;
-  return ACCENT_COLORS[index];
+  return ACCENT_PALETTE[hash % ACCENT_PALETTE.length];
 }

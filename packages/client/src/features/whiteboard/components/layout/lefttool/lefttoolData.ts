@@ -6,11 +6,12 @@ import {
   ArrowRight,
   Circle,
   Eraser,
+  Hand,
+  Image as ImageIcon,
   MousePointer2,
   Pen,
-  Spline,
+  Minus,
   Square,
-  StickyNote,
   Type,
 } from "lucide-react";
 import type { LineStyle } from "../../../models/element";
@@ -61,6 +62,15 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inspectorKind: "selection",
   },
   {
+    tool: "hand",
+    label: "Hand (Pan)",
+    description: "Click and drag to pan left, right, up, and down.",
+    Icon: Hand,
+    shortcut: "H",
+    placement: "persistent",
+    inspectorKind: "selection",
+  },
+  {
     tool: "pen",
     label: "Pen",
     description: "Draw freeform strokes that stay active while sketching.",
@@ -103,24 +113,13 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     tool: "path",
-    label: "Path",
-    description: "Draw path shapes, then return to selection.",
-    Icon: Spline,
+    label: "Line",
+    description: "Draw straight lines, then return to selection.",
+    Icon: Minus,
     shortcut: "L",
     placement: "one-shot",
     inspectorKind: "shape",
-    supportsFill: true,
     supportsLineStyle: true,
-  },
-  {
-    tool: "sticky",
-    label: "Sticky Note",
-    description: "Place a sticky note with CRDT text sync.",
-    Icon: StickyNote,
-    shortcut: "N",
-    placement: "one-shot",
-    inspectorKind: "shape",
-    supportsFill: true,
   },
   {
     tool: "arrow",
@@ -142,26 +141,35 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inspectorKind: "text",
     supportsTextControls: true,
   },
+  {
+    tool: "image",
+    label: "Image",
+    description: "Upload an image (.jpg, .jpeg, .png, .gif, .ico).",
+    Icon: ImageIcon,
+    shortcut: "I",
+    placement: "one-shot",
+    inspectorKind: "shape",
+  },
 ];
 
 export const TOOL_RAIL_SECTIONS: RailSection[] = [
   {
     id: "core",
-    items: [TOOL_DEFINITIONS[0]],
+    items: [TOOL_DEFINITIONS[0], TOOL_DEFINITIONS[1]],
   },
   {
     id: "draw",
-    items: [TOOL_DEFINITIONS[1], TOOL_DEFINITIONS[2]],
+    items: [TOOL_DEFINITIONS[2], TOOL_DEFINITIONS[3]],
   },
   {
     id: "create",
     items: [
-      TOOL_DEFINITIONS[3],
       TOOL_DEFINITIONS[4],
       TOOL_DEFINITIONS[5],
       TOOL_DEFINITIONS[6],
       TOOL_DEFINITIONS[7],
       TOOL_DEFINITIONS[8],
+      TOOL_DEFINITIONS[9],
     ],
   },
 ];
@@ -246,6 +254,6 @@ export const FONT_FAMILY_OPTIONS = [
 export const FONT_SIZE_OPTIONS = [14, 16, 20, 24, 32, 40];
 
 export const FUTURE_TOOL_HINTS = [
-  "Sticky notes, uploads, and layers can live in secondary panels once those features ship.",
+  "Uploads and layers can live in secondary panels once those features ship.",
   "Board actions like clear, undo, and redo should stay outside the drawing inspector.",
 ];

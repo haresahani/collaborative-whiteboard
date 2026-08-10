@@ -1,75 +1,89 @@
-import { useEffect, useState } from "react";
-import { MousePointer2, Eraser } from "lucide-react";
 import { useCollaborationStore } from "../../store/collaborationStore";
-import { useViewportStore } from "../../store/viewportStore";
-import { worldToScreen } from "../../engine/viewport";
+
+const CURSOR_COLORS = [
+  "#6366f1",
+  "#ec4899",
+  "#f59e0b",
+  "#10b981",
+  "#3b82f6",
+  "#ef4444",
+  "#8b5cf6",
+  "#14b8a6",
+];
+
+function hashColor(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+  }
+  return CURSOR_COLORS[hash % CURSOR_COLORS.length];
+}
 
 export default function LiveCursorsOverlay() {
   const cursors = useCollaborationStore((state) => state.cursors);
-  const activeUsers = useCollaborationStore((state) => state.activeUsers);
-
-  // Subscribe to changes in viewport (pan & zoom) to translate cursor positions accurately
-  const offsetX = useViewportStore((state) => state.offsetX);
-  const offsetY = useViewportStore((state) => state.offsetY);
-  const zoom = useViewportStore((state) => state.zoom);
-
-  // eslint-disable-next-line react-hooks/purity
-  const [now, setNow] = useState(Date.now());
-
-  // Periodically update local clock to filter out stale cursor broadcasts (idle timeout)
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const activeCursors = Object.values(cursors).filter((c) => {
-    const isStale = now - c.updatedAt > 10000; // stale if no move events for 10 seconds
-    const isOnline = activeUsers.some((u) => u.userId === c.userId);
-    return !isStale && isOnline;
-  });
 
   return (
-    <div className="wb-live-cursors-layer">
-      {activeCursors.map((cursor) => {
-        const screenPos = worldToScreen(
-          { x: cursor.x, y: cursor.y },
-          { offsetX, offsetY, zoom },
-        );
-
+    <div
+      className="live-cursors-overlay"
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        zIndex: 50,
+        overflow: "hidden",
+      }}
+    >
+      {Array.from(cursors.values()).map((cursor) => {
+        const color = cursor.accent || hashColor(cursor.userId);
         return (
           <div
             key={cursor.userId}
-            className="wb-live-cursor"
             style={{
-              left: screenPos.x,
-              top: screenPos.y,
-              color: cursor.accent,
+              position: "absolute",
+              left: cursor.x,
+              top: cursor.y,
+              transform: "translate(-2px, -2px)",
+              transition: "left 80ms linear, top 80ms linear",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: 2,
             }}
           >
-            {cursor.tool === "eraser" ? (
-              <Eraser
-                className="wb-live-cursor__icon"
-                style={{
-                  fill: cursor.accent,
-                }}
+            {/* Cursor SVG */}
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 18 18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M2 2L7.5 16L10 10L16 7.5L2 2Z"
+                fill={color}
+                stroke="white"
+                strokeWidth="1.2"
+                strokeLinejoin="round"
               />
-            ) : (
-              <MousePointer2
-                className="wb-live-cursor__icon"
-                style={{
-                  fill: cursor.accent,
-                }}
-              />
-            )}
+            </svg>
+            {/* Name label */}
             <span
-              className="wb-live-cursor__badge"
               style={{
-                backgroundColor: cursor.accent,
+                background: color,
+                color: "#fff",
+                fontSize: 11,
+                fontWeight: 600,
+                padding: "1px 6px",
+                borderRadius: 4,
+                whiteSpace: "nowrap",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+                letterSpacing: "0.01em",
+                fontFamily: "Inter, sans-serif",
+                marginLeft: 6,
+                marginTop: -2,
               }}
             >
-              {cursor.displayName}
+              {cursor.displayName || "Guest"}
             </span>
           </div>
         );

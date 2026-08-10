@@ -1,3 +1,4 @@
+import { getStroke } from "perfect-freehand";
 import type { Point2D } from "./sampling";
 
 export interface BezierCurveSegment {
@@ -5,6 +6,60 @@ export interface BezierCurveSegment {
   cp1: Point2D;
   cp2: Point2D;
   p1: Point2D;
+}
+
+/**
+ * Draws an organic, calligraphic freehand vector stroke using perfect-freehand curves.
+ */
+export function drawOrganicFreehandStroke(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  points: Point2D[],
+  strokeWidth: number = 2,
+  strokeColor: string = "#000000",
+): void {
+  if (points.length === 0) return;
+
+  ctx.save();
+
+  if (points.length === 1) {
+    ctx.beginPath();
+    ctx.arc(points[0].x, points[0].y, Math.max(1, strokeWidth / 2), 0, Math.PI * 2);
+    ctx.fillStyle = strokeColor;
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  const strokeOutline = getStroke(
+    points.map((p) => [p.x, p.y]),
+    {
+      size: Math.max(2, strokeWidth * 2.2),
+      thinning: 0.5,
+      smoothing: 0.55,
+      streamline: 0.5,
+      start: {
+        taper: 8,
+        cap: true,
+      },
+      end: {
+        taper: 8,
+        cap: true,
+      },
+    },
+  );
+
+  if (strokeOutline.length >= 3) {
+    ctx.beginPath();
+    ctx.moveTo(strokeOutline[0][0], strokeOutline[0][1]);
+    for (let i = 1; i < strokeOutline.length; i++) {
+      ctx.lineTo(strokeOutline[i][0], strokeOutline[i][1]);
+    }
+    ctx.closePath();
+    ctx.fillStyle = strokeColor;
+    ctx.fill();
+  }
+
+  ctx.restore();
 }
 
 /**
@@ -71,39 +126,5 @@ export function drawSmoothStroke(
 
   const strokeColor = options.strokeColor || "#000000";
   const strokeWidth = options.strokeWidth || 2;
-  const lineCap = options.lineCap || "round";
-
-  ctx.save();
-  ctx.strokeStyle = strokeColor;
-  ctx.lineWidth = strokeWidth;
-  ctx.lineCap = lineCap;
-  ctx.lineJoin = "round";
-
-  ctx.beginPath();
-
-  if (points.length === 1) {
-    ctx.arc(points[0].x, points[0].y, strokeWidth / 2, 0, Math.PI * 2);
-    ctx.fillStyle = strokeColor;
-    ctx.fill();
-    ctx.restore();
-    return;
-  }
-
-  const segments = computeCatmullRomBezierSegments(points);
-  if (segments.length > 0) {
-    ctx.moveTo(segments[0].p0.x, segments[0].p0.y);
-    for (const seg of segments) {
-      ctx.bezierCurveTo(
-        seg.cp1.x,
-        seg.cp1.y,
-        seg.cp2.x,
-        seg.cp2.y,
-        seg.p1.x,
-        seg.p1.y,
-      );
-    }
-  }
-
-  ctx.stroke();
-  ctx.restore();
+  drawOrganicFreehandStroke(ctx, points, strokeWidth, strokeColor);
 }

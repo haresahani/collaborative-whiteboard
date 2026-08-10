@@ -1,10 +1,14 @@
-import type { Element } from "../models/element";
-import { getElementsTouchedByEraser } from "./eraser/eraseLogic";
+import type { Element, Point } from "../models/element";
+import {
+  getElementsTouchedByEraser,
+  getElementsTouchedByEraserSegment,
+} from "./eraser/eraseLogic";
 import type { ToolEffect, ToolHandler } from "./types";
 
 export interface EraserSession {
   baseElements: Element[];
   currentElements: Element[];
+  lastPoint: Point;
 }
 
 export const eraserTool: ToolHandler<EraserSession> = {
@@ -18,7 +22,11 @@ export const eraserTool: ToolHandler<EraserSession> = {
     const next = ctx.elements.filter((el) => !touchedIds.has(el.id));
 
     return {
-      session: { baseElements: ctx.elements, currentElements: next },
+      session: {
+        baseElements: ctx.elements,
+        currentElements: next,
+        lastPoint: input.world,
+      },
       effects: [],
     };
   },
@@ -26,19 +34,28 @@ export const eraserTool: ToolHandler<EraserSession> = {
   onPointerMove(session, input, ctx) {
     if (input.buttons !== 1) return { session };
 
-    const touched = getElementsTouchedByEraser(
+    const touched = getElementsTouchedByEraserSegment(
       session.currentElements,
+      session.lastPoint,
       input.world,
       ctx.style.eraserSize,
     );
 
-    if (touched.length === 0) return { session };
+    const nextLastPoint = input.world;
+
+    if (touched.length === 0) {
+      return { session: { ...session, lastPoint: nextLastPoint } };
+    }
 
     const touchedIds = new Set(touched.map((el) => el.id));
     const next = session.currentElements.filter((el) => !touchedIds.has(el.id));
 
     return {
-      session: { ...session, currentElements: next },
+      session: {
+        ...session,
+        currentElements: next,
+        lastPoint: nextLastPoint,
+      },
       effects: [],
     };
   },

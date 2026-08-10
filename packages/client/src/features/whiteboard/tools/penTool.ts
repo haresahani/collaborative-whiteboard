@@ -1,6 +1,6 @@
 import type { StrokeElement } from "../models/element";
 import type { ToolHandler } from "./types";
-import { samplePoint, simplifyRDP } from "../utils/sampling";
+import { samplePoint } from "../utils/sampling";
 
 export interface PenSession {
   stroke: StrokeElement;
@@ -40,7 +40,7 @@ export const penTool: ToolHandler<PenSession> = {
     }
 
     const currentPoint = { x: input.world.x, y: input.world.y };
-    const sampledPoints = samplePoint(session.rawPoints, currentPoint, 2.5);
+    const sampledPoints = samplePoint(session.rawPoints, currentPoint, 1.2);
 
     if (sampledPoints.length === session.rawPoints.length) {
       return { session, preview: session.stroke };
@@ -59,12 +59,9 @@ export const penTool: ToolHandler<PenSession> = {
   },
 
   onPointerUp(session, _input, ctx) {
-    // Perform Ramer-Douglas-Peucker simplification to reduce points before persistence
-    const simplifiedPoints = simplifyRDP(session.rawPoints, 1.2);
-
     const finalizedStroke: StrokeElement = {
       ...session.stroke,
-      points: simplifiedPoints,
+      points: session.rawPoints,
       updatedAt: ctx.now(),
     };
 

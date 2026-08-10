@@ -29,6 +29,7 @@ export interface RenderWorkerRenderMessage {
   otherTempElements: Element[];
   width: number;
   height: number;
+  isDark: boolean;
 }
 
 export type RenderWorkerMessage =
@@ -72,6 +73,7 @@ self.onmessage = (event: MessageEvent<RenderWorkerMessage>) => {
       data.selectedIds,
       data.marquee,
       data.otherTempElements,
+      data.isDark,
     );
   }
 };

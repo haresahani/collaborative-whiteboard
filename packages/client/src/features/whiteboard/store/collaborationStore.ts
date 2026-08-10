@@ -1,5 +1,23 @@
 import { create } from "zustand";
-import type { Element } from "../models/element";
+
+export interface ChatMessage {
+  id: string;
+  userId: string;
+  displayName: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface RemoteCursorState {
+  userId: string;
+  displayName: string;
+  accent: string;
+  x: number;
+  y: number;
+  previewElement?: unknown;
+  erasedIds?: string[];
+  tool?: string;
+}
 
 export interface ActiveUser {
   userId: string;
@@ -7,71 +25,35 @@ export interface ActiveUser {
   accent: string;
 }
 
-export interface CursorPosition {
-  userId: string;
-  displayName: string;
-  accent: string;
-  x: number; // board-relative world X
-  y: number; // board-relative world Y
-  updatedAt: number;
-  previewElement?: Element | null; // board-relative in-progress preview element
-  erasedIds?: string[]; // board-relative in-progress erased element IDs
-  tool?: string; // current active tool type
-}
-
-export interface ChatMessage {
-  _id?: string;
-  boardId: string;
-  userId: string;
-  displayName: string;
-  message: string;
-  createdAt: string | Date;
-}
-
-type CollaborationState = {
+interface CollaborationState {
+  cursors: Map<string, RemoteCursorState>;
   activeUsers: ActiveUser[];
-  cursors: Record<string, CursorPosition>; // key: userId
   chatMessages: ChatMessage[];
 
-  setActiveUsers: (users: ActiveUser[]) => void;
-  updateCursor: (
-    userId: string,
-    data: Omit<CursorPosition, "updatedAt">,
-  ) => void;
-  removeCursor: (userId: string) => void;
+  updateCursor: (userId: string, data: RemoteCursorState) => void;
   clearCursors: () => void;
+  setActiveUsers: (users: ActiveUser[]) => void;
   setChatMessages: (messages: ChatMessage[]) => void;
   addChatMessage: (message: ChatMessage) => void;
-};
+}
 
 export const useCollaborationStore = create<CollaborationState>((set) => ({
+  cursors: new Map(),
   activeUsers: [],
-  cursors: {},
   chatMessages: [],
 
-  setActiveUsers: (activeUsers) => set({ activeUsers }),
-
   updateCursor: (userId, data) =>
-    set((state) => ({
-      cursors: {
-        ...state.cursors,
-        [userId]: {
-          ...data,
-          updatedAt: Date.now(),
-        },
-      },
-    })),
-
-  removeCursor: (userId) =>
     set((state) => {
-      const nextCursors = { ...state.cursors };
-      delete nextCursors[userId];
-      return { cursors: nextCursors };
+      const next = new Map(state.cursors);
+      next.set(userId, data);
+      return { cursors: next };
     }),
 
-  clearCursors: () => set({ cursors: {} }),
+  clearCursors: () => set({ cursors: new Map() }),
 
-  setChatMessages: (chatMessages) => set({ chatMessages }),
+  setActiveUsers: (users) => set({ activeUsers: users }),
+
+  setChatMessages: (messages) => set({ chatMessages: messages }),
 
   addChatMessage: (message) =>
     set((state) => ({

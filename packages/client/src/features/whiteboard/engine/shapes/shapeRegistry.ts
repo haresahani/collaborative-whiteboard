@@ -5,9 +5,9 @@ import { strokeShape } from "./strokeShape";
 import { rectangleShape } from "./rectangleShape";
 import { ellipseShape } from "./ellipseShape";
 import { pathShape } from "./pathShape";
-import { stickyShape } from "./stickyShape";
 import { arrowShape } from "./arrowShape";
 import { textShape } from "./textShape";
+import { imageShape } from "./imageShape";
 
 type ShapeMap = Record<ElementType, Shape<Element>>;
 
@@ -16,9 +16,9 @@ const registry: ShapeMap = {
   rectangle: rectangleShape as Shape<Element>,
   ellipse: ellipseShape as Shape<Element>,
   path: pathShape as Shape<Element>,
-  sticky: stickyShape as Shape<Element>,
   arrow: arrowShape as Shape<Element>,
   text: textShape as Shape<Element>,
+  image: imageShape as Shape<Element>,
 };
 
 export function getShape(type: ElementType): Shape<Element> {

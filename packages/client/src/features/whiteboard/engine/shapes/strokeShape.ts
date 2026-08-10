@@ -25,14 +25,14 @@ export const strokeShape: Shape<StrokeElement> = {
       applyLineStyle(ctx, lineStyle, strokeWidth);
     }
 
-    drawSmoothStroke(ctx, stroke.points);
+    const activeColor = strokeColor === "eraser" ? "rgba(0,0,0,1)" : strokeColor;
+
+    drawSmoothStroke(ctx, stroke.points, strokeWidth, activeColor);
 
     if (selected) {
       ctx.globalCompositeOperation = "source-over";
       ctx.setLineDash([]);
-      ctx.strokeStyle = "#3b82f6";
-      ctx.lineWidth = strokeWidth + 3;
-      drawSmoothStroke(ctx, stroke.points);
+      drawSmoothStroke(ctx, stroke.points, strokeWidth + 3, "#3b82f6");
     }
   },
 

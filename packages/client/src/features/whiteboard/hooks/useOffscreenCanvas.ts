@@ -11,6 +11,7 @@ export interface RenderState {
   selectedIds: string[];
   marquee: { x: number; y: number; width: number; height: number } | null;
   otherTempElements: Element[];
+  isDark?: boolean;
 }
 
 type TransferredCanvas = HTMLCanvasElement & {
@@ -33,10 +34,20 @@ export function useOffscreenCanvas(
       typeof canvas.transferControlToOffscreen === "function" &&
       typeof Worker !== "undefined";
 
+    const getCanvasDimensions = () => {
+      const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+      return {
+        width: Math.floor(window.innerWidth * dpr),
+        height: Math.floor(window.innerHeight * dpr),
+      };
+    };
+
+    const { width, height } = getCanvasDimensions();
+
     if (!isSupported) {
       try {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
       } catch {
         // ignore if canvas was previously transferred
       }
@@ -45,8 +56,9 @@ export function useOffscreenCanvas(
       const handleResize = () => {
         if (canvasRef.current) {
           try {
-            canvasRef.current.width = window.innerWidth;
-            canvasRef.current.height = window.innerHeight;
+            const dims = getCanvasDimensions();
+            canvasRef.current.width = dims.width;
+            canvasRef.current.height = dims.height;
           } catch {
             // ignore
           }
@@ -62,8 +74,8 @@ export function useOffscreenCanvas(
         isOffscreenSupportedRef.current = true;
         workerRef.current.postMessage({
           type: "resize",
-          width: window.innerWidth,
-          height: window.innerHeight,
+          width,
+          height,
         });
       }
       return;
@@ -82,8 +94,8 @@ export function useOffscreenCanvas(
         {
           type: "init",
           canvas: offscreen,
-          width: window.innerWidth,
-          height: window.innerHeight,
+          width,
+          height,
         },
         [offscreen],
       );
@@ -93,10 +105,11 @@ export function useOffscreenCanvas(
 
       const handleResize = () => {
         if (workerRef.current) {
+          const dims = getCanvasDimensions();
           workerRef.current.postMessage({
             type: "resize",
-            width: window.innerWidth,
-            height: window.innerHeight,
+            width: dims.width,
+            height: dims.height,
           });
         }
       };
@@ -112,8 +125,8 @@ export function useOffscreenCanvas(
       );
       isOffscreenSupportedRef.current = false;
       try {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
       } catch {
         // ignore
       }
@@ -125,12 +138,22 @@ export function useOffscreenCanvas(
       const canvas = canvasRef.current;
       if (!canvas) return;
 
+      const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+      const width = Math.floor(window.innerWidth * dpr);
+      const height = Math.floor(window.innerHeight * dpr);
+
+      // Read theme on the main thread — safe here, NOT safe in Web Worker
+      const isDark =
+        typeof document !== "undefined" &&
+        document.documentElement.getAttribute("data-theme") === "dark";
+
       if (isOffscreenSupportedRef.current && workerRef.current) {
         workerRef.current.postMessage({
           type: "render",
           ...state,
-          width: window.innerWidth,
-          height: window.innerHeight,
+          width,
+          height,
+          isDark,
         });
       } else {
         const ctx = canvas.getContext("2d");
@@ -145,6 +168,7 @@ export function useOffscreenCanvas(
             state.selectedIds,
             state.marquee,
             state.otherTempElements,
+            isDark,
           );
         }
       }

@@ -3,15 +3,19 @@ import type {
   RectangleElement,
   EllipseElement,
   PathElement,
-  StickyElement,
 } from "../../models/element";
 
 export function hitTestStroke(
   x: number,
   y: number,
   stroke: StrokeElement,
-  threshold = 6,
+  threshold = 12,
 ) {
+  const effectiveThreshold = Math.max(
+    (stroke.style?.strokeWidth ?? 2) / 2 + 10,
+    threshold,
+  );
+
   for (let i = 0; i < stroke.points.length - 1; i++) {
     const p1 = stroke.points[i];
     const p2 = stroke.points[i + 1];
@@ -33,7 +37,7 @@ export function hitTestStroke(
 
     const dist = Math.sqrt((x - closestX) ** 2 + (y - closestY) ** 2);
 
-    if (dist < threshold) return true;
+    if (dist < effectiveThreshold) return true;
   }
 
   return false;
@@ -78,10 +82,4 @@ export function hitTestPath(x: number, y: number, path: PathElement) {
   return hitTestStroke(x, y, strokeProxy, 10);
 }
 
-export function hitTestSticky(x: number, y: number, sticky: StickyElement) {
-  const rectProxy: RectangleElement = {
-    ...sticky,
-    type: "rectangle",
-  };
-  return hitTestRectangle(x, y, rectProxy);
-}
+

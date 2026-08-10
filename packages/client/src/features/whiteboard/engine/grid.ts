@@ -7,12 +7,12 @@ export function renderGrid(
   offsetX: number,
   offsetY: number,
   zoom: number,
+  isDark = false,
 ) {
   const gridSize = Math.max(22 * zoom, 18);
   const majorEvery = 4;
 
   ctx.save();
-
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 
   const startX = offsetX % gridSize;
@@ -27,9 +27,9 @@ export function renderGrid(
       const radius = isMajor ? 1.35 : 0.7;
 
       ctx.beginPath();
-      ctx.fillStyle = isMajor
-        ? "rgba(151, 123, 84, 0.22)"
-        : "rgba(151, 123, 84, 0.12)";
+      ctx.fillStyle = isDark
+        ? isMajor ? "rgba(200,200,200,0.14)" : "rgba(200,200,200,0.07)"
+        : isMajor ? "rgba(151,123,84,0.22)"  : "rgba(151,123,84,0.12)";
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
       rowIndex += 1;

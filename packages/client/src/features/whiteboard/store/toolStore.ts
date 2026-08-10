@@ -2,23 +2,24 @@ import { create } from "zustand";
 import type { LineStyle } from "../models/element";
 
 export type ToolType =
+  | "select"
+  | "hand"
   | "pen"
   | "eraser"
-  | "select"
   | "rectangle"
   | "ellipse"
   | "path"
-  | "sticky"
   | "arrow"
-  | "text";
+  | "text"
+  | "image";
 
 export const ONE_SHOT_TOOLS = [
   "rectangle",
   "ellipse",
   "path",
-  "sticky",
   "arrow",
   "text",
+  "image",
 ] as const;
 
 export function isOneShotTool(tool: ToolType) {
@@ -49,7 +50,7 @@ type ToolState = {
 export const useToolStore = create<ToolState>((set) => ({
   tool: "pen",
   color: "#ff0000",
-  fillColor: "#fff4c2",
+  fillColor: "transparent",
   width: 2,
   eraserSize: 16,
   lineStyle: "solid",

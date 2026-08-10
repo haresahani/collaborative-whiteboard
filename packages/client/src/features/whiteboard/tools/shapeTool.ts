@@ -6,7 +6,6 @@ import type {
   PathElement,
   Point,
   RectangleElement,
-  StickyElement,
 } from "../models/element";
 import type { ToolHandler } from "./types";
 
@@ -123,6 +122,7 @@ export interface PathSession {
 export const pathTool: ToolHandler<PathSession> = {
   onPointerDown(input, ctx) {
     const now = ctx.now();
+    const startPoint = { x: input.world.x, y: input.world.y };
 
     const path: PathElement = {
       id: ctx.newId(),
@@ -131,11 +131,10 @@ export const pathTool: ToolHandler<PathSession> = {
       y: input.world.y,
       width: 0,
       height: 0,
-      points: [{ x: input.world.x, y: input.world.y }],
+      points: [startPoint, startPoint],
       style: {
         strokeColor: ctx.style.color,
         strokeWidth: ctx.style.width,
-        fillColor: ctx.style.fillColor,
         lineStyle: ctx.style.lineStyle,
       },
       zIndex: 0,
@@ -147,13 +146,21 @@ export const pathTool: ToolHandler<PathSession> = {
   },
 
   onPointerMove(session, input, ctx) {
-    const points = [
-      ...session.path.points,
-      { x: input.world.x, y: input.world.y },
-    ];
+    const startPoint = session.path.points[0];
+    const endPoint = { x: input.world.x, y: input.world.y };
+
+    const minX = Math.min(startPoint.x, endPoint.x);
+    const minY = Math.min(startPoint.y, endPoint.y);
+    const maxX = Math.max(startPoint.x, endPoint.x);
+    const maxY = Math.max(startPoint.y, endPoint.y);
+
     const path: PathElement = {
       ...session.path,
-      points,
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+      points: [startPoint, endPoint],
       updatedAt: ctx.now(),
     };
 
@@ -173,62 +180,7 @@ export const pathTool: ToolHandler<PathSession> = {
   },
 };
 
-export interface StickySession {
-  sticky: StickyElement;
-}
 
-export const stickyTool: ToolHandler<StickySession> = {
-  onPointerDown(input, ctx) {
-    const now = ctx.now();
-    const defaultSize = 160;
-
-    const sticky: StickyElement = {
-      id: ctx.newId(),
-      type: "sticky",
-      x: input.world.x,
-      y: input.world.y,
-      width: defaultSize,
-      height: defaultSize,
-      color: ctx.style.fillColor || "#fff4c2",
-      text: "",
-      style: {
-        strokeColor: ctx.style.color || "#000000",
-        strokeWidth: 1,
-        fillColor: ctx.style.fillColor || "#fff4c2",
-      },
-      zIndex: 0,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    return { session: { sticky }, preview: sticky };
-  },
-
-  onPointerMove(session, input, ctx) {
-    const width = Math.max(80, input.world.x - session.sticky.x);
-    const height = Math.max(80, input.world.y - session.sticky.y);
-    const sticky: StickyElement = {
-      ...session.sticky,
-      width,
-      height,
-      updatedAt: ctx.now(),
-    };
-
-    return { session: { sticky }, preview: sticky };
-  },
-
-  onPointerUp(session, _input, ctx) {
-    return {
-      session: null,
-      preview: null,
-      effects: [
-        { type: "commit", elements: [...ctx.elements, session.sticky] },
-        { type: "setSelection", ids: [session.sticky.id] },
-        { type: "switchTool", tool: "select" },
-      ],
-    };
-  },
-};
 
 export interface ArrowSession {
   arrow: ArrowElement;

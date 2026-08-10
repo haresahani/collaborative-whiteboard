@@ -1,41 +1,35 @@
-import type {
-  Element,
-  StrokeElement,
-  RectangleElement,
-  ArrowElement,
-  TextElement,
-} from "../models/element";
+import type { Element } from "../models/element";
 
 export interface SnapshotElementGroups {
-  strokes: StrokeElement[];
-  shapes: (RectangleElement | ArrowElement)[];
-  notes: TextElement[]; // Maps notes inside snapshotJson database schema to client text elements
+  strokes?: Element[];
+  shapes?: Element[];
+  notes?: Element[];
+  elements?: Element[];
 }
 
 export function deserializeSnapshot(
-  snapshotJson: SnapshotElementGroups | null | undefined,
+  snapshotJson?: SnapshotElementGroups | Element[] | null
 ): Element[] {
   if (!snapshotJson) return [];
-  const strokes = snapshotJson.strokes || [];
-  const shapes = snapshotJson.shapes || [];
-  const notes = snapshotJson.notes || [];
-  return [...strokes, ...shapes, ...notes];
-}
 
-export function serializeSnapshot(elements: Element[]): SnapshotElementGroups {
-  const strokes: StrokeElement[] = [];
-  const shapes: (RectangleElement | ArrowElement)[] = [];
-  const notes: TextElement[] = [];
-
-  for (const el of elements) {
-    if (el.type === "stroke") {
-      strokes.push(el);
-    } else if (el.type === "rectangle" || el.type === "arrow") {
-      shapes.push(el as RectangleElement | ArrowElement);
-    } else if (el.type === "text") {
-      notes.push(el);
-    }
+  if (Array.isArray(snapshotJson)) {
+    return snapshotJson;
   }
 
-  return { strokes, shapes, notes };
+  const result: Element[] = [];
+
+  if (Array.isArray(snapshotJson.elements)) {
+    result.push(...snapshotJson.elements);
+  }
+  if (Array.isArray(snapshotJson.strokes)) {
+    result.push(...snapshotJson.strokes);
+  }
+  if (Array.isArray(snapshotJson.shapes)) {
+    result.push(...snapshotJson.shapes);
+  }
+  if (Array.isArray(snapshotJson.notes)) {
+    result.push(...snapshotJson.notes);
+  }
+
+  return result;
 }

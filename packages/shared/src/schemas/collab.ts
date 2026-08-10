@@ -1,34 +1,35 @@
 import { z } from "zod";
 
 export const cursorMoveSchema = z.object({
-  x: z.number({ required_error: "x coordinate is required" }),
-  y: z.number({ required_error: "y coordinate is required" }),
-  previewElement: z.any().optional(),
+  x: z.number(),
+  y: z.number(),
+  previewElement: z.unknown().optional(),
   erasedIds: z.array(z.string()).optional(),
   tool: z.string().optional(),
 });
 
-export const cursorBatchEntrySchema = cursorMoveSchema.extend({
-  userId: z.string().optional(),
-  displayName: z.string().optional(),
-});
-
 export const cursorBatchSchema = z.object({
-  cursors: z.array(cursorBatchEntrySchema),
+  cursors: z.array(
+    z.object({
+      userId: z.string().optional(),
+      displayName: z.string().optional(),
+      x: z.number(),
+      y: z.number(),
+      previewElement: z.unknown().optional(),
+      erasedIds: z.array(z.string()).optional(),
+      tool: z.string().optional(),
+    }),
+  ),
 });
 
 export const chatSendSchema = z.object({
   message: z
-    .string({ required_error: "Message is required" })
-    .transform((val) => val.trim())
-    .refine((val) => val.length > 0, { message: "Message cannot be empty" })
-    .refine((val) => val.length <= 2000, {
-      message: "Message must be 2000 characters or fewer",
-    }),
-  messageId: z.string().uuid().optional(),
+    .string()
+    .min(1, "Message cannot be empty")
+    .max(2000, "Message too long"),
+  messageId: z.string().uuid(),
 });
 
-export type CursorMove = z.infer<typeof cursorMoveSchema>;
-export type CursorBatchEntry = z.infer<typeof cursorBatchEntrySchema>;
-export type CursorBatch = z.infer<typeof cursorBatchSchema>;
-export type ChatSend = z.infer<typeof chatSendSchema>;
+export type CursorMovePayload = z.infer<typeof cursorMoveSchema>;
+export type CursorBatchPayload = z.infer<typeof cursorBatchSchema>;
+export type ChatSendPayload = z.infer<typeof chatSendSchema>;

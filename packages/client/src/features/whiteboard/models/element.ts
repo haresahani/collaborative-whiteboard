@@ -5,9 +5,9 @@ export type ElementType =
   | "rectangle"
   | "ellipse"
   | "path"
-  | "sticky"
   | "arrow"
-  | "text";
+  | "text"
+  | "image";
 
 export type LineStyle = "solid" | "dashed" | "dotted";
 
@@ -76,18 +76,6 @@ export interface PathElement extends BaseElement {
   style: ElementStyle;
 }
 
-export interface StickyElement extends BaseElement {
-  type: "sticky";
-
-  width: number;
-  height: number;
-
-  color: string;
-  text?: string;
-
-  style: ElementStyle;
-}
-
 export interface ArrowBinding {
   elementId: string;
   anchor: {
@@ -124,11 +112,27 @@ export interface TextElement extends BaseElement {
   style: ElementStyle;
 }
 
+export interface ImageElement extends BaseElement {
+  type: "image";
+
+  src: string;
+
+  width: number;
+  height: number;
+
+  opacity?: number;
+  flipX?: boolean;
+  flipY?: boolean;
+
+  style: ElementStyle;
+}
+
 export type Element =
   | StrokeElement
   | RectangleElement
   | EllipseElement
   | PathElement
-  | StickyElement
   | ArrowElement
-  | TextElement;
+  | TextElement
+  | ImageElement;
+

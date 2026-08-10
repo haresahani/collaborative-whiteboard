@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { io, Socket } from "socket.io-client";
-import { getAuthToken, getBoardJoinToken } from "./auth";
+import { getStoredToken, getBoardJoinToken } from "./auth";
 import { yjsService } from "../features/whiteboard/services/yjsService";
 import type {
   Element,
@@ -24,8 +24,32 @@ import {
   useCollaborationStore,
   type ChatMessage,
 } from "../features/whiteboard/store/collaborationStore";
-import { getUserAccent } from "@shared/utils/accent";
-import { chatSendSchema } from "@shared/schemas/collab";
+
+// Inline accent mapper — deterministic color per userId
+const ACCENT_PALETTE = [
+  "#6366f1", "#ec4899", "#f59e0b", "#10b981",
+  "#3b82f6", "#ef4444", "#8b5cf6", "#14b8a6",
+];
+function getUserAccent(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+  }
+  return ACCENT_PALETTE[hash % ACCENT_PALETTE.length];
+}
+
+// Inline chat message validator
+const chatSendSchema = {
+  safeParse(data: { message: string; messageId: string }) {
+    if (!data.message || data.message.trim().length === 0) {
+      return { success: false as const, error: { errors: [{ message: "Message cannot be empty" }] } };
+    }
+    if (data.message.length > 2000) {
+      return { success: false as const, error: { errors: [{ message: "Message too long" }] } };
+    }
+    return { success: true as const, data };
+  },
+};
 
 export interface RemoteStrokeData {
   points: [number, number][];
@@ -111,6 +135,7 @@ class SocketService {
         auth: {
           token: joinToken,
         },
+        transports: ["websocket", "polling"],
       });
 
       this.isConnecting = false;
@@ -140,6 +165,7 @@ class SocketService {
         async (data: {
           snapshot?: { snapshotJson?: SnapshotElementGroups };
           oplogs: unknown[];
+          title?: string;
         }) => {
           console.log("[Socket] Received board.init:", data);
           const snapshotElements = deserializeSnapshot(
@@ -151,12 +177,18 @@ class SocketService {
           ) as unknown as Element[];
           useBoardStore.getState().setElements(finalElements);
 
-          // Fetch initial Yjs state for sticky notes
+          if (data.title) {
+            window.dispatchEvent(new CustomEvent("board:title:sync", { detail: { title: data.title } }));
+          }
+
+          // Initialize collaborative Yjs state
           try {
-            const authToken = await getAuthToken();
-            const yjsRes = await fetch(`/api/boards/${boardId}/yjs-state`, {
-              headers: { Authorization: `Bearer ${authToken}` },
-            });
+            const authToken = getStoredToken();
+            const headers: Record<string, string> = {};
+            if (authToken) {
+              headers["Authorization"] = `Bearer ${authToken}`;
+            }
+            const yjsRes = await fetch(`/api/boards/${boardId}/yjs-state`, { headers });
             if (yjsRes.ok) {
               const arrayBuffer = await yjsRes.arrayBuffer();
               yjsService.initBoard(boardId, new Uint8Array(arrayBuffer));
@@ -168,6 +200,13 @@ class SocketService {
           }
         },
       );
+
+      // Handle live title changes
+      this.socket.on("board.title.broadcast", (data: { boardId: string; title: string }) => {
+        if (data.title) {
+          window.dispatchEvent(new CustomEvent("board:title:sync", { detail: { title: data.title } }));
+        }
+      });
 
       // Handle general operational broadcasts
       this.socket.on("op.broadcast", (op: unknown) => {
@@ -412,6 +451,11 @@ class SocketService {
 
   getUserId(): string | null {
     return this.myUserId;
+  }
+
+  emitBoardTitleUpdate(boardId: string, title: string) {
+    if (!this.socket || !this.socket.connected) return;
+    this.socket.emit("board.title.update", { boardId, title });
   }
 
   emitYjsUpdate(boardId: string, update: Uint8Array) {

@@ -1,7 +1,7 @@
 import type { Element } from "../models/element";
 // import { drawSmoothStroke } from "./smoothing";
 import { renderGrid } from "./grid";
-import { getSelectionBounds } from "./geometry/bounds";
+import { getSelectionBounds, isElementVisibleInViewport } from "./geometry/bounds";
 import { drawElement } from "./shapes/shapeRegistry";
 
 export function normalizeBox(box: {
@@ -128,19 +128,40 @@ export function renderElements(
     height: number;
   } | null = null,
   otherTempElements: Element[] = [],
+  isDark = false,
 ) {
   const canvas = ctx.canvas;
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  renderGrid(ctx, canvas.width, canvas.height, offsetX, offsetY, zoom);
+  const cssWidth = canvas.width / dpr;
+  const cssHeight = canvas.height / dpr;
 
-  ctx.setTransform(zoom, 0, 0, zoom, offsetX, offsetY);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  renderGrid(ctx, cssWidth, cssHeight, offsetX, offsetY, zoom, isDark);
+
+  // Exact High-DPI World Transform Matrix Math
+  ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, offsetX * dpr, offsetY * dpr);
 
   for (const element of elements) {
     if ((element as unknown as Record<string, unknown>).tombstoned) continue;
+
+    // Viewport Frustum Culling Math
+    if (
+      !isElementVisibleInViewport(
+        element,
+        cssWidth,
+        cssHeight,
+        offsetX,
+        offsetY,
+        zoom,
+      )
+    ) {
+      continue;
+    }
+
     const selected = selectedIds.includes(element.id);
     drawElement(ctx, element, selected);
   }
@@ -162,6 +183,6 @@ export function renderElements(
   }
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-
   ctx.globalCompositeOperation = "source-over";
 }
+

@@ -7,11 +7,13 @@ export const pathShape: Shape<PathElement> = {
   draw(ctx, path, selected) {
     if (!path.points || path.points.length === 0) return;
 
-    const { strokeColor, strokeWidth, fillColor, lineStyle } = path.style;
+    const { strokeColor, strokeWidth, lineStyle } = path.style;
 
     ctx.globalCompositeOperation = "source-over";
     ctx.strokeStyle = strokeColor;
     ctx.lineWidth = strokeWidth;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     applyLineStyle(ctx, lineStyle, strokeWidth);
 
     ctx.beginPath();
@@ -19,12 +21,6 @@ export const pathShape: Shape<PathElement> = {
     for (let i = 1; i < path.points.length; i++) {
       ctx.lineTo(path.points[i].x, path.points[i].y);
     }
-
-    if (fillColor) {
-      ctx.fillStyle = fillColor;
-      ctx.fill();
-    }
-
     ctx.stroke();
 
     if (selected) {
