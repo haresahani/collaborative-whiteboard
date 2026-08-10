@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { MessageSquare, Send, Sparkles, X } from "lucide-react";
 import { cn } from "../../../../lib/utils";
 import { useCollaborationStore, type ChatMessage } from "../../store/collaborationStore";
+import { useAuthStore } from "../../../../store/authStore";
 import { socketService } from "../../../../api/ws";
 import { usePanelFocus } from "../../hooks/usePanelFocus";
 
@@ -14,9 +15,12 @@ export default function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
   const closeButtonRef = usePanelFocus(isOpen);
   const chatMessages = useCollaborationStore((state) => state.chatMessages);
   const activeUsers = useCollaborationStore((state) => state.activeUsers);
+  const currentUser = useAuthStore((state) => state.user);
   const [inputText, setInputText] = useState("");
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const myUserId = socketService.getMyUserId() || currentUser?.id;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -113,7 +117,7 @@ export default function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
               padding: "12px 16px",
               display: "flex",
               flexDirection: "column",
-              gap: 10,
+              gap: 12,
             }}
           >
             {chatMessages.length === 0 ? (
@@ -153,32 +157,43 @@ export default function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
               </div>
             ) : (
               chatMessages.map((msg: ChatMessage) => {
+                const isSelf = Boolean(myUserId && msg.userId === myUserId);
                 const timeStr = msg.timestamp
                   ? new Date(msg.timestamp).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })
                   : "";
+
                 return (
                   <div
                     key={msg.id}
                     style={{
                       display: "flex",
                       flexDirection: "column",
+                      alignSelf: isSelf ? "flex-end" : "flex-start",
+                      maxWidth: "82%",
                       gap: 3,
-                      fontSize: 12,
                     }}
                   >
+                    {/* Header: Name and Time */}
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
+                        gap: 6,
+                        justifyContent: isSelf ? "flex-end" : "flex-start",
                         padding: "0 2px",
                       }}
                     >
-                      <span style={{ fontWeight: 600, color: "#6366f1", fontSize: 11 }}>
-                        {msg.displayName || "Anonymous"}
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          fontSize: 11,
+                          color: isSelf ? "#818cf8" : "#a78bfa",
+                        }}
+                      >
+                        {isSelf ? "You" : msg.displayName || "Guest"}
                       </span>
                       {timeStr && (
                         <span style={{ fontSize: 10, color: "var(--wb-muted)" }}>
@@ -186,15 +201,23 @@ export default function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
                         </span>
                       )}
                     </div>
+
+                    {/* Message Bubble */}
                     <div
                       style={{
                         padding: "8px 12px",
-                        borderRadius: 10,
-                        background: "var(--wb-surface-muted, rgba(255,255,255,0.06))",
-                        border: "1px solid var(--wb-border)",
-                        color: "var(--wb-text)",
+                        borderRadius: isSelf ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
+                        background: isSelf
+                          ? "linear-gradient(135deg, #6366f1, #4f46e5)"
+                          : "var(--wb-surface-muted, rgba(255,255,255,0.06))",
+                        border: isSelf ? "none" : "1px solid var(--wb-border)",
+                        color: isSelf ? "#ffffff" : "var(--wb-text)",
+                        boxShadow: isSelf
+                          ? "0 2px 8px rgba(99, 102, 241, 0.3)"
+                          : "0 1px 3px rgba(0,0,0,0.1)",
                         wordBreak: "break-word",
-                        lineHeight: 1.4,
+                        lineHeight: 1.45,
+                        fontSize: 12,
                       }}
                     >
                       {msg.message}
