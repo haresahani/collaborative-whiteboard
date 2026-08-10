@@ -305,6 +305,7 @@ class SocketService {
       this.socket.on(
         "op.stroke.broadcast",
         (payload: StrokeBroadcastPayload) => {
+          if (payload.userId === this.myUserId) return;
           console.log("[Socket] Received op.stroke.broadcast:", payload);
           const op: import("shared").IOp = {
             opId: payload.opId,
@@ -326,6 +327,43 @@ class SocketService {
           useBoardStore.getState().setElements(newElements);
         },
       );
+
+      // Handle single op broadcast (rectangle, ellipse, pen, text, delete, etc.)
+      this.socket.on("op.broadcast", (op: import("shared").IOp) => {
+        if (!op || op.actorId === this.myUserId) return;
+        console.log("[Socket] Received op.broadcast:", op);
+        const currentElements = useBoardStore.getState().elements;
+        const newElements = applyOperation(
+          currentElements as unknown as ISharedElement[],
+          op,
+        ) as unknown as Element[];
+        useBoardStore.getState().setElements(newElements);
+      });
+
+      // Handle batched ops broadcast
+      this.socket.on("op.batch", (raw: unknown) => {
+        try {
+          const ops: import("shared").IOp[] =
+            raw instanceof ArrayBuffer || raw instanceof Uint8Array || Buffer.isBuffer(raw)
+              ? decodeOpBatch(raw as ArrayBuffer)
+              : Array.isArray(raw)
+                ? raw
+                : (raw as any)?.ops || [];
+
+          let currentElements = useBoardStore.getState().elements as unknown as ISharedElement[];
+          let changed = false;
+          for (const op of ops) {
+            if (op.actorId === this.myUserId) continue;
+            currentElements = applyOperation(currentElements, op);
+            changed = true;
+          }
+          if (changed) {
+            useBoardStore.getState().setElements(currentElements as unknown as Element[]);
+          }
+        } catch (err) {
+          console.error("[Socket] Failed to process incoming op.batch:", err);
+        }
+      });
 
       // --- Presence listeners ---
       this.socket.on("presence.list", (users: any[]) => {
