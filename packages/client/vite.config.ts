@@ -10,4 +10,13 @@ export default defineConfig({
       "@shared": resolve(__dirname, "../../packages/shared/src"),
     },
   },
+  server: {
+    port: 5173,
+    proxy: {
+      "/api": {
+        target: "http://localhost:1234",
+        changeOrigin: true,
+      },
+    },
+  },
 });

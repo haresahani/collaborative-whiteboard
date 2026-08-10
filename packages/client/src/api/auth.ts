@@ -16,6 +16,16 @@ export interface AuthResponse {
 
 const AUTH_TOKEN_KEY = "auth_token";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function parseResponseJson(res: Response): Promise<Record<string, any>> {
+  const text = await res.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return { message: text || `HTTP Error ${res.status}: ${res.statusText}` };
+  }
+}
+
 /**
  * Saves auth token in localStorage.
  */
@@ -50,7 +60,7 @@ export async function loginUser(credentials: {
     body: JSON.stringify(credentials),
   });
 
-  const json = await res.json();
+  const json = await parseResponseJson(res);
 
   if (res.status === 403 && json.data?.requiresVerification) {
     return {
@@ -66,7 +76,7 @@ export async function loginUser(credentials: {
   }
 
   const data: AuthResponse = json.data;
-  if (data.token) {
+  if (data?.token) {
     setStoredToken(data.token);
   }
   return data;
@@ -82,14 +92,14 @@ export async function googleAuthApi(credential: string): Promise<AuthResponse> {
     body: JSON.stringify({ credential }),
   });
 
-  const json = await res.json();
+  const json = await parseResponseJson(res);
 
   if (!res.ok) {
     throw new Error(json.message || "Google authentication failed");
   }
 
   const data: AuthResponse = json.data;
-  if (data.token) {
+  if (data?.token) {
     setStoredToken(data.token);
   }
   return data;
@@ -109,7 +119,7 @@ export async function signupUser(data: {
     body: JSON.stringify(data),
   });
 
-  const json = await res.json();
+  const json = await parseResponseJson(res);
 
   if (!res.ok) {
     throw new Error(json.message || "Signup failed. Please try again.");
@@ -131,14 +141,14 @@ export async function verifyEmailApi(payload: {
     body: JSON.stringify(payload),
   });
 
-  const json = await res.json();
+  const json = await parseResponseJson(res);
 
   if (!res.ok) {
     throw new Error(json.message || "Email verification failed");
   }
 
   const data: AuthResponse = json.data;
-  if (data.token) {
+  if (data?.token) {
     setStoredToken(data.token);
   }
   return data;
@@ -154,7 +164,7 @@ export async function resendVerificationCodeApi(email: string): Promise<{ messag
     body: JSON.stringify({ email }),
   });
 
-  const json = await res.json();
+  const json = await parseResponseJson(res);
 
   if (!res.ok) {
     throw new Error(json.message || "Failed to resend verification code");
@@ -183,7 +193,7 @@ export async function fetchCurrentUser(): Promise<UserProfile> {
     throw new Error("Session expired or invalid");
   }
 
-  const json = await res.json();
+  const json = await parseResponseJson(res);
   return json.data;
 }
 
@@ -196,7 +206,6 @@ export function logoutUser(): void {
 
 /**
  * Retrieves primary user auth token.
- * In development, if no token is in localStorage, auto-creates a guest account.
  */
 export function getAuthToken(): string | null {
   return getStoredToken();
@@ -224,8 +233,8 @@ export async function getBoardJoinToken(boardId: string, isRetry = false): Promi
     throw new Error(`Failed to retrieve board join token: ${res.statusText}`);
   }
 
-  const json = await res.json();
-  return json.data.token;
+  const json = await parseResponseJson(res);
+  return json.data?.token || "";
 }
 
 /**
