@@ -49,7 +49,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: deployment/docker/backend.Dockerfile
+          file: packages/api/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}/api:production-latest
 
@@ -57,7 +57,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: deployment/docker/socket.Dockerfile
+          file: packages/socket/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}/socket:production-latest
 
@@ -65,7 +65,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: deployment/docker/worker.Dockerfile
+          file: packages/worker/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}/worker:production-latest
 
@@ -73,7 +73,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: deployment/docker/frontend.Dockerfile
+          file: packages/client/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}/client:production-latest
 
