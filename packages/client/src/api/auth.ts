@@ -238,6 +238,39 @@ export async function getBoardJoinToken(boardId: string, isRetry = false): Promi
 }
 
 /**
+ * Fetches user-owned boards from REST API.
+ */
+export async function fetchMyBoardsApi(): Promise<Array<{ id: string; name: string; updatedAt: string; itemCount: number }>> {
+  const token = getStoredToken();
+  if (!token) return [];
+
+  try {
+    const res = await fetch("/api/boards", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) return [];
+
+    const json = await parseResponseJson(res);
+    const boards = json.data?.boards || json.data || [];
+    if (!Array.isArray(boards)) return [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return boards.map((b: any) => ({
+      id: String(b._id || b.id),
+      name: String(b.title || b.name || "Untitled Whiteboard"),
+      updatedAt: String(b.updatedAt || new Date().toISOString()),
+      itemCount: Number(b.activeElementsCount || 0),
+    }));
+  } catch (err) {
+    console.error("Failed to fetch my boards:", err);
+    return [];
+  }
+}
+
+/**
  * Deletes a board by ID from backend MongoDB database.
  */
 export async function deleteBoardApi(boardId: string): Promise<boolean> {
