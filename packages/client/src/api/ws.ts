@@ -131,7 +131,8 @@ class SocketService {
         this.myUserId = claims.userId;
       }
 
-      this.socket = io({
+      const socketUrl = (import.meta.env.VITE_SOCKET_URL as string) || undefined;
+      this.socket = io(socketUrl, {
         auth: {
           token: joinToken,
         },
