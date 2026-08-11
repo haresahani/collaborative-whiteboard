@@ -385,5 +385,11 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
     throw ApiError.notFound("User not found");
   }
 
-  ApiResponse.success(res, user);
+  ApiResponse.success(res, {
+    id: String(user._id),
+    email: user.email,
+    displayName: user.displayName,
+    avatar: user.avatar,
+    isEmailVerified: user.isEmailVerified,
+  });
 });

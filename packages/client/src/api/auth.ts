@@ -188,13 +188,23 @@ export async function fetchCurrentUser(): Promise<UserProfile> {
     },
   });
 
-  if (!res.ok) {
+  if (res.status === 401 || res.status === 404) {
     removeStoredToken();
     throw new Error("Session expired or invalid");
   }
 
+  if (!res.ok) {
+    throw new Error(`Failed to fetch profile: ${res.statusText}`);
+  }
+
   const json = await parseResponseJson(res);
-  return json.data;
+  const data = json.data || {};
+  return {
+    id: String(data.id || data._id || ""),
+    email: String(data.email || ""),
+    displayName: String(data.displayName || data.name || "User"),
+    isEmailVerified: Boolean(data.isEmailVerified),
+  };
 }
 
 /**
