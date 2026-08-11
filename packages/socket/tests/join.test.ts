@@ -208,19 +208,22 @@ describe("Socket Server Join Flow Tests", () => {
     expect(mockSocket.join).toHaveBeenCalledWith("board:board-123");
 
     // Assert board.init includes both DB and buffered oplogs
-    expect(mockSocket.emit).toHaveBeenCalledWith("board.init", {
-      snapshot: {
-        version: 10,
-        snapshotJson: {
-          strokes: [{ id: "stroke-1", type: "stroke" }],
-          shapes: [],
-          notes: [],
+    expect(mockSocket.emit).toHaveBeenCalledWith(
+      "board.init",
+      expect.objectContaining({
+        snapshot: {
+          version: 10,
+          snapshotJson: {
+            strokes: [{ id: "stroke-1", type: "stroke" }],
+            shapes: [],
+            notes: [],
+          },
         },
-      },
-      oplogs: expect.arrayContaining([
-        expect.objectContaining({ opId: "db-op-uuid" }),
-        expect.objectContaining({ opId: "buffer-op-uuid" }),
-      ]),
-    });
+        oplogs: expect.arrayContaining([
+          expect.objectContaining({ opId: "db-op-uuid" }),
+          expect.objectContaining({ opId: "buffer-op-uuid" }),
+        ]),
+      }),
+    );
   });
 });

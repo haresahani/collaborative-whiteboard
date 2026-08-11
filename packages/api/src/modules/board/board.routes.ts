@@ -22,7 +22,7 @@ const router: Router = Router();
 // Board CRUD
 router.post("/", authMiddleware, validate(createBoardSchema), createBoard);
 router.get("/", authMiddleware, getMyBoards);
-router.get("/:id", optionalAuthMiddleware, getBoard);
+router.get("/:id", authMiddleware, getBoard);
 router.patch("/:id", authMiddleware, updateBoard);
 router.delete("/:id", authMiddleware, deleteBoard);
 
@@ -30,7 +30,7 @@ router.delete("/:id", authMiddleware, deleteBoard);
 router.get("/:id/join-token", optionalAuthMiddleware, getBoardJoinToken);
 
 // Snapshot & Yjs State
-router.get("/:id/snapshot", optionalAuthMiddleware, getSnapshot);
+router.get("/:id/snapshot", authMiddleware, getSnapshot);
 router.get("/:id/yjs-state", optionalAuthMiddleware, getYjsState);
 
 // Operations (oplog)
