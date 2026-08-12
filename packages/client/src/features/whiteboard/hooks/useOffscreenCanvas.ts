@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback } from "react";
 import type { Element } from "../models/element";
 import { renderElements } from "../engine/renderer";
+import type { GridStyle } from "../engine/grid";
+import { useCanvasDefaultsStore } from "../store/useCanvasDefaultsStore";
 
 export interface RenderState {
   elements: Element[];
@@ -12,6 +14,7 @@ export interface RenderState {
   marquee: { x: number; y: number; width: number; height: number } | null;
   otherTempElements: Element[];
   isDark?: boolean;
+  gridStyle?: GridStyle;
 }
 
 type TransferredCanvas = HTMLCanvasElement & {
@@ -142,10 +145,11 @@ export function useOffscreenCanvas(
       const width = Math.floor(window.innerWidth * dpr);
       const height = Math.floor(window.innerHeight * dpr);
 
-      // Read theme on the main thread — safe here, NOT safe in Web Worker
+      // Read theme & gridStyle on the main thread
       const isDark =
         typeof document !== "undefined" &&
         document.documentElement.getAttribute("data-theme") === "dark";
+      const gridStyle = useCanvasDefaultsStore.getState().gridStyle;
 
       if (isOffscreenSupportedRef.current && workerRef.current) {
         workerRef.current.postMessage({
@@ -154,6 +158,7 @@ export function useOffscreenCanvas(
           width,
           height,
           isDark,
+          gridStyle,
         });
       } else {
         const ctx = canvas.getContext("2d");
@@ -169,6 +174,7 @@ export function useOffscreenCanvas(
             state.marquee,
             state.otherTempElements,
             isDark,
+            gridStyle,
           );
         }
       }

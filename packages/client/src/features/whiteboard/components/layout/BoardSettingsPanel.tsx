@@ -1,8 +1,12 @@
 import {
   ChevronRight,
   Copy,
+  Eye,
   FolderPen,
+  Grid,
   Hash,
+  LayoutGrid,
+  Lock,
   LogIn,
   LogOut,
   Monitor,
@@ -10,7 +14,9 @@ import {
   Palette,
   Settings2,
   Shield,
+  ShieldCheck,
   SlidersHorizontal,
+  Square,
   Sun,
   User,
   UserPlus,
@@ -23,6 +29,13 @@ import { usePanelFocus } from "../../hooks/usePanelFocus";
 import { useThemeStore, type Theme } from "../../store/themeStore";
 import { useCollaborationStore } from "../../store/collaborationStore";
 import { useAuthStore } from "../../../../store/authStore";
+import {
+  useBoardPermissionsStore,
+  type BoardAccessLevel,
+} from "../../store/useBoardPermissionsStore";
+import { useCanvasDefaultsStore } from "../../store/useCanvasDefaultsStore";
+import { useToolStore } from "../../store/toolStore";
+import type { GridStyle } from "../../engine/grid";
 
 interface BoardSettingsPanelProps {
   isOpen: boolean;
@@ -31,20 +44,6 @@ interface BoardSettingsPanelProps {
   onBoardNameChange: (name: string) => void;
   onClose: () => void;
 }
-
-const FUTURE_SECTIONS = [
-  {
-    title: "Permissions",
-    description: "Board privacy, edit access, and invite rules live here.",
-    Icon: Shield,
-  },
-  {
-    title: "Canvas Defaults",
-    description:
-      "Future options for grid, export defaults, and template presets.",
-    Icon: SlidersHorizontal,
-  },
-];
 
 const THEME_OPTIONS: {
   value: Theme;
@@ -210,6 +209,285 @@ function ThemeSection() {
             </button>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+function PermissionsSection() {
+  const {
+    accessLevel,
+    setAccessLevel,
+    isLocked,
+    setIsLocked,
+    allowGuestEdit,
+    setAllowGuestEdit,
+  } = useBoardPermissionsStore();
+
+  return (
+    <section className="wb-inspector__section">
+      <div className="wb-inspector__section-title">
+        <Shield size={15} />
+        <h4>Permissions & Access</h4>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "10px" }}>
+        {/* Access Level Selector */}
+        <div>
+          <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--wb-text-soft)", display: "block", marginBottom: "6px" }}>
+            Board Privacy Mode
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
+            {[
+              { id: "edit", label: "Public Edit", icon: Eye },
+              { id: "view", label: "View Only", icon: Lock },
+              { id: "private", label: "Private", icon: ShieldCheck },
+            ].map(({ id, label, icon: IconComponent }) => {
+              const active = accessLevel === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setAccessLevel(id as BoardAccessLevel)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "8px 4px",
+                    borderRadius: "8px",
+                    border: active ? "2px solid var(--wb-accent)" : "1px solid var(--wb-border)",
+                    background: active ? "color-mix(in srgb, var(--wb-accent) 12%, transparent)" : "var(--wb-surface-strong)",
+                    color: active ? "var(--wb-accent)" : "var(--wb-text)",
+                    fontSize: "11px",
+                    fontWeight: active ? 700 : 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  <IconComponent size={14} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Lock Editing Toggle */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: "8px", background: "var(--wb-surface-strong)" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--wb-text)" }}>Lock Canvas Editing</span>
+            <span style={{ fontSize: "10px", color: "var(--wb-text-soft)" }}>Freeze all drawing & element changes</span>
+          </div>
+          <input
+            type="checkbox"
+            checked={isLocked}
+            onChange={(e) => setIsLocked(e.target.checked)}
+            style={{ width: "16px", height: "16px", accentColor: "var(--wb-accent)", cursor: "pointer" }}
+          />
+        </div>
+
+        {/* Allow Guest Edit Toggle */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: "8px", background: "var(--wb-surface-strong)" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--wb-text)" }}>Allow Guest Editors</span>
+            <span style={{ fontSize: "10px", color: "var(--wb-text-soft)" }}>Guests can draw without signing in</span>
+          </div>
+          <input
+            type="checkbox"
+            checked={allowGuestEdit}
+            onChange={(e) => setAllowGuestEdit(e.target.checked)}
+            style={{ width: "16px", height: "16px", accentColor: "var(--wb-accent)", cursor: "pointer" }}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CanvasDefaultsSection() {
+  const {
+    gridStyle,
+    setGridStyle,
+    snapToGrid,
+    setSnapToGrid,
+    defaultStrokeColor,
+    setDefaultStrokeColor,
+    defaultStrokeWidth,
+    setDefaultStrokeWidth,
+    exportScale,
+    setExportScale,
+  } = useCanvasDefaultsStore();
+
+  const setToolStyle = useToolStore((state) => state.setStyle);
+
+  const handleColorChange = (color: string) => {
+    setDefaultStrokeColor(color);
+    setToolStyle({ color });
+  };
+
+  const handleWidthChange = (width: number) => {
+    setDefaultStrokeWidth(width);
+    setToolStyle({ width });
+  };
+
+  return (
+    <section className="wb-inspector__section">
+      <div className="wb-inspector__section-title">
+        <SlidersHorizontal size={15} />
+        <h4>Canvas Defaults & Grid</h4>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "10px" }}>
+        {/* Grid Background Selector */}
+        <div>
+          <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--wb-text-soft)", display: "block", marginBottom: "6px" }}>
+            Grid Pattern Style
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
+            {[
+              { id: "dots", label: "Dot Grid", icon: Grid },
+              { id: "lines", label: "Line Grid", icon: LayoutGrid },
+              { id: "none", label: "Blank", icon: Square },
+            ].map(({ id, label, icon: IconComponent }) => {
+              const active = gridStyle === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setGridStyle(id as GridStyle)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "8px 4px",
+                    borderRadius: "8px",
+                    border: active ? "2px solid var(--wb-accent)" : "1px solid var(--wb-border)",
+                    background: active ? "color-mix(in srgb, var(--wb-accent) 12%, transparent)" : "var(--wb-surface-strong)",
+                    color: active ? "var(--wb-accent)" : "var(--wb-text)",
+                    fontSize: "11px",
+                    fontWeight: active ? 700 : 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  <IconComponent size={14} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Snap to Grid Toggle */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: "8px", background: "var(--wb-surface-strong)" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--wb-text)" }}>Snap to Grid</span>
+            <span style={{ fontSize: "10px", color: "var(--wb-text-soft)" }}>Align elements to grid coordinates</span>
+          </div>
+          <input
+            type="checkbox"
+            checked={snapToGrid}
+            onChange={(e) => setSnapToGrid(e.target.checked)}
+            style={{ width: "16px", height: "16px", accentColor: "var(--wb-accent)", cursor: "pointer" }}
+          />
+        </div>
+
+        {/* Default Color Swatches */}
+        <div>
+          <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--wb-text-soft)", display: "block", marginBottom: "6px" }}>
+            Default Drawing Color
+          </label>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            {["#6366f1", "#10b981", "#ef4444", "#f59e0b", "#3b82f6", "#000000", "#ffffff"].map((color) => {
+              const active = defaultStrokeColor === color;
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => handleColorChange(color)}
+                  style={{
+                    width: "24px",
+                    height: "24px",
+                    borderRadius: "50%",
+                    backgroundColor: color,
+                    border: active ? "2px solid var(--wb-accent)" : "1px solid var(--wb-border)",
+                    boxShadow: active ? "0 0 0 2px var(--wb-accent)" : "none",
+                    cursor: "pointer",
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Default Stroke Width */}
+        <div>
+          <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--wb-text-soft)", display: "block", marginBottom: "6px" }}>
+            Default Stroke Thickness
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
+            {[
+              { width: 2, label: "Thin (2px)" },
+              { width: 4, label: "Medium (4px)" },
+              { width: 8, label: "Thick (8px)" },
+            ].map(({ width, label }) => {
+              const active = defaultStrokeWidth === width;
+              return (
+                <button
+                  key={width}
+                  type="button"
+                  onClick={() => handleWidthChange(width)}
+                  style={{
+                    padding: "6px 4px",
+                    borderRadius: "6px",
+                    border: active ? "2px solid var(--wb-accent)" : "1px solid var(--wb-border)",
+                    background: active ? "color-mix(in srgb, var(--wb-accent) 12%, transparent)" : "var(--wb-surface-strong)",
+                    color: active ? "var(--wb-accent)" : "var(--wb-text)",
+                    fontSize: "11px",
+                    fontWeight: active ? 700 : 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Export Resolution */}
+        <div>
+          <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--wb-text-soft)", display: "block", marginBottom: "6px" }}>
+            Export Quality Preset
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+            {[
+              { scale: 1, label: "1x Standard" },
+              { scale: 2, label: "2x Ultra HD" },
+            ].map(({ scale, label }) => {
+              const active = exportScale === scale;
+              return (
+                <button
+                  key={scale}
+                  type="button"
+                  onClick={() => setExportScale(scale)}
+                  style={{
+                    padding: "6px 4px",
+                    borderRadius: "6px",
+                    border: active ? "2px solid var(--wb-accent)" : "1px solid var(--wb-border)",
+                    background: active ? "color-mix(in srgb, var(--wb-accent) 12%, transparent)" : "var(--wb-surface-strong)",
+                    color: active ? "var(--wb-accent)" : "var(--wb-text)",
+                    fontSize: "11px",
+                    fontWeight: active ? 700 : 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -400,20 +678,11 @@ export default function BoardSettingsPanel({
               </div>
             </section>
 
-            {/* ── Future Sections ── */}
-            {FUTURE_SECTIONS.map(({ title, description, Icon }) => (
-              <section key={title} className="wb-inspector__section">
-                <div className="wb-inspector__section-title">
-                  <Icon size={15} />
-                  <h4>{title}</h4>
-                </div>
+            {/* ── Permissions & Access ── */}
+            <PermissionsSection />
 
-                <div className="wb-settings-placeholder">
-                  <p>{description}</p>
-                  <span>Coming soon</span>
-                </div>
-              </section>
-            ))}
+            {/* ── Canvas Defaults & Grid ── */}
+            <CanvasDefaultsSection />
           </div>
         </div>
       </aside>

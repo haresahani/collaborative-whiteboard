@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { Plus, Search, Clock, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
-import { deleteBoardApi, fetchMyBoardsApi } from "../api/auth";
+import { deleteBoardApi, fetchMyBoardsApi, createBoardApi } from "../api/auth";
 
 interface BoardMetadata {
   id: string;
@@ -37,22 +37,24 @@ function loadInitialBoards(userId?: string | null): BoardMetadata[] {
 
 export default function IndexPage() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
   const [search, setSearch] = useState("");
+  const userId = user?.id;
   const [recentBoards, setRecentBoards] = useState<BoardMetadata[]>(() =>
-    loadInitialBoards(user?.id),
+    loadInitialBoards(userId),
   );
 
   // Sync authenticated user's real boards from REST API
   useEffect(() => {
     let isMounted = true;
-    if (isAuthenticated && user?.id) {
+
+    if (isAuthenticated && userId) {
       void fetchMyBoardsApi().then((apiBoards) => {
         if (!isMounted) return;
-        if (apiBoards && apiBoards.length > 0) {
+        if (Array.isArray(apiBoards)) {
           setRecentBoards(apiBoards);
           try {
-            localStorage.setItem(getStorageKey(user.id), JSON.stringify(apiBoards));
+            localStorage.setItem(getStorageKey(userId), JSON.stringify(apiBoards));
           } catch {
             // ignore
           }
@@ -62,7 +64,7 @@ export default function IndexPage() {
     return () => {
       isMounted = false;
     };
-  }, [user?.id, isAuthenticated]);
+  }, [userId, isAuthenticated]);
 
   const saveBoards = (updated: BoardMetadata[]) => {
     setRecentBoards(updated);
@@ -74,11 +76,23 @@ export default function IndexPage() {
     }
   };
 
-  const handleCreateBoard = () => {
+  const handleCreateBoard = async () => {
+    const defaultTitle = `Untitled Whiteboard ${recentBoards.length + 1}`;
+
+    if (isAuthenticated && userId) {
+      const created = await createBoardApi(defaultTitle);
+      if (created) {
+        const updated = [created, ...recentBoards.filter((b) => b.id !== created.id)];
+        saveBoards(updated);
+        navigate(`/${created.id}`);
+        return;
+      }
+    }
+
     const newId = `board-${uuidv4().slice(0, 8)}`;
     const newBoard: BoardMetadata = {
       id: newId,
-      name: `Untitled Whiteboard ${recentBoards.length + 1}`,
+      name: defaultTitle,
       updatedAt: new Date().toISOString(),
       itemCount: 0,
     };
@@ -164,7 +178,17 @@ export default function IndexPage() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            {isAuthenticated && user ? (
+            {isLoading ? (
+              <div
+                style={{
+                  height: "36px",
+                  width: "120px",
+                  borderRadius: "8px",
+                  background: "#1e293b",
+                  opacity: 0.6,
+                }}
+              />
+            ) : isAuthenticated && user ? (
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <div
                   style={{

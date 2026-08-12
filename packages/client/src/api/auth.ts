@@ -15,6 +15,7 @@ export interface AuthResponse {
 }
 
 const AUTH_TOKEN_KEY = "auth_token";
+const AUTH_USER_KEY = "auth_user";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function parseResponseJson(res: Response): Promise<Record<string, any>> {
@@ -45,6 +46,40 @@ export function removeStoredToken(): void {
  */
 export function getStoredToken(): string | null {
   return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+/**
+ * Saves user profile in localStorage for instant offline/refresh UI initialization.
+ */
+export function setStoredUser(user: UserProfile | null): void {
+  if (user) {
+    try {
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    } catch {
+      // ignore
+    }
+  } else {
+    localStorage.removeItem(AUTH_USER_KEY);
+  }
+}
+
+/**
+ * Removes user profile from localStorage.
+ */
+export function removeStoredUser(): void {
+  localStorage.removeItem(AUTH_USER_KEY);
+}
+
+/**
+ * Retrieves stored user profile from localStorage.
+ */
+export function getStoredUser(): UserProfile | null {
+  try {
+    const saved = localStorage.getItem(AUTH_USER_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -79,6 +114,9 @@ export async function loginUser(credentials: {
   if (data?.token) {
     setStoredToken(data.token);
   }
+  if (data?.user) {
+    setStoredUser(data.user);
+  }
   return data;
 }
 
@@ -101,6 +139,9 @@ export async function googleAuthApi(credential: string): Promise<AuthResponse> {
   const data: AuthResponse = json.data;
   if (data?.token) {
     setStoredToken(data.token);
+  }
+  if (data?.user) {
+    setStoredUser(data.user);
   }
   return data;
 }
@@ -151,6 +192,9 @@ export async function verifyEmailApi(payload: {
   if (data?.token) {
     setStoredToken(data.token);
   }
+  if (data?.user) {
+    setStoredUser(data.user);
+  }
   return data;
 }
 
@@ -188,13 +232,26 @@ export async function fetchCurrentUser(): Promise<UserProfile> {
     },
   });
 
-  if (!res.ok) {
+  if (res.status === 401 || res.status === 404) {
     removeStoredToken();
+    removeStoredUser();
     throw new Error("Session expired or invalid");
   }
 
+  if (!res.ok) {
+    throw new Error(`Failed to fetch profile: ${res.statusText}`);
+  }
+
   const json = await parseResponseJson(res);
-  return json.data;
+  const data = json.data || {};
+  const profile: UserProfile = {
+    id: String(data.id || data._id || ""),
+    email: String(data.email || ""),
+    displayName: String(data.displayName || data.name || "User"),
+    isEmailVerified: Boolean(data.isEmailVerified),
+  };
+  setStoredUser(profile);
+  return profile;
 }
 
 /**
@@ -202,6 +259,7 @@ export async function fetchCurrentUser(): Promise<UserProfile> {
  */
 export function logoutUser(): void {
   removeStoredToken();
+  removeStoredUser();
 }
 
 /**
@@ -311,5 +369,40 @@ export async function updateBoardTitleApi(boardId: string, title: string): Promi
   } catch (err) {
     console.error("Failed to update board title in backend database:", err);
     return false;
+  }
+}
+
+/**
+ * Creates a new board in backend MongoDB database.
+ */
+export async function createBoardApi(title: string): Promise<{ id: string; name: string; updatedAt: string; itemCount: number } | null> {
+  const token = getStoredToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch("/api/boards", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ title }),
+    });
+
+    if (!res.ok) return null;
+
+    const json = await parseResponseJson(res);
+    const b = json.data;
+    if (!b) return null;
+
+    return {
+      id: String(b._id || b.id),
+      name: String(b.title || title),
+      updatedAt: String(b.updatedAt || new Date().toISOString()),
+      itemCount: 0,
+    };
+  } catch (err) {
+    console.error("Failed to create board in database:", err);
+    return null;
   }
 }

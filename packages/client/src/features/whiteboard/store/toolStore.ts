@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { LineStyle } from "../models/element";
+import { useCanvasDefaultsStore } from "./useCanvasDefaultsStore";
 
 export type ToolType =
   | "select"
@@ -41,17 +42,20 @@ type ToolState = {
   setColor: (color: string) => void;
   setFillColor: (fillColor: string) => void;
   setWidth: (width: number) => void;
+  setStyle: (style: Partial<{ color: string; fillColor: string; width: number; eraserSize: number; lineStyle: LineStyle; fontFamily: string; fontSize: number }>) => void;
   setEraserSize: (eraserSize: number) => void;
   setLineStyle: (lineStyle: LineStyle) => void;
   setFontFamily: (fontFamily: string) => void;
   setFontSize: (fontSize: number) => void;
 };
 
+const initialDefaults = useCanvasDefaultsStore.getState();
+
 export const useToolStore = create<ToolState>((set) => ({
   tool: "pen",
-  color: "#ff0000",
+  color: initialDefaults.defaultStrokeColor || "#6366f1",
   fillColor: "transparent",
-  width: 2,
+  width: initialDefaults.defaultStrokeWidth || 2,
   eraserSize: 16,
   lineStyle: "solid",
   fontFamily: '"Plus Jakarta Sans", sans-serif',
@@ -61,6 +65,7 @@ export const useToolStore = create<ToolState>((set) => ({
   setColor: (color) => set({ color }),
   setFillColor: (fillColor) => set({ fillColor }),
   setWidth: (width) => set({ width }),
+  setStyle: (style) => set((prev) => ({ ...prev, ...style })),
   setEraserSize: (eraserSize) => set({ eraserSize }),
   setLineStyle: (lineStyle) => set({ lineStyle }),
   setFontFamily: (fontFamily) => set({ fontFamily }),

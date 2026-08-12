@@ -16,6 +16,7 @@ import ChatPanel from "./layout/ChatPanel";
 import { exportToPNG } from "../engine/exporter";
 import { useAuthStore } from "../../../store/authStore";
 import { updateBoardTitleApi } from "../../../api/auth";
+import { useCanvasDefaultsStore } from "../store/useCanvasDefaultsStore";
 
 function getStorageKey(userId?: string | null): string {
   return userId
@@ -169,9 +170,11 @@ export default function WhiteboardPage() {
   const handleExport = useCallback(() => {
     const elements = useBoardStore.getState().elements;
     const fileName = sanitizeFileName(boardName) || "whiteboard";
+    const exportScale = useCanvasDefaultsStore.getState().exportScale || 2;
     const dataUrl = exportToPNG(elements, boardName, {
       backgroundColor: "#ffffff",
       padding: 40,
+      scale: exportScale,
     });
 
     if (!dataUrl) {

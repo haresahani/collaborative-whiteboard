@@ -6,6 +6,7 @@ export interface ExportOptions {
   padding?: number;
   backgroundColor?: string | null;
   includeGrid?: boolean;
+  scale?: number;
 }
 
 /**
@@ -28,7 +29,8 @@ export function exportToPNG(
   const contentHeight = Math.ceil(maxY - minY + padding * 2);
 
   const canvas = document.createElement("canvas");
-  const dpr = window.devicePixelRatio || 1;
+  const scale = options.scale ?? 2;
+  const dpr = (window.devicePixelRatio || 1) * (scale / 2);
 
   canvas.width = contentWidth * dpr;
   canvas.height = contentHeight * dpr;

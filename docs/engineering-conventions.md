@@ -91,3 +91,42 @@ If a dedicated logger is added later, adopt it consistently instead of mixing pa
 ## Shared Code Rule
 
 Only move code into `shared` when two packages actively use it. Do not create "future shared" abstractions.
+
+## Testing Conventions
+
+### Test File Placement
+
+- **Unit tests** for a file live adjacent to the source, inside a `__tests__/` subdirectory or named `*.test.ts` alongside the file.
+- **Integration tests** for a package live in `packages/<name>/tests/`.
+- **E2E tests** live in `tests/e2e/playwright/specs/`.
+- **Chaos/resilience tests** live in `tests/chaos/specs/`.
+- **Performance tests** live in `tests/performance/k6/`.
+
+### Test Naming
+
+- Describe what the unit does, not how it is implemented.
+- Use `it('should ...')` for behaviour assertions.
+- Group related cases with `describe('<ContextName>')`.
+
+### Mocking Rules
+
+- Mock only at the boundary (database, Redis, external HTTP). Do not mock internal functions.
+- Prefer `vi.mock` (Vitest) over manual stubs unless the module is complex.
+- Always restore mocks after each test (`afterEach(() => vi.restoreAllMocks())`).
+
+### Coverage Targets
+
+| Layer    | Tool       | Target              |
+| -------- | ---------- | ------------------- |
+| `shared` | Vitest     | 90%+                |
+| `api`    | Vitest     | 80%+                |
+| `socket` | Vitest     | 75%+                |
+| `worker` | Vitest     | 80%+                |
+| `client` | Vitest     | 70%+                |
+| E2E      | Playwright | critical paths only |
+
+### CI
+
+- All packages run `pnpm test` in CI before merge.
+- E2E tests run against a fully composed Docker stack in a separate job.
+- Performance tests are run manually or on a schedule, not on every PR.

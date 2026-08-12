@@ -33,9 +33,9 @@ ENV NODE_ENV=production
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/shared ./packages/shared
-COPY packages/infra-utils ./packages/infra-utils
-COPY packages/api ./packages/api
+COPY --from=builder /app/packages/shared ./packages/shared
+COPY --from=builder /app/packages/infra-utils ./packages/infra-utils
+COPY --from=builder /app/packages/api ./packages/api
 
 # Install production dependencies only
 RUN corepack enable && corepack prepare pnpm@10.17.0 --activate

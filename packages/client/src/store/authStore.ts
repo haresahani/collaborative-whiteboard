@@ -7,6 +7,8 @@ import {
   signupUser,
   verifyEmailApi,
   resendVerificationCodeApi,
+  getStoredUser,
+  getStoredToken,
   type UserProfile,
 } from "../api/auth";
 
@@ -34,21 +36,34 @@ interface AuthState {
   clearError: () => void;
 }
 
+const initialUser = getStoredUser();
+const initialToken = getStoredToken();
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
+  user: initialUser,
+  isAuthenticated: Boolean(initialUser && initialToken),
+  isLoading: false,
   error: null,
   pendingVerificationEmail: null,
   latestDevCode: null,
 
   initAuth: async () => {
-    set({ isLoading: true, error: null });
+    const token = getStoredToken();
+    if (!token) {
+      set({ user: null, isAuthenticated: false, isLoading: false });
+      return;
+    }
+
     try {
       const user = await fetchCurrentUser();
       set({ user, isAuthenticated: true, isLoading: false });
     } catch {
-      set({ user: null, isAuthenticated: false, isLoading: false });
+      const currentToken = getStoredToken();
+      if (!currentToken) {
+        set({ user: null, isAuthenticated: false, isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
     }
   },
 

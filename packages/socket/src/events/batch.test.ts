@@ -91,7 +91,9 @@ describe("Socket Server Batching & Ephemeral Filtering", () => {
     // Collapse logic simulation
     const latestByUser = new Map<string, (typeof decoded)[0]>();
     for (const c of decoded) {
-      latestByUser.set(c.userId, c);
+      if (c.userId) {
+        latestByUser.set(c.userId, c);
+      }
     }
 
     const collapsed = Array.from(latestByUser.values());

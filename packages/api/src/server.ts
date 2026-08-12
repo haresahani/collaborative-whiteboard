@@ -38,7 +38,7 @@ app.use(
       },
     },
     crossOriginResourcePolicy: { policy: "cross-origin" },
-  }),
+  }) as express.RequestHandler,
 );
 
 const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
