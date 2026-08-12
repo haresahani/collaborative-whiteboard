@@ -636,6 +636,30 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     },
   );
 
+  socket.on(
+    "board.permissions.update",
+    (data: {
+      boardId: string;
+      permissions: {
+        isLocked: boolean;
+        accessLevel: string;
+        allowGuestEdit: boolean;
+      };
+    }) => {
+      try {
+        const { boardId: targetBoardId, permissions } = data;
+        if (!targetBoardId || !permissions) return;
+
+        io.to(roomName(targetBoardId)).emit("board.permissions.broadcast", {
+          boardId: targetBoardId,
+          permissions,
+        });
+      } catch (err) {
+        console.error("[socket] Error handling board.permissions.update:", err);
+      }
+    },
+  );
+
   socket.on("disconnect", async (reason) => {
     console.log(
       `[socket] user ${userId} (${displayName}) disconnected from board ${boardId}: ${reason}`,

@@ -7,6 +7,7 @@ import type {
   StrokeElement,
 } from "../features/whiteboard/models/element";
 import { useBoardStore } from "../features/whiteboard/store/boardStore";
+import { useBoardPermissionsStore } from "../features/whiteboard/store/useBoardPermissionsStore";
 import {
   deserializeSnapshot,
   type SnapshotElementGroups,
@@ -206,6 +207,13 @@ class SocketService {
       this.socket.on("board.title.broadcast", (data: { boardId: string; title: string }) => {
         if (data.title) {
           window.dispatchEvent(new CustomEvent("board:title:sync", { detail: { title: data.title } }));
+        }
+      });
+
+      // Handle live permissions changes
+      this.socket.on("board.permissions.broadcast", (data: { boardId: string; permissions: any }) => {
+        if (data.permissions) {
+          useBoardPermissionsStore.getState().setPermissions(data.permissions);
         }
       });
 
@@ -628,6 +636,15 @@ class SocketService {
 
       resolve({ ok: true, opId });
     });
+  }
+
+  emitBoardPermissionsUpdate(
+    boardId: string,
+    permissions: { isLocked: boolean; accessLevel: string; allowGuestEdit: boolean },
+  ) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit("board.permissions.update", { boardId, permissions });
+    }
   }
 }
 

@@ -35,6 +35,8 @@ import {
 } from "../../store/useBoardPermissionsStore";
 import { useCanvasDefaultsStore } from "../../store/useCanvasDefaultsStore";
 import { useToolStore } from "../../store/toolStore";
+import { socketService } from "../../../../api/ws";
+import { useBoardStore } from "../../store/boardStore";
 import type { GridStyle } from "../../engine/grid";
 
 interface BoardSettingsPanelProps {
@@ -224,6 +226,36 @@ function PermissionsSection() {
     setAllowGuestEdit,
   } = useBoardPermissionsStore();
 
+  const handleAccessLevelChange = (level: BoardAccessLevel) => {
+    setAccessLevel(level);
+    const boardId = useBoardStore.getState().boardId;
+    socketService.emitBoardPermissionsUpdate(boardId, {
+      accessLevel: level,
+      isLocked,
+      allowGuestEdit,
+    });
+  };
+
+  const handleIsLockedChange = (locked: boolean) => {
+    setIsLocked(locked);
+    const boardId = useBoardStore.getState().boardId;
+    socketService.emitBoardPermissionsUpdate(boardId, {
+      accessLevel,
+      isLocked: locked,
+      allowGuestEdit,
+    });
+  };
+
+  const handleAllowGuestEditChange = (allow: boolean) => {
+    setAllowGuestEdit(allow);
+    const boardId = useBoardStore.getState().boardId;
+    socketService.emitBoardPermissionsUpdate(boardId, {
+      accessLevel,
+      isLocked,
+      allowGuestEdit: allow,
+    });
+  };
+
   return (
     <section className="wb-inspector__section">
       <div className="wb-inspector__section-title">
@@ -248,7 +280,7 @@ function PermissionsSection() {
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setAccessLevel(id as BoardAccessLevel)}
+                  onClick={() => handleAccessLevelChange(id as BoardAccessLevel)}
                   style={{
                     display: "flex",
                     flexDirection: "column",
@@ -281,7 +313,7 @@ function PermissionsSection() {
           <input
             type="checkbox"
             checked={isLocked}
-            onChange={(e) => setIsLocked(e.target.checked)}
+            onChange={(e) => handleIsLockedChange(e.target.checked)}
             style={{ width: "16px", height: "16px", accentColor: "var(--wb-accent)", cursor: "pointer" }}
           />
         </div>
@@ -295,7 +327,7 @@ function PermissionsSection() {
           <input
             type="checkbox"
             checked={allowGuestEdit}
-            onChange={(e) => setAllowGuestEdit(e.target.checked)}
+            onChange={(e) => handleAllowGuestEditChange(e.target.checked)}
             style={{ width: "16px", height: "16px", accentColor: "var(--wb-accent)", cursor: "pointer" }}
           />
         </div>
