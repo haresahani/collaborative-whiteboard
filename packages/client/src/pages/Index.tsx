@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { Plus, Search, Clock, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
-import { deleteBoardApi, fetchMyBoardsApi } from "../api/auth";
+import { deleteBoardApi, fetchMyBoardsApi, createBoardApi } from "../api/auth";
 
 interface BoardMetadata {
   id: string;
@@ -51,7 +51,7 @@ export default function IndexPage() {
     if (isAuthenticated && userId) {
       void fetchMyBoardsApi().then((apiBoards) => {
         if (!isMounted) return;
-        if (Array.isArray(apiBoards) && apiBoards.length > 0) {
+        if (Array.isArray(apiBoards)) {
           setRecentBoards(apiBoards);
           try {
             localStorage.setItem(getStorageKey(userId), JSON.stringify(apiBoards));
@@ -76,11 +76,23 @@ export default function IndexPage() {
     }
   };
 
-  const handleCreateBoard = () => {
+  const handleCreateBoard = async () => {
+    const defaultTitle = `Untitled Whiteboard ${recentBoards.length + 1}`;
+
+    if (isAuthenticated && userId) {
+      const created = await createBoardApi(defaultTitle);
+      if (created) {
+        const updated = [created, ...recentBoards.filter((b) => b.id !== created.id)];
+        saveBoards(updated);
+        navigate(`/${created.id}`);
+        return;
+      }
+    }
+
     const newId = `board-${uuidv4().slice(0, 8)}`;
     const newBoard: BoardMetadata = {
       id: newId,
-      name: `Untitled Whiteboard ${recentBoards.length + 1}`,
+      name: defaultTitle,
       updatedAt: new Date().toISOString(),
       itemCount: 0,
     };

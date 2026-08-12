@@ -371,3 +371,38 @@ export async function updateBoardTitleApi(boardId: string, title: string): Promi
     return false;
   }
 }
+
+/**
+ * Creates a new board in backend MongoDB database.
+ */
+export async function createBoardApi(title: string): Promise<{ id: string; name: string; updatedAt: string; itemCount: number } | null> {
+  const token = getStoredToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch("/api/boards", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ title }),
+    });
+
+    if (!res.ok) return null;
+
+    const json = await parseResponseJson(res);
+    const b = json.data;
+    if (!b) return null;
+
+    return {
+      id: String(b._id || b.id),
+      name: String(b.title || title),
+      updatedAt: String(b.updatedAt || new Date().toISOString()),
+      itemCount: 0,
+    };
+  } catch (err) {
+    console.error("Failed to create board in database:", err);
+    return null;
+  }
+}
