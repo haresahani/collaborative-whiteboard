@@ -4,7 +4,7 @@ import {
   Share2,
   Lock,
 } from "lucide-react";
-import { useBoardPermissionsStore, canUserEditBoard } from "../store/useBoardPermissionsStore";
+import { useBoardPermissionsStore, canUserEditBoard } from "../../store/useBoardPermissionsStore";
 import { useAuthStore } from "../../../store/authStore";
 
 type NavigationPanel = "info" | "settings" | "chat" | null;
