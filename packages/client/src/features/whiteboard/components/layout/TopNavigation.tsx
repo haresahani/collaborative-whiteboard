@@ -5,7 +5,7 @@ import {
   Lock,
 } from "lucide-react";
 import { useBoardPermissionsStore, canUserEditBoard } from "../../store/useBoardPermissionsStore";
-import { useAuthStore } from "../../../store/authStore";
+import { useAuthStore } from "../../../../store/authStore";
 
 type NavigationPanel = "info" | "settings" | "chat" | null;
 
@@ -33,6 +33,7 @@ export default function TopNavigation({
   let lockText = "";
   if (isLocked) lockText = "Canvas Frozen";
   else if (accessLevel === "view") lockText = "View Only";
+  else if (accessLevel === "private") lockText = "Private Board";
   else if (!allowGuestEdit && !isAuthenticated) lockText = "Guests View Only";
 
   return (
@@ -43,18 +44,20 @@ export default function TopNavigation({
             display: "inline-flex",
             alignItems: "center",
             gap: "6px",
-            padding: "4px 10px",
+            padding: "5px 12px",
             borderRadius: "9999px",
-            backgroundColor: "rgba(239, 68, 68, 0.15)",
-            border: "1px solid rgba(239, 68, 68, 0.3)",
-            color: "#fca5a5",
+            backgroundColor: "#18181b",
+            border: "1.5px solid #ef4444",
+            color: "#f87171",
             fontSize: "0.78rem",
             fontWeight: 700,
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+            zIndex: 10,
             marginRight: "auto",
             marginLeft: "1rem",
           }}
         >
-          <Lock size={13} />
+          <Lock size={13} style={{ color: "#ef4444" }} />
           <span>{lockText}</span>
         </div>
       )}

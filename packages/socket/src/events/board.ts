@@ -30,6 +30,14 @@ import {
 const tracer = getTracer("socket-events");
 const boardTitlesMap = new Map<string, string>();
 
+interface BoardPermissionsState {
+  isLocked: boolean;
+  accessLevel: string;
+  allowGuestEdit: boolean;
+}
+const boardPermissionsMap = new Map<string, BoardPermissionsState>();
+const boardOwnersMap = new Map<string, string>();
+
 const StrokeCommitSchema = z.object({
   opId: z.string().uuid(),
   stroke: z.object({
@@ -43,17 +51,9 @@ const StrokeCommitSchema = z.object({
   }),
 });
 
-type StrokeCommitAck = (response: {
-  ok: boolean;
-  opId?: string;
-  error?: string;
-}) => void;
+type StrokeCommitAck = (response: { ok: boolean; opId?: string; error?: string }) => void;
 
-type OpCommitAck = (response: {
-  ok: boolean;
-  opId?: string;
-  error?: string;
-}) => void;
+type OpCommitAck = (response: { ok: boolean; opId?: string; error?: string }) => void;
 
 function roomName(boardId: string): string {
   return `board:${boardId}`;
@@ -67,27 +67,19 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
   };
 
   void socket.join(roomName(boardId));
-  console.log(
-    `[socket] user ${userId} (${displayName}) joined room ${roomName(boardId)}`,
-  );
+  console.log(`[socket] user ${userId} (${displayName}) joined room ${roomName(boardId)}`);
 
   // join.board handler: fetches snapshot + oplogs tail and sends board.init
   socket.on("join.board", async (data: { boardId: string }) => {
     try {
-      if (
-        !(await checkSocketRateLimit(
-          socketJoinRateLimiterMemory,
-          socket,
-          "join.board",
-        ))
-      ) {
+      if (!(await checkSocketRateLimit(socketJoinRateLimiterMemory, socket, "join.board"))) {
         return;
       }
 
       const targetBoardId = data.boardId;
       if (targetBoardId !== boardId) {
         console.warn(
-          `[socket] User ${userId} attempted to join board ${targetBoardId} but JWT token is scoped to ${boardId}`,
+          `[socket] User ${userId} attempted to join board ${targetBoardId} but JWT token is scoped to ${boardId}`
         );
         socket.emit("protocol:error", {
           code: "UNAUTHORIZED",
@@ -101,9 +93,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       void socket.join(roomName(boardId));
 
       // Fetch latest snapshot
-      const latestSnapshot = await Snapshot.findOne({ boardId })
-        .sort({ opIndex: -1 })
-        .lean();
+      const latestSnapshot = await Snapshot.findOne({ boardId }).sort({ opIndex: -1 }).lean();
 
       let snapshotVersion = 0;
       let snapshotJson = { strokes: [], shapes: [], notes: [] };
@@ -141,6 +131,10 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         return a.opId.localeCompare(b.opId);
       });
 
+      if (!boardOwnersMap.has(boardId) && userId) {
+        boardOwnersMap.set(boardId, userId);
+      }
+
       // Send board.init
       socket.emit("board.init", {
         snapshot: {
@@ -149,38 +143,30 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         },
         oplogs: mergedOps,
         title: boardTitlesMap.get(boardId) || "",
+        permissions: boardPermissionsMap.get(boardId) || {
+          isLocked: false,
+          accessLevel: "edit",
+          allowGuestEdit: true,
+        },
+        ownerId: boardOwnersMap.get(boardId) || null,
       });
 
       try {
-        await PresenceService.updatePresence(
-          boardId,
-          userId,
-          displayName,
-          socket.id,
-        );
+        await PresenceService.updatePresence(boardId, userId, displayName, socket.id);
         const activeUsers = await PresenceService.getActiveUsers(boardId);
         io.to(roomName(boardId)).emit("presence.list", activeUsers);
 
-        const chatHistory = await Chat.find({ boardId })
-          .sort({ createdAt: -1 })
-          .limit(100)
-          .lean();
+        const chatHistory = await Chat.find({ boardId }).sort({ createdAt: -1 }).limit(100).lean();
         socket.emit("chat.history", chatHistory.reverse());
       } catch (presenceErr) {
-        console.error(
-          `[socket] join.board presence/chat init failed:`,
-          presenceErr,
-        );
+        console.error(`[socket] join.board presence/chat init failed:`, presenceErr);
       }
 
       console.log(
-        `[socket] join.board success: user=${userId} board=${boardId} snapshotVersion=${snapshotVersion} opsCount=${mergedOps.length}`,
+        `[socket] join.board success: user=${userId} board=${boardId} snapshotVersion=${snapshotVersion} opsCount=${mergedOps.length}`
       );
     } catch (err) {
-      console.error(
-        `[socket] join.board error for user ${userId} on board ${boardId}:`,
-        err,
-      );
+      console.error(`[socket] join.board error for user ${userId} on board ${boardId}:`, err);
       socket.emit("protocol:error", {
         code: "SERVER_ERROR",
         message: "Failed to initialize board state",
@@ -192,13 +178,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
   socket.on("op.commit", async (raw: unknown, ack?: OpCommitAck) => {
     const span = tracer.startSpan("op.commit");
     try {
-      if (
-        !(await checkSocketRateLimit(
-          socketOpRateLimiterMemory,
-          socket,
-          "op.commit",
-        ))
-      ) {
+      if (!(await checkSocketRateLimit(socketOpRateLimiterMemory, socket, "op.commit"))) {
         void ack?.({ ok: false, error: "RATE_LIMIT_EXCEEDED" });
         span.end();
         return;
@@ -222,10 +202,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       const parsed = OpSchema.safeParse(enriched);
 
       if (!parsed.success) {
-        logger.warn(
-          { userId, errors: parsed.error.issues },
-          "[socket] invalid op payload",
-        );
+        logger.warn({ userId, errors: parsed.error.issues }, "[socket] invalid op payload");
         void ack?.({ ok: false, error: "INVALID_PAYLOAD" });
         span.end();
         return;
@@ -241,7 +218,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
           userId: op.actorId,
           lamport: op.lamport,
         },
-        "[socket] op commit",
+        "[socket] op commit"
       );
 
       // Cache in ring buffer
@@ -266,27 +243,14 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
   // 1b. Batched op handler with MessagePack binary payload support
   socket.on(
     "op.batch",
-    async (
-      raw: unknown,
-      ack?: (res: { ok: boolean; count?: number; error?: string }) => void,
-    ) => {
+    async (raw: unknown, ack?: (res: { ok: boolean; count?: number; error?: string }) => void) => {
       try {
-        if (
-          !(await checkSocketRateLimit(
-            socketOpRateLimiterMemory,
-            socket,
-            "op.batch",
-          ))
-        ) {
+        if (!(await checkSocketRateLimit(socketOpRateLimiterMemory, socket, "op.batch"))) {
           void ack?.({ ok: false, error: "RATE_LIMIT_EXCEEDED" });
           return;
         }
         let rawOps: unknown[] = [];
-        if (
-          raw instanceof ArrayBuffer ||
-          raw instanceof Uint8Array ||
-          Buffer.isBuffer(raw)
-        ) {
+        if (raw instanceof ArrayBuffer || raw instanceof Uint8Array || Buffer.isBuffer(raw)) {
           rawOps = decodeOpBatch(raw as ArrayBuffer);
         } else if (Array.isArray(raw)) {
           rawOps = raw;
@@ -325,10 +289,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         }
 
         if (processedOps.length > 0) {
-          opsCounter.inc(
-            { type: "op.batch", service: "socket" },
-            processedOps.length,
-          );
+          opsCounter.inc({ type: "op.batch", service: "socket" }, processedOps.length);
           const encoded = encodeOpBatch(processedOps);
           socket.to(roomName(boardId)).emit("op.batch", encoded);
         }
@@ -338,7 +299,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         logger.error({ err }, "[socket] op.batch handling failed");
         void ack?.({ ok: false, error: "BATCH_PROCESSING_FAILED" });
       }
-    },
+    }
   );
 
   // 1c. Batched cursor handler with MessagePack binary support & per-user collapsing
@@ -348,11 +309,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         userId?: string;
         displayName?: string;
       })[] = [];
-      if (
-        raw instanceof ArrayBuffer ||
-        raw instanceof Uint8Array ||
-        Buffer.isBuffer(raw)
-      ) {
+      if (raw instanceof ArrayBuffer || raw instanceof Uint8Array || Buffer.isBuffer(raw)) {
         rawCursors = decodeCursorBatch(raw as ArrayBuffer);
       } else if (Array.isArray(raw)) {
         rawCursors = raw as (import("shared").CursorMove & {
@@ -371,7 +328,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
                 displayName?: string;
               })[];
             }
-          ).cursors,
+          ).cursors
         )
       ) {
         rawCursors = (
@@ -410,13 +367,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
 
   // 2. Legacy/specific stroke.commit handler (kept for compatibility/robustness)
   socket.on("op.stroke.commit", async (raw: unknown, ack?: StrokeCommitAck) => {
-    if (
-      !(await checkSocketRateLimit(
-        socketOpRateLimiterMemory,
-        socket,
-        "op.stroke.commit",
-      ))
-    ) {
+    if (!(await checkSocketRateLimit(socketOpRateLimiterMemory, socket, "op.stroke.commit"))) {
       void ack?.({ ok: false, error: "RATE_LIMIT_EXCEEDED" });
       return;
     }
@@ -424,10 +375,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     const parsed = StrokeCommitSchema.safeParse(raw);
 
     if (!parsed.success) {
-      logger.warn(
-        { userId, errors: parsed.error.issues },
-        "[socket] invalid stroke payload",
-      );
+      logger.warn({ userId, errors: parsed.error.issues }, "[socket] invalid stroke payload");
       void ack?.({ ok: false, error: "INVALID_PAYLOAD" });
       return;
     }
@@ -439,7 +387,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       const nextLamport = await getNextLamport(boardId);
 
       console.log(
-        `[socket] stroke commit opId=${opId} board=${boardId} user=${userId} lamport=${nextLamport}`,
+        `[socket] stroke commit opId=${opId} board=${boardId} user=${userId} lamport=${nextLamport}`
       );
 
       // Enqueue as a standard Op
@@ -475,12 +423,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
 
   socket.on("presence.heartbeat", async () => {
     try {
-      await PresenceService.updatePresence(
-        boardId,
-        userId,
-        displayName,
-        socket.id,
-      );
+      await PresenceService.updatePresence(boardId, userId, displayName, socket.id);
       const activeUsers = await PresenceService.getActiveUsers(boardId);
       io.to(roomName(boardId)).emit("presence.list", activeUsers);
     } catch (err) {
@@ -500,16 +443,13 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
 
       const parsed = cursorMoveSchema.safeParse(raw);
       if (!parsed.success) {
-        console.error(
-          "[socket] cursorMoveSchema validation failed:",
-          parsed.error.format(),
-        );
+        console.error("[socket] cursorMoveSchema validation failed:", parsed.error.format());
         return;
       }
 
       const { x, y, previewElement, erasedIds, tool } = parsed.data;
       console.log(
-        `[socket] cursor.move relay: user=${userId} (${displayName}) x=${x} y=${y} hasPreview=${!!previewElement} erasedCount=${erasedIds?.length || 0} tool=${tool || "none"}`,
+        `[socket] cursor.move relay: user=${userId} (${displayName}) x=${x} y=${y} hasPreview=${!!previewElement} erasedCount=${erasedIds?.length || 0} tool=${tool || "none"}`
       );
 
       // Broadcast to other clients only
@@ -529,13 +469,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
 
   socket.on("chat.send", async (raw: unknown) => {
     try {
-      if (
-        !(await checkSocketRateLimit(
-          socketChatRateLimiterMemory,
-          socket,
-          "chat.send",
-        ))
-      ) {
+      if (!(await checkSocketRateLimit(socketChatRateLimiterMemory, socket, "chat.send"))) {
         return;
       }
 
@@ -564,9 +498,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       } catch (err: unknown) {
         const error = err as { code?: number };
         if (error && error.code === 11000) {
-          console.warn(
-            `[socket] Duplicate chat message ignored: messageId=${messageId}`,
-          );
+          console.warn(`[socket] Duplicate chat message ignored: messageId=${messageId}`);
           return;
         }
         throw err;
@@ -600,41 +532,36 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         };
 
         await pushRecentOp(boardId, op);
-        socket
-          .to(roomName(boardId))
-          .emit("yjs.update", { update: data.update });
+        socket.to(roomName(boardId)).emit("yjs.update", { update: data.update });
         await enqueueOp(op);
         void ack?.({ ok: true });
       } catch (err) {
         console.error("[socket] yjs.update handler error:", err);
         void ack?.({ ok: false });
       }
-    },
+    }
   );
 
   socket.on("yjs.awareness", (data: { update: unknown }) => {
     socket.to(roomName(boardId)).emit("yjs.awareness", { update: data.update });
   });
 
-  socket.on(
-    "board.title.update",
-    (data: { boardId: string; title: string }) => {
-      try {
-        const { boardId: targetBoardId, title } = data;
-        if (!title || typeof title !== "string") return;
-        const sanitizedTitle = sanitizeText(title.trim().slice(0, 100));
+  socket.on("board.title.update", (data: { boardId: string; title: string }) => {
+    try {
+      const { boardId: targetBoardId, title } = data;
+      if (!title || typeof title !== "string") return;
+      const sanitizedTitle = sanitizeText(title.trim().slice(0, 100));
 
-        boardTitlesMap.set(targetBoardId, sanitizedTitle);
+      boardTitlesMap.set(targetBoardId, sanitizedTitle);
 
-        io.to(roomName(targetBoardId)).emit("board.title.broadcast", {
-          boardId: targetBoardId,
-          title: sanitizedTitle,
-        });
-      } catch (err) {
-        console.error("[socket] Error handling board.title.update:", err);
-      }
-    },
-  );
+      io.to(roomName(targetBoardId)).emit("board.title.broadcast", {
+        boardId: targetBoardId,
+        title: sanitizedTitle,
+      });
+    } catch (err) {
+      console.error("[socket] Error handling board.title.update:", err);
+    }
+  });
 
   socket.on(
     "board.permissions.update",
@@ -650,30 +577,30 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         const { boardId: targetBoardId, permissions } = data;
         if (!targetBoardId || !permissions) return;
 
+        boardPermissionsMap.set(targetBoardId, permissions);
+
+        if (!boardOwnersMap.has(targetBoardId) && socket.data.userId) {
+          boardOwnersMap.set(targetBoardId, socket.data.userId);
+        }
+
         io.to(roomName(targetBoardId)).emit("board.permissions.broadcast", {
           boardId: targetBoardId,
           permissions,
+          ownerId: boardOwnersMap.get(targetBoardId) || null,
         });
       } catch (err) {
         console.error("[socket] Error handling board.permissions.update:", err);
       }
-    },
+    }
   );
 
   socket.on("disconnect", async (reason) => {
     console.log(
-      `[socket] user ${userId} (${displayName}) disconnected from board ${boardId}: ${reason}`,
+      `[socket] user ${userId} (${displayName}) disconnected from board ${boardId}: ${reason}`
     );
     try {
-      socket
-        .to(roomName(boardId))
-        .emit("yjs.awareness.remove", { userId, socketId: socket.id });
-      await PresenceService.removePresence(
-        boardId,
-        userId,
-        displayName,
-        socket.id,
-      );
+      socket.to(roomName(boardId)).emit("yjs.awareness.remove", { userId, socketId: socket.id });
+      await PresenceService.removePresence(boardId, userId, displayName, socket.id);
       const activeUsers = await PresenceService.getActiveUsers(boardId);
       io.to(roomName(boardId)).emit("presence.list", activeUsers);
     } catch (err) {

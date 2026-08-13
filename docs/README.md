@@ -1,25 +1,27 @@
-# Documentation
+# Collaborative Whiteboard Documentation Index
 
-These docs are meant to describe the project as it actually exists and the V1 we are intentionally building next.
+Welcome to the technical documentation for the **Collaborative Whiteboard** system monorepo.
 
-## Core Docs
+---
 
-- `architecture.md`: current system shape plus the chosen V1 target architecture
-- `protocol.md`: REST baseline and planned V1 realtime protocol
-- `collaboration-model.md`: the selected sync strategy and why it was chosen
-- `v1-scope.md`: what V1 includes, excludes, and how it will be delivered
-- `package-responsibilities.md`: clear ownership for each monorepo package
-- `engineering-conventions.md`: folder, API, env, logging, and naming rules
-- `runbook.md`: local setup, commands, ports, and common troubleshooting
-- `testing-guide.md`: current test state and the minimum quality bar
-- `OBSERVABILITY.md`: full Prometheus, Grafana, Pino, OpenTelemetry & Jaeger stack architecture
-- `INTERVIEW_NOTES.md`: honest talking points for demos and interviews
+## 🏛️ Architecture & System Design
 
-## Principles
+- **[ARCHITECTURE.md](../ARCHITECTURE.md)**: Main architecture document featuring system topology, component responsibilities, data schemas, and Mermaid sequence diagrams for:
+  - Join & State Hydration Flow
+  - Operation Commit & Realtime Broadcast Flow
+  - Snapshot Persist & BullMQ Compaction Flow
+- **[DESIGN_DOC.md](../DESIGN_DOC.md)**: System design document detailing choices made, deep-dive comparison (**CRDT vs OT vs Authoritative Monotonic Server**), snapshotting strategy, and scalability roadmap.
+- **[docs/collaboration-model.md](collaboration-model.md)**: Real-time synchronization rules, sequence ordering, and conflict resolution strategy.
+- **[docs/package-responsibilities.md](package-responsibilities.md)**: Monorepo package boundaries (`client`, `socket`, `api`, `worker`, `shared`, `infra-utils`).
+- **[docs/protocol.md](protocol.md)**: WebSocket event contracts (`join.board`, `op:submit`, `op:broadcast`, `presence.update`).
 
-These docs follow a few rules:
+---
 
-- describe the code that exists today
-- mark planned work clearly
-- avoid production claims that are not implemented
-- prefer a narrow, defendable V1 over a broad imaginary roadmap
+## 🚀 Operations, Testing & Interview Preparation
+
+- **[docs/DEMO_SCRIPT.md](DEMO_SCRIPT.md)**: Step-by-step 2–3 minute video presentation script & live interview demo guide.
+- **[docs/INTERVIEW_NOTES.md](INTERVIEW_NOTES.md)**: Strategic talking points, tradeoffs explanations, and narrative positioning for senior technical interviews.
+- **[docs/runbook.md](runbook.md)**: Local development setup, Docker dependencies, environment configurations, and operational troubleshooting.
+- **[docs/testing-guide.md](testing-guide.md)**: Overview of the 70+ automated integration test suite across client, API, socket, worker, and infra packages.
+- **[docs/OBSERVABILITY.md](OBSERVABILITY.md)**: Metrics (/metrics), Grafana dashboards, Pino logging setup, and OpenTelemetry / Jaeger distributed tracing integration.
+- **[docs/MULTI_REGION_HA.md](MULTI_REGION_HA.md)**: Multi-region high-availability design and disaster recovery specs.

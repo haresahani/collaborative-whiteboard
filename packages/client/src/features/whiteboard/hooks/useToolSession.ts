@@ -136,7 +136,7 @@ export function useToolSession() {
       const activeTool = useToolStore.getState().tool;
 
       // Block drawing/mutations if board editing is locked or view-only
-      if (!canUserEditBoard() && activeTool !== "pan" && activeTool !== "select") {
+      if (!canUserEditBoard() && activeTool !== "hand" && activeTool !== "select") {
         return;
       }
 

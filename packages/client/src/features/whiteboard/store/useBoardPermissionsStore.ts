@@ -20,7 +20,7 @@ interface BoardPermissionsState {
 export const useBoardPermissionsStore = create<BoardPermissionsState>((set) => ({
   accessLevel: "edit",
   allowGuestEdit: true,
-  userRole: "owner",
+  userRole: "editor",
   isLocked: false,
 
   setAccessLevel: (accessLevel) => set({ accessLevel }),
@@ -42,9 +42,12 @@ export function canUserEditBoard(): boolean {
   // 2. View Only mode -> Non-owner users cannot edit
   if (accessLevel === "view" && userRole !== "owner") return false;
 
-  // 3. Guest editing disabled -> Guests without login cannot edit
+  // 3. Private mode -> Non-owner users cannot edit
+  if (accessLevel === "private" && userRole !== "owner") return false;
+
+  // 4. Guest editing disabled -> Guests without login cannot edit
   const isAuthenticated = useAuthStore.getState().isAuthenticated;
-  if (!allowGuestEdit && !isAuthenticated && userRole !== "owner") return false;
+  if (!allowGuestEdit && !isAuthenticated) return false;
 
   return true;
 }

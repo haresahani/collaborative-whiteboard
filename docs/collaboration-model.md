@@ -1,53 +1,28 @@
-# Collaboration Model Decision
+# Collaboration Model & Sync Strategy
 
-This document freezes the first sync model for the project.
+> [!TIP]
+> A comprehensive system design deep dive comparing **CRDT vs OT vs Authoritative Monotonic Server** and detailing snapshot compaction algorithms is available in [DESIGN_DOC.md](../DESIGN_DOC.md).
 
-## Decision
+## Collaboration Model Summary
 
-V1 will use an authoritative server collaboration model with Socket.IO rooms and append-only operations.
+V1 uses an **Authoritative Monotonic Server** model with Socket.IO rooms, incremental operation logs (`seq`), and background snapshot compaction:
 
-## Model Summary
+```text
+Client A (Draw) ---> Socket Gateway (Assign seq: 104) ---> MongoDB Oplog
+                         |
+                         +---> Broadcast (seq: 104) ---> Client B (Render)
+```
 
-- each board maps to one socket room
-- clients submit operations
-- the server validates and orders operations
-- the server assigns a monotonic `seq`
-- operations are persisted in MongoDB
-- clients restore from snapshot plus later operations
+### Core Collaboration Rules
 
-## Conflict Strategy
+1. **Room Scoping**: Each canvas board maps to a dedicated Socket.IO room (`board:boardId`).
+2. **Server Sequence Authority**: The Socket server acts as the single source of truth for operation sequence numbers (`seq`).
+3. **Attribute-Level Last-Accepted-Wins (LAW)**: Conflicting concurrent updates to the same element attribute are ordered strictly by server sequence assignment.
+4. **Optimistic Local UI**: Clients apply drawing actions locally immediately and adjust state upon receiving server sequence acknowledgments.
+5. **Snapshot Compaction**: Historical operation logs are periodically consolidated into unified snapshots by an asynchronous BullMQ background worker.
 
-V1 will not use CRDTs.
+### Deep Dive References
 
-Conflict handling will be:
-
-- unique IDs for created elements
-- server sequence order as the source of truth
-- last accepted update wins when two users modify the same element concurrently
-- coarse text updates instead of character-level collaborative merges
-
-This is enough for a practical 2-user V1 and keeps the system understandable.
-
-## Why This Choice
-
-- it matches the current repo better than a distributed CRDT design
-- it is faster to implement end to end
-- it is easier to test
-- it makes the interview story stronger because the tradeoff is explicit
-
-## Not Chosen For V1
-
-- CRDTs
-- Redis pub/sub
-- worker-mediated sync flows
-- offline reconciliation
-- multi-region collaboration guarantees
-
-## Upgrade Path
-
-If the project later needs more advanced collaboration behavior, the likely path is:
-
-1. stabilize the operation format
-2. improve snapshotting and replay
-3. separate ephemeral presence from persisted changes
-4. revisit CRDTs only if text or highly concurrent element editing truly requires them
+- [System Design Doc & CRDT Analysis](../DESIGN_DOC.md)
+- [System Architecture & Sequence Flows](../ARCHITECTURE.md)
+- [Realtime Socket Protocol](protocol.md)

@@ -7,7 +7,11 @@ import type {
   StrokeElement,
 } from "../features/whiteboard/models/element";
 import { useBoardStore } from "../features/whiteboard/store/boardStore";
-import { useBoardPermissionsStore } from "../features/whiteboard/store/useBoardPermissionsStore";
+import {
+  useBoardPermissionsStore,
+  type BoardAccessLevel,
+} from "../features/whiteboard/store/useBoardPermissionsStore";
+import { useAuthStore } from "../store/authStore";
 import {
   deserializeSnapshot,
   type SnapshotElementGroups,
@@ -168,6 +172,8 @@ class SocketService {
           snapshot?: { snapshotJson?: SnapshotElementGroups };
           oplogs: unknown[];
           title?: string;
+          permissions?: { isLocked: boolean; accessLevel: BoardAccessLevel; allowGuestEdit: boolean };
+          ownerId?: string | null;
         }) => {
           console.log("[Socket] Received board.init:", data);
           const snapshotElements = deserializeSnapshot(
@@ -181,6 +187,22 @@ class SocketService {
 
           if (data.title) {
             window.dispatchEvent(new CustomEvent("board:title:sync", { detail: { title: data.title } }));
+          }
+
+          if (data.permissions) {
+            useBoardPermissionsStore.getState().setPermissions({
+              ...data.permissions,
+              accessLevel: data.permissions.accessLevel as BoardAccessLevel,
+            });
+          }
+
+          const isAuthenticated = useAuthStore.getState().isAuthenticated;
+          const currentUserId = useAuthStore.getState().user?.id;
+          if (isAuthenticated && currentUserId && data.ownerId) {
+            const isOwner = data.ownerId === currentUserId;
+            useBoardPermissionsStore.getState().setUserRole(isOwner ? "owner" : "editor");
+          } else {
+            useBoardPermissionsStore.getState().setUserRole("editor");
           }
 
           // Initialize collaborative Yjs state
@@ -211,11 +233,22 @@ class SocketService {
       });
 
       // Handle live permissions changes
-      this.socket.on("board.permissions.broadcast", (data: { boardId: string; permissions: any }) => {
-        if (data.permissions) {
-          useBoardPermissionsStore.getState().setPermissions(data.permissions);
-        }
-      });
+      this.socket.on(
+        "board.permissions.broadcast",
+        (data: { boardId: string; permissions: any; ownerId?: string }) => {
+          if (data.permissions) {
+            useBoardPermissionsStore.getState().setPermissions(data.permissions);
+          }
+          const isAuthenticated = useAuthStore.getState().isAuthenticated;
+          const currentUserId = useAuthStore.getState().user?.id;
+          if (isAuthenticated && currentUserId && data.ownerId) {
+            const isOwner = data.ownerId === currentUserId;
+            useBoardPermissionsStore.getState().setUserRole(isOwner ? "owner" : "editor");
+          } else {
+            useBoardPermissionsStore.getState().setUserRole("editor");
+          }
+        },
+      );
 
       // Handle general operational broadcasts
       this.socket.on("op.broadcast", (op: unknown) => {

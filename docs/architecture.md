@@ -1,126 +1,32 @@
-# Architecture Overview
+# Architecture Overview & Specifications
 
-This document reflects the codebase as it exists today and the architecture chosen for V1. It is not a production-scale fantasy diagram.
+> [!TIP]
+> The primary, detailed architecture specification with Mermaid sequence diagrams (Join, Op Commit, Snapshot Persist) and component layout is located in [ARCHITECTURE.md](../ARCHITECTURE.md).
 
-## Current Architecture
+## System Architecture Summary
 
-Today the repo looks like this:
-
-```text
-Browser
-  |
-  v
-packages/client
-  - local whiteboard state in Zustand stores
-  - canvas rendering and interaction engine
-  - route: /board/:id
-  - no live API or socket wiring yet
-
-packages/api
-  - Express REST server
-  - JWT auth endpoints
-  - board CRUD endpoints
-  - oplog append endpoint
-  - MongoDB persistence
-
-packages/socket
-  - stub only
-
-packages/worker
-  - stub only
-```
-
-### What is real today
-
-- the client editor architecture is real and fairly strong
-- the API package has real models, middleware, and routes
-- MongoDB is the current persistence choice for backend work
-
-### What is not real today
-
-- websocket collaboration
-- background export jobs
-- Redis fan-out
-- CRDT conflict resolution
-- infrastructure claims such as Kubernetes, observability, and multi-region behavior
-
-## Active Package Responsibilities
-
-The package boundaries for current and near-term work are:
-
-- `client`: whiteboard UX, canvas interactions, local editor state, API/socket integration
-- `api`: auth, board metadata, snapshots, oplog persistence, HTTP validation
-- `socket`: board rooms, operation validation, operation broadcast, presence
-- `worker`: reserved for future async jobs after V1
-- `shared`: types and helpers shared by two or more packages
-- `infra-utils`: helper utilities only, not product runtime logic
-
-Detailed ownership is tracked in `package-responsibilities.md`.
-
-## Chosen V1 Architecture
-
-V1 will use a simple, explainable architecture:
+The Collaborative Whiteboard architecture follows an **authoritative server with monotonic sequence ordering** pattern:
 
 ```text
-React client
-  | \
-  |  \ REST
-  |   \
-  |    v
-  |   Express API ----> MongoDB
-  |
-  | WebSocket
-  v
-Socket.IO board service ----> MongoDB oplog
+React Client (Zustand) <---> Socket.IO Gateway Server <---> MongoDB (Oplog & Snapshots)
+      |                              |                              ^
+      | REST                         | BullMQ Queue                 |
+      v                              v                              |
+Express API Server -------------> Redis <------------------- BullMQ Worker (Compaction)
 ```
 
-### V1 principles
+### Core Architecture Components
 
-- one board = one socket room
-- server is authoritative for operation ordering
-- operations are persisted in MongoDB with a sequence number
-- snapshots are used to reload board state efficiently
-- client stays optimistic for responsiveness, but server ordering wins
+1. **[`packages/client`](../packages/client)**: React + Zustand whiteboard editor featuring optimistic UI updates, local undo/redo history stack, and real-time presence cursor rendering.
+2. **[`packages/socket`](../packages/socket)**: Authoritative Socket.IO room gateway for board operation ordering (`seq`), payload validation, real-time broadcasting, and room presence management.
+3. **[`packages/api`](../packages/api)**: Express REST API managing authentication (JWT), board metadata CRUD, and direct snapshot/oplog queries.
+4. **[`packages/worker`](../packages/worker)**: BullMQ background job worker handling async snapshot compaction, oplog pruning, and background export tasks.
+5. **[`packages/shared`](../packages/shared)**: Shared domain contracts, element shapes, operation types, and Zod schemas.
+6. **[`packages/infra-utils`](../packages/infra-utils)**: Observability infrastructure providing Prometheus metrics (`/metrics`), Pino structured logging, and OpenTelemetry instrumentation.
 
-## Why This Architecture
+### Key Architectural Documents
 
-This path matches the repo better than a CRDT-heavy distributed design.
-
-- The client already has a good local editor, so wiring persistence and sync is the next logical step.
-- The API already has board, snapshot, and oplog concepts, so Mongo-backed replay is a natural V1.
-- A single Socket.IO service with server sequencing is easier to build, test, and explain than Redis plus CRDT plus worker orchestration.
-- Interviewers usually respond better to one clean, finished system than to many unimplemented claims.
-- **Client Undo Lifetime**: The local undo/redo stack is in-memory per session. Reloading or reconnecting resets the client's local undo stack, while the global board state remains consistent via the MongoDB oplog.
-
-## V1 Data Flow
-
-The intended V1 flow is:
-
-1. User opens `/board/:id`.
-2. Client fetches board metadata and latest snapshot from the API.
-3. Client connects to the board socket room.
-4. Local editor actions are converted into operations.
-5. Socket service validates the operation, assigns the next `seq`, persists it, and broadcasts it.
-6. Other clients apply the operation in server sequence order.
-7. On reload or reconnect, the client restores from snapshot plus later operations.
-
-## Current Gaps To Close
-
-The architecture work still missing before V1 is done:
-
-- wire the client to auth and board APIs
-- define and implement the operation format
-- implement socket room join, ack, broadcast, and presence
-- add snapshot loading and saving
-- standardize API response shapes and error handling
-- add tests around auth, board CRUD, editor actions, and one realtime flow
-
-## Non-Goals For V1
-
-The following are intentionally out of scope for the first complete system:
-
-- CRDT-based text merging
-- Redis-based horizontal scale
-- worker-driven exports
-- advanced monitoring stacks
-- multi-region or large-cluster deployment stories
+- [Main Architecture & Sequence Diagrams](../ARCHITECTURE.md)
+- [System Design Doc & Tradeoffs (CRDT vs Authoritative Server)](../DESIGN_DOC.md)
+- [Realtime Protocol & Synchronization Specs](protocol.md)
+- [Monorepo Package Responsibilities](package-responsibilities.md)

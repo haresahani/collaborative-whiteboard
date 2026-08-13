@@ -137,11 +137,7 @@ button {
   height: 100dvh;
   overflow: hidden;
   background:
-    radial-gradient(
-      circle at top left,
-      rgba(255, 255, 255, 0.4),
-      transparent 26%
-    ),
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.4), transparent 26%),
     linear-gradient(180deg, #f8f4ec 0%, var(--wb-page) 100%);
 }
 
@@ -155,8 +151,7 @@ button {
   height: 100%;
   display: block;
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.5), transparent 24%),
-    var(--wb-canvas);
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.5), transparent 24%), var(--wb-canvas);
 }
 
 .wb-eraser-trail-layer {
@@ -519,11 +514,7 @@ button {
 
 .wb-action-button--primary {
   border-color: rgba(81, 70, 229, 0.16);
-  background: linear-gradient(
-    135deg,
-    var(--wb-accent) 0%,
-    var(--wb-accent-strong) 100%
-  );
+  background: linear-gradient(135deg, var(--wb-accent) 0%, var(--wb-accent-strong) 100%);
   color: #ffffff;
   box-shadow: 0 10px 22px rgba(81, 70, 229, 0.22);
 }
@@ -636,11 +627,7 @@ button {
 
 .wb-lefttool__rail-button.is-active {
   border-color: rgba(81, 70, 229, 0.16);
-  background: linear-gradient(
-    135deg,
-    rgba(81, 70, 229, 0.14),
-    rgba(81, 70, 229, 0.06)
-  );
+  background: linear-gradient(135deg, rgba(81, 70, 229, 0.14), rgba(81, 70, 229, 0.06));
   box-shadow:
     0 8px 20px rgba(81, 70, 229, 0.14),
     inset 0 0 0 1px rgba(255, 255, 255, 0.48);
@@ -658,11 +645,7 @@ button {
 
 .wb-lefttool__section--hero {
   background:
-    radial-gradient(
-      circle at top left,
-      rgba(81, 70, 229, 0.12),
-      transparent 44%
-    ),
+    radial-gradient(circle at top left, rgba(81, 70, 229, 0.12), transparent 44%),
     rgba(255, 255, 255, 0.72);
 }
 
@@ -846,11 +829,7 @@ button {
 
 .wb-lefttool__tile.is-active {
   border-color: rgba(81, 70, 229, 0.22);
-  background: linear-gradient(
-    180deg,
-    rgba(90, 77, 255, 0.16),
-    rgba(81, 70, 229, 0.07)
-  );
+  background: linear-gradient(180deg, rgba(90, 77, 255, 0.16), rgba(81, 70, 229, 0.07));
   box-shadow:
     0 10px 22px rgba(81, 70, 229, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.72);
@@ -972,19 +951,14 @@ button {
 
 .wb-lefttool__line-preview.is-dashed {
   background:
-    repeating-linear-gradient(
-        90deg,
-        var(--wb-text-soft) 0 10px,
-        transparent 10px 16px
-      )
-      center/100% 2px no-repeat,
+    repeating-linear-gradient(90deg, var(--wb-text-soft) 0 10px, transparent 10px 16px) center/100%
+      2px no-repeat,
     rgba(247, 244, 238, 0.86);
 }
 
 .wb-lefttool__line-preview.is-dotted {
   background:
-    radial-gradient(circle, var(--wb-text-soft) 1.4px, transparent 1.6px)
-      center/10px 3px repeat-x,
+    radial-gradient(circle, var(--wb-text-soft) 1.4px, transparent 1.6px) center/10px 3px repeat-x,
     rgba(247, 244, 238, 0.86);
 }
 
@@ -1213,6 +1187,11 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wb-inspector__section-title svg {
+  flex-shrink: 0;
 }
 
 .wb-right-panel__title {
@@ -1228,7 +1207,8 @@ button {
   min-height: 0;
   flex-direction: column;
   gap: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .wb-inspector__section {
@@ -1237,9 +1217,10 @@ button {
 }
 
 .wb-inspector__section h4 {
-  margin: 0 0 14px;
+  margin: 0;
   font-size: 14px;
   font-weight: 700;
+  line-height: 1.2;
   color: var(--wb-text);
 }
 
@@ -2247,18 +2228,13 @@ button {
 /* Board shell & canvas */
 [data-theme="dark"] .whiteboard-shell {
   background:
-    radial-gradient(
-      circle at top left,
-      rgba(124, 115, 245, 0.07),
-      transparent 26%
-    ),
+    radial-gradient(circle at top left, rgba(124, 115, 245, 0.07), transparent 26%),
     linear-gradient(180deg, #161616 0%, var(--wb-page) 100%);
 }
 
 [data-theme="dark"] .whiteboard-canvas-element {
   background:
-    radial-gradient(circle at top, rgba(124, 115, 245, 0.05), transparent 24%),
-    var(--wb-canvas);
+    radial-gradient(circle at top, rgba(124, 115, 245, 0.05), transparent 24%), var(--wb-canvas);
 }
 
 /* Pills (presence, zoom, stats) */
@@ -2297,11 +2273,7 @@ button {
 /* Left tool surface hero section */
 [data-theme="dark"] .wb-lefttool__section--hero {
   background:
-    radial-gradient(
-      circle at top left,
-      rgba(124, 115, 245, 0.1),
-      transparent 44%
-    ),
+    radial-gradient(circle at top left, rgba(124, 115, 245, 0.1), transparent 44%),
     rgba(30, 30, 32, 0.82);
 }
 
@@ -2447,19 +2419,14 @@ button {
 
 [data-theme="dark"] .wb-lefttool__line-preview.is-dashed {
   background:
-    repeating-linear-gradient(
-        90deg,
-        var(--wb-text-soft) 0 10px,
-        transparent 10px 16px
-      )
-      center/100% 2px no-repeat,
+    repeating-linear-gradient(90deg, var(--wb-text-soft) 0 10px, transparent 10px 16px) center/100%
+      2px no-repeat,
     rgba(36, 36, 39, 0.9);
 }
 
 [data-theme="dark"] .wb-lefttool__line-preview.is-dotted {
   background:
-    radial-gradient(circle, var(--wb-text-soft) 1.4px, transparent 1.6px)
-      center/10px 3px repeat-x,
+    radial-gradient(circle, var(--wb-text-soft) 1.4px, transparent 1.6px) center/10px 3px repeat-x,
     rgba(36, 36, 39, 0.9);
 }
 
