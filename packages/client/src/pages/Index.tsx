@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
-import { Plus, Search, Clock, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Clock, ExternalLink, Pencil, Trash2, Sparkles } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { deleteBoardApi, fetchMyBoardsApi, createBoardApi } from "../api/auth";
 
@@ -158,7 +158,7 @@ export default function IndexPage() {
                 boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
               }}
             >
-              <Pencil size={22} />
+              <Sparkles size={22} />
             </div>
             <div>
               <h1

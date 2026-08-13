@@ -7,6 +7,7 @@ import { useSelectionStore } from "../store/selectionStore";
 import { useTextEditorStore } from "../store/textEditorStore";
 import { useToolStore } from "../store/toolStore";
 import { useViewportStore } from "../store/viewportStore";
+import { canUserEditBoard } from "../store/useBoardPermissionsStore";
 import { socketService } from "../../../api/ws";
 import { resolveDoubleClick, resolvePointerDown } from "../tools/toolRegistry";
 import { eraserTool, type EraserSession } from "../tools/eraserTool";
@@ -132,8 +133,15 @@ export function useToolSession() {
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
+      const activeTool = useToolStore.getState().tool;
+
+      // Block drawing/mutations if board editing is locked or view-only
+      if (!canUserEditBoard() && activeTool !== "hand" && activeTool !== "select") {
+        return;
+      }
+
       const resolved = resolvePointerDown(
-        useToolStore.getState().tool,
+        activeTool,
         buildInput(e),
         buildContext(),
       );

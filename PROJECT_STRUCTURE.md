@@ -3,12 +3,8 @@
 This document provides a tree view of the folders and files in the `collaborative-whiteboard` repository.
 
 ```text
-├── @/
-│   └── components/
-│       └── ui/
-│           ├── button.tsx
-│           ├── input.tsx
-│           └── label.tsx
+├── ARCHITECTURE.md
+├── DESIGN_DOC.md
 ├── docs/
 │   ├── INTERVIEW_NOTES.md
 │   ├── OBSERVABILITY.md
@@ -60,8 +56,6 @@ This document provides a tree view of the folders and files in the `collaborativ
 │   └── docker-compose.yml
 ├── packages/
 │   ├── api/
-│   │   ├── prisma/
-│   │   │   └── schema.json
 │   │   ├── src/
 │   │   │   ├── config/
 │   │   │   │   └── db.ts
@@ -641,12 +635,10 @@ This document provides a tree view of the folders and files in the `collaborativ
 ├── MAINTAINING.md
 ├── PROJECT_STRUCTURE.md
 ├── README.md
-├── dev-commands.sh
 ├── eslint.config.js
 ├── lint-staged.config.mjs
 ├── package.json
 ├── pnpm-workspace.yaml
-├── test-socket-server.js
 ├── tsconfig.base.json
 ├── tsconfig.eslint.json
 └── tsconfig.json
@@ -654,7 +646,6 @@ This document provides a tree view of the folders and files in the `collaborativ
 
 ## Description of Main Directories
 
-- **`@/`**: Project root-level imports/components.
 - **`docs/`**: Core project documentation explaining architecture, protocol, runbooks, and conventions.
 - **`env/`**: Environment configuration files (e.g. `dev.env`, `prod.env`).
 - **`infra/`**: Infrastructure configuration (Kubernetes, Prometheus, Grafana dashboards).

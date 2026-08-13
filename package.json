@@ -27,7 +27,7 @@
     "lint": "pnpm -r --filter ./packages/* --if-present lint",
     "format": "prettier --write .",
     "prepare": "husky install || true",
-    "test": "pnpm -r test",
+    "test": "pnpm --filter \"./packages/*\" --workspace-concurrency 1 test",
     "test:e2e": "playwright test --project=chromium --config=tests/e2e/playwright/playwright.config.ts",
     "test:e2e:ui": "playwright test --ui --config=tests/e2e/playwright/playwright.config.ts",
     "test:e2e:headed": "playwright test --headed --config=tests/e2e/playwright/playwright.config.ts",

@@ -35,6 +35,8 @@ import {
 } from "../../store/useBoardPermissionsStore";
 import { useCanvasDefaultsStore } from "../../store/useCanvasDefaultsStore";
 import { useToolStore } from "../../store/toolStore";
+import { socketService } from "../../../../api/ws";
+import { useBoardStore } from "../../store/boardStore";
 import type { GridStyle } from "../../engine/grid";
 
 interface BoardSettingsPanelProps {
@@ -68,7 +70,7 @@ function AccountSection() {
       </div>
 
       {isAuthenticated && user ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px", borderRadius: "10px", background: "var(--wb-surface-strong)" }}>
             <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "var(--wb-accent)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "14px" }}>
               {user.displayName.slice(0, 1).toUpperCase()}
@@ -108,7 +110,7 @@ function AccountSection() {
             You are currently active as a guest. Sign in to save boards to your personal workspace.
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "8px" }}>
             <button
               type="button"
               onClick={() => navigate("/login", { state: { from: location.pathname } })}
@@ -172,9 +174,8 @@ function ThemeSection() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           gap: "8px",
-          marginTop: "10px",
         }}
       >
         {THEME_OPTIONS.map(({ value, label, Icon }) => {
@@ -224,6 +225,39 @@ function PermissionsSection() {
     setAllowGuestEdit,
   } = useBoardPermissionsStore();
 
+  const handleAccessLevelChange = (level: BoardAccessLevel) => {
+    setAccessLevel(level);
+    const boardId = useBoardStore.getState().boardId;
+    if (!boardId) return;
+    socketService.emitBoardPermissionsUpdate(boardId, {
+      accessLevel: level,
+      isLocked,
+      allowGuestEdit,
+    });
+  };
+
+  const handleIsLockedChange = (locked: boolean) => {
+    setIsLocked(locked);
+    const boardId = useBoardStore.getState().boardId;
+    if (!boardId) return;
+    socketService.emitBoardPermissionsUpdate(boardId, {
+      accessLevel,
+      isLocked: locked,
+      allowGuestEdit,
+    });
+  };
+
+  const handleAllowGuestEditChange = (allow: boolean) => {
+    setAllowGuestEdit(allow);
+    const boardId = useBoardStore.getState().boardId;
+    if (!boardId) return;
+    socketService.emitBoardPermissionsUpdate(boardId, {
+      accessLevel,
+      isLocked,
+      allowGuestEdit: allow,
+    });
+  };
+
   return (
     <section className="wb-inspector__section">
       <div className="wb-inspector__section-title">
@@ -231,13 +265,13 @@ function PermissionsSection() {
         <h4>Permissions & Access</h4>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "10px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {/* Access Level Selector */}
         <div>
           <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--wb-text-soft)", display: "block", marginBottom: "6px" }}>
             Board Privacy Mode
           </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "6px" }}>
             {[
               { id: "edit", label: "Public Edit", icon: Eye },
               { id: "view", label: "View Only", icon: Lock },
@@ -248,7 +282,7 @@ function PermissionsSection() {
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setAccessLevel(id as BoardAccessLevel)}
+                  onClick={() => handleAccessLevelChange(id as BoardAccessLevel)}
                   style={{
                     display: "flex",
                     flexDirection: "column",
@@ -281,7 +315,7 @@ function PermissionsSection() {
           <input
             type="checkbox"
             checked={isLocked}
-            onChange={(e) => setIsLocked(e.target.checked)}
+            onChange={(e) => handleIsLockedChange(e.target.checked)}
             style={{ width: "16px", height: "16px", accentColor: "var(--wb-accent)", cursor: "pointer" }}
           />
         </div>
@@ -295,7 +329,7 @@ function PermissionsSection() {
           <input
             type="checkbox"
             checked={allowGuestEdit}
-            onChange={(e) => setAllowGuestEdit(e.target.checked)}
+            onChange={(e) => handleAllowGuestEditChange(e.target.checked)}
             style={{ width: "16px", height: "16px", accentColor: "var(--wb-accent)", cursor: "pointer" }}
           />
         </div>
@@ -343,7 +377,7 @@ function CanvasDefaultsSection() {
           <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--wb-text-soft)", display: "block", marginBottom: "6px" }}>
             Grid Pattern Style
           </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "6px" }}>
             {[
               { id: "dots", label: "Dot Grid", icon: Grid },
               { id: "lines", label: "Line Grid", icon: LayoutGrid },
@@ -397,7 +431,7 @@ function CanvasDefaultsSection() {
           <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--wb-text-soft)", display: "block", marginBottom: "6px" }}>
             Default Drawing Color
           </label>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
             {["#6366f1", "#10b981", "#ef4444", "#f59e0b", "#3b82f6", "#000000", "#ffffff"].map((color) => {
               const active = defaultStrokeColor === color;
               return (
@@ -425,7 +459,7 @@ function CanvasDefaultsSection() {
           <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--wb-text-soft)", display: "block", marginBottom: "6px" }}>
             Default Stroke Thickness
           </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "6px" }}>
             {[
               { width: 2, label: "Thin (2px)" },
               { width: 4, label: "Medium (4px)" },
@@ -581,7 +615,7 @@ export default function BoardSettingsPanel({
                 <h4>Board Details</h4>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--wb-text-soft)" }}>
                   Board Title
                   <input

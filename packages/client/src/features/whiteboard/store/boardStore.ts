@@ -3,6 +3,7 @@ import { create } from "zustand";
 import type { Element } from "../models/element";
 import { useHistoryStore } from "./historyStore";
 import { socketService } from "../../../api/ws";
+import { canUserEditBoard } from "./useBoardPermissionsStore";
 
 type BoardState = {
   boardId: string | null;
@@ -38,6 +39,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   setBoardId: (boardId) => set({ boardId }),
 
   commit: (elements, coalesceKey, base) => {
+    if (!canUserEditBoard()) return;
     const current = get().elements;
     const snapshot = base ?? current;
 
