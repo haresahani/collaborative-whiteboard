@@ -30,6 +30,8 @@ import {
   type ChatMessage,
 } from "../features/whiteboard/store/collaborationStore";
 
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
+
 // Inline accent mapper — deterministic color per userId
 const ACCENT_PALETTE = [
   "#6366f1", "#ec4899", "#f59e0b", "#10b981",
@@ -212,7 +214,7 @@ class SocketService {
             if (authToken) {
               headers["Authorization"] = `Bearer ${authToken}`;
             }
-            const yjsRes = await fetch(`/api/boards/${boardId}/yjs-state`, { headers });
+            const yjsRes = await fetch(`${API_BASE}/api/boards/${boardId}/yjs-state`, { headers });
             if (yjsRes.ok) {
               const arrayBuffer = await yjsRes.arrayBuffer();
               yjsService.initBoard(boardId, new Uint8Array(arrayBuffer));

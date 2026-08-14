@@ -17,6 +17,14 @@ export interface AuthResponse {
 const AUTH_TOKEN_KEY = "auth_token";
 const AUTH_USER_KEY = "auth_user";
 
+/**
+ * Base URL for all API requests.
+ * - Locally: empty string → relative paths → Vite dev-server proxy handles /api/*
+ * - Production (Render): set VITE_API_URL to the full API service URL
+ *   e.g. https://whiteboard-api-xxxx.onrender.com
+ */
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function parseResponseJson(res: Response): Promise<Record<string, any>> {
   const text = await res.text();
@@ -89,7 +97,7 @@ export async function loginUser(credentials: {
   email: string;
   password: string;
 }): Promise<AuthResponse> {
-  const res = await fetch("/api/auth/login", {
+  const res = await fetch(`${API_BASE}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(credentials),
@@ -124,7 +132,7 @@ export async function loginUser(credentials: {
  * Authenticates user via Google OAuth ID Token credential.
  */
 export async function googleAuthApi(credential: string): Promise<AuthResponse> {
-  const res = await fetch("/api/auth/google", {
+  const res = await fetch(`${API_BASE}/api/auth/google`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ credential }),
@@ -154,7 +162,7 @@ export async function signupUser(data: {
   password: string;
   displayName: string;
 }): Promise<AuthResponse> {
-  const res = await fetch("/api/auth/signup", {
+  const res = await fetch(`${API_BASE}/api/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -176,7 +184,7 @@ export async function verifyEmailApi(payload: {
   email: string;
   code: string;
 }): Promise<AuthResponse> {
-  const res = await fetch("/api/auth/verify-email", {
+  const res = await fetch(`${API_BASE}/api/auth/verify-email`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -202,7 +210,7 @@ export async function verifyEmailApi(payload: {
  * Requests a new verification code to be sent to email.
  */
 export async function resendVerificationCodeApi(email: string): Promise<{ message: string; devCode?: string }> {
-  const res = await fetch("/api/auth/resend-code", {
+  const res = await fetch(`${API_BASE}/api/auth/resend-code`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -226,7 +234,7 @@ export async function fetchCurrentUser(): Promise<UserProfile> {
     throw new Error("No auth token found");
   }
 
-  const res = await fetch("/api/auth/me", {
+  const res = await fetch(`${API_BASE}/api/auth/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -279,7 +287,7 @@ export async function getBoardJoinToken(boardId: string, isRetry = false): Promi
     headers["Authorization"] = `Bearer ${authToken}`;
   }
 
-  const res = await fetch(`/api/boards/${boardId}/join-token`, { headers });
+  const res = await fetch(`${API_BASE}/api/boards/${boardId}/join-token`, { headers });
 
   if (res.status === 401 && !isRetry) {
     console.warn("[Auth] Token expired or invalid. Clearing localStorage and retrying...");
@@ -303,7 +311,7 @@ export async function fetchMyBoardsApi(): Promise<Array<{ id: string; name: stri
   if (!token) return [];
 
   try {
-    const res = await fetch("/api/boards", {
+    const res = await fetch(`${API_BASE}/api/boards`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -336,7 +344,7 @@ export async function deleteBoardApi(boardId: string): Promise<boolean> {
   if (!token) return true;
 
   try {
-    const res = await fetch(`/api/boards/${boardId}`, {
+    const res = await fetch(`${API_BASE}/api/boards/${boardId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -357,7 +365,7 @@ export async function updateBoardTitleApi(boardId: string, title: string): Promi
   if (!token) return true;
 
   try {
-    const res = await fetch(`/api/boards/${boardId}`, {
+    const res = await fetch(`${API_BASE}/api/boards/${boardId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -380,7 +388,7 @@ export async function createBoardApi(title: string): Promise<{ id: string; name:
   if (!token) return null;
 
   try {
-    const res = await fetch("/api/boards", {
+    const res = await fetch(`${API_BASE}/api/boards`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
