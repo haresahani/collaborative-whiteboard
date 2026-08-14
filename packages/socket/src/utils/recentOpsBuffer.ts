@@ -1,15 +1,8 @@
 import Redis from "ioredis";
 import type { IOp } from "shared";
-import { env } from "../config/env";
+import { getSharedRedisClient } from "../config/redis";
 
-const redis = new Redis(env.REDIS_URL, {
-  maxRetriesPerRequest: null,
-  lazyConnect: true,
-});
-
-redis.on("error", () => {
-  // Silent error handler for offline/unit test environments
-});
+const redis = getSharedRedisClient();
 
 const MAX_BUFFER_SIZE = 200;
 const memoryBuffer = new Map<string, IOp[]>();
@@ -33,10 +26,7 @@ export async function pushRecentOp(boardId: string, op: IOp): Promise<void> {
   }
 }
 
-export async function getRecentOps(
-  boardId: string,
-  afterLamport: number,
-): Promise<IOp[]> {
+export async function getRecentOps(boardId: string, afterLamport: number): Promise<IOp[]> {
   try {
     const key = getRecentOpsKey(boardId);
     const members = await redis.zrangebyscore(key, `(${afterLamport}`, "+inf");
@@ -47,10 +37,7 @@ export async function getRecentOps(
         const parsed = JSON.parse(item) as IOp;
         ops.push(parsed);
       } catch (err) {
-        console.error(
-          "[recentOpsBuffer] Error parsing buffered op from Redis:",
-          err,
-        );
+        console.error("[recentOpsBuffer] Error parsing buffered op from Redis:", err);
       }
     }
     return ops;

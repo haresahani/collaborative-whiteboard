@@ -6,8 +6,8 @@ export interface RedisAdapterClients {
   subClient: Redis;
 }
 
-export function normalizeRedisUrl(url: string): string {
-  if (!url) return url;
+export function normalizeRedisUrl(url?: string): string {
+  if (!url) return "redis://127.0.0.1:6379";
   let normalized = url.trim();
   if (normalized.startsWith("//")) {
     normalized = normalized.includes("upstash.io") ? `rediss:${normalized}` : `redis:${normalized}`;
@@ -17,6 +17,25 @@ export function normalizeRedisUrl(url: string): string {
       : `redis://${normalized}`;
   }
   return normalized;
+}
+
+let sharedRedisClient: Redis | null = null;
+
+export function getSharedRedisClient(): Redis {
+  if (!sharedRedisClient) {
+    const url = normalizeRedisUrl(env.REDIS_URL);
+    const isTls = url.startsWith("rediss://");
+    sharedRedisClient = new Redis(url, {
+      maxRetriesPerRequest: null,
+      lazyConnect: true,
+      tls: isTls ? { rejectUnauthorized: false } : undefined,
+    });
+
+    sharedRedisClient.on("error", (err) => {
+      console.warn("[socket] Redis shared client notice:", err.message);
+    });
+  }
+  return sharedRedisClient;
 }
 
 export function createRedisAdapterClients(

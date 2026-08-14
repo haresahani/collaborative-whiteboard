@@ -1,9 +1,7 @@
-import Redis from "ioredis";
-import { env } from "../config/env";
+import type Redis from "ioredis";
+import { getSharedRedisClient } from "../config/redis";
 
-const redis = new Redis(env.REDIS_URL, {
-  maxRetriesPerRequest: null,
-});
+const redis = getSharedRedisClient();
 
 const PRESENCE_TTL_MS = 30 * 1000; // 30 seconds
 
@@ -19,7 +17,7 @@ export class PresenceService {
     boardId: string,
     userId: string,
     displayName: string,
-    socketId: string,
+    socketId: string
   ): Promise<void> {
     const key = this.getPresenceKey(boardId);
     const now = Date.now();
@@ -43,7 +41,7 @@ export class PresenceService {
     boardId: string,
     userId: string,
     displayName: string,
-    socketId: string,
+    socketId: string
   ): Promise<void> {
     const key = this.getPresenceKey(boardId);
     const member = JSON.stringify({ userId, socketId, displayName });
@@ -53,9 +51,7 @@ export class PresenceService {
   /**
    * Retrieves unique, active users for a board. Expired presences are cleaned up.
    */
-  static async getActiveUsers(
-    boardId: string,
-  ): Promise<{ userId: string; displayName: string }[]> {
+  static async getActiveUsers(boardId: string): Promise<{ userId: string; displayName: string }[]> {
     const key = this.getPresenceKey(boardId);
     const now = Date.now();
 
@@ -65,10 +61,7 @@ export class PresenceService {
     // Retrieve members whose scores are greater than current time
     const members = await redis.zrangebyscore(key, now, "+inf");
 
-    const activeMap = new Map<
-      string,
-      { userId: string; displayName: string }
-    >();
+    const activeMap = new Map<string, { userId: string; displayName: string }>();
 
     for (const item of members) {
       try {
@@ -84,10 +77,7 @@ export class PresenceService {
           displayName: parsed.displayName,
         });
       } catch (err) {
-        console.error(
-          "[Presence] Error parsing presence member from Redis:",
-          err,
-        );
+        console.error("[Presence] Error parsing presence member from Redis:", err);
       }
     }
 

@@ -1,10 +1,7 @@
-import Redis from "ioredis";
-import { env } from "../config/env";
+import { getSharedRedisClient } from "../config/redis";
 import { Oplog } from "shared/models";
 
-const redis = new Redis(env.REDIS_URL, {
-  maxRetriesPerRequest: null,
-});
+const redis = getSharedRedisClient();
 
 export async function getNextLamport(boardId: string): Promise<number> {
   const key = `board:${boardId}:lamport`;
@@ -15,10 +12,7 @@ export async function getNextLamport(boardId: string): Promise<number> {
   // If nextVal is 1, the counter is uninitialized in Redis.
   // We initialize it using the highest lamport value in MongoDB.
   if (nextVal === 1) {
-    const lastOp = await Oplog.findOne({ boardId })
-      .sort({ lamport: -1 })
-      .select("lamport")
-      .lean();
+    const lastOp = await Oplog.findOne({ boardId }).sort({ lamport: -1 }).select("lamport").lean();
 
     const dbMax = lastOp ? lastOp.lamport : 0;
     if (dbMax > 0) {
