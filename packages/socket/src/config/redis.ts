@@ -9,13 +9,27 @@ export interface RedisAdapterClients {
 export function normalizeRedisUrl(url?: string): string {
   if (!url) return "redis://127.0.0.1:6379";
   let normalized = url.trim();
-  if (normalized.startsWith("//")) {
+
+  // If user pasted HTTPS/HTTP REST URL from Upstash console
+  if (normalized.startsWith("https://") || normalized.startsWith("http://")) {
+    normalized = normalized.replace(/^https?:\/\//, "rediss://");
+  } else if (normalized.startsWith("//")) {
     normalized = normalized.includes("upstash.io") ? `rediss:${normalized}` : `redis:${normalized}`;
   } else if (!normalized.startsWith("redis://") && !normalized.startsWith("rediss://")) {
     normalized = normalized.includes("upstash.io")
       ? `rediss://${normalized}`
       : `redis://${normalized}`;
   }
+
+  // Ensure port :6379 for Upstash endpoints if omitted
+  if (normalized.includes("upstash.io") && !/:[0-9]+(\/|\?|$)/.test(normalized)) {
+    if (normalized.includes("?")) {
+      normalized = normalized.replace("?", ":6379?");
+    } else {
+      normalized = `${normalized.replace(/\/+$/, "")}:6379`;
+    }
+  }
+
   return normalized;
 }
 
