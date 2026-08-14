@@ -4,7 +4,11 @@ const DEFAULT_DEV_MONGO_URL =
   "mongodb+srv://haresahani:eswqwifRfDs91dQ5@whiteboard-collab.vtsbfwk.mongodb.net/collaborative-whiteboard?appName=whiteboard-collab";
 
 export async function connectDB(): Promise<void> {
-  const mongoUrl = process.env.MONGO_URL || DEFAULT_DEV_MONGO_URL;
+  const mongoUrl =
+    process.env.MONGO_URL ||
+    process.env.MONGO_URI ||
+    process.env.MONGODB_URI ||
+    DEFAULT_DEV_MONGO_URL;
   try {
     await mongoose.connect(mongoUrl);
     console.log("[socket] MongoDB connected successfully");

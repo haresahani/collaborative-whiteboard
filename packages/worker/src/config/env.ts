@@ -24,6 +24,7 @@ export const env = validateEnv(process.env);
 
 export const MONGO_URL =
   process.env.MONGO_URL ||
+  process.env.MONGO_URI ||
   process.env.MONGODB_URI ||
   (process.env.NODE_ENV === "test" ? "mongodb://127.0.0.1:27017/collaborative-whiteboard" : "");
 
