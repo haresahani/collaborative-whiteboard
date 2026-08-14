@@ -21,39 +21,13 @@ let disconnectDBRef: (() => Promise<void>) | null = null;
 
 async function main() {
   logger.info("[worker] Starting background worker...");
-  const { connectDB, disconnectDB } = await import("./config/db");
-  const { redisConnection } = await import("./config/redis");
-  const { oplogWorker } = await import("./oplogWorker");
-  oplogWorkerRef = oplogWorker;
-  redisConnectionRef = redisConnection;
-  disconnectDBRef = disconnectDB;
-
-  // 1. Connect to MongoDB
-  await connectDB();
-
-  // 2. Queue metrics reader
-  readerQueue = new Queue("oplog-queue", { connection: redisConnection });
-
-  metricsInterval = setInterval(() => {
-    void (async () => {
-      if (!readerQueue) return;
-      try {
-        const waiting = await readerQueue.getWaitingCount();
-        const active = await readerQueue.getActiveCount();
-        queueLengthGauge.set({ queue: "oplog-queue", state: "waiting" }, waiting);
-        queueLengthGauge.set({ queue: "oplog-queue", state: "active" }, active);
-      } catch (err) {
-        logger.error({ err }, "[worker] Failed to update queue metrics");
-      }
-    })();
-  }, 5000);
-
-  // 3. Prometheus metrics HTTP server
+  // 1. Prometheus metrics HTTP server (start immediately on 0.0.0.0 for Render port detection)
   const port = process.env.PORT
     ? parseInt(process.env.PORT, 10)
     : process.env.WORKER_METRICS_PORT
       ? parseInt(process.env.WORKER_METRICS_PORT, 10)
       : 9090;
+
   metricsServer = createServer((req, res) => {
     if (req.url === "/health" || req.url === "/") {
       res.writeHead(200, { "Content-Type": "application/json" });
@@ -105,9 +79,37 @@ async function main() {
     res.end("Not Found");
   });
 
-  metricsServer.listen(port, () => {
-    logger.info(`[worker] Metrics server listening on port ${port}`);
+  metricsServer.listen(port, "0.0.0.0", () => {
+    logger.info(`[worker] Metrics server listening on 0.0.0.0:${port}`);
   });
+
+  // 2. Initialize Database and Queue Worker
+  const { connectDB, disconnectDB } = await import("./config/db");
+  const { redisConnection } = await import("./config/redis");
+  const { oplogWorker } = await import("./oplogWorker");
+  oplogWorkerRef = oplogWorker;
+  redisConnectionRef = redisConnection;
+  disconnectDBRef = disconnectDB;
+
+  // Connect to MongoDB
+  await connectDB();
+
+  // Queue metrics reader
+  readerQueue = new Queue("oplog-queue", { connection: redisConnection });
+
+  metricsInterval = setInterval(() => {
+    void (async () => {
+      if (!readerQueue) return;
+      try {
+        const waiting = await readerQueue.getWaitingCount();
+        const active = await readerQueue.getActiveCount();
+        queueLengthGauge.set({ queue: "oplog-queue", state: "waiting" }, waiting);
+        queueLengthGauge.set({ queue: "oplog-queue", state: "active" }, active);
+      } catch (err) {
+        logger.error({ err }, "[worker] Failed to update queue metrics");
+      }
+    })();
+  }, 5000);
 
   logger.info("[worker] Running. Press Ctrl+C to stop.");
 }
