@@ -39,9 +39,4 @@ RUN chown -R appuser:appgroup /app
 
 USER appuser
 
-EXPOSE 3001
-
-HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:3001/health || exit 1
-
 CMD ["pnpm", "--filter", "socket", "start"]
