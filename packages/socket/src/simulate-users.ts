@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import { io } from "socket.io-client";
-import jwt from "jsonwebtoken";
+import { issueBoardJoinToken } from "shared/jwt";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,10 +13,8 @@ dotenv.config({
 });
 
 const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "super_secret_jwt_key_for_local_development_environment_32chars_min";
+  process.env.JWT_SECRET || "super_secret_jwt_key_for_local_development_environment_32chars_min";
 
-const BOARD_JOIN_AUDIENCE = "board-join";
 const SOCKET_URL = "http://127.0.0.1:3001";
 const BOARD_ID = "local-board";
 
@@ -60,29 +58,19 @@ const COLLABORATORS: SimUser[] = [
   },
 ];
 
-function issueBoardJoinToken(payload: {
-  userId: string;
-  boardId: string;
-  displayName: string;
-}): string {
-  return jwt.sign(payload, JWT_SECRET, {
-    audience: BOARD_JOIN_AUDIENCE,
-    expiresIn: "2h",
-  });
-}
-
 function startSimulation() {
-  console.log(
-    `\n🚀 Starting collaborator simulation for board: "${BOARD_ID}"...`,
-  );
+  console.log(`\n🚀 Starting collaborator simulation for board: "${BOARD_ID}"...`);
   console.log(`🔌 Connecting to socket server at ${SOCKET_URL}\n`);
 
   const sockets = COLLABORATORS.map((user, index) => {
-    const token = issueBoardJoinToken({
-      userId: user.userId,
-      boardId: BOARD_ID,
-      displayName: user.displayName,
-    });
+    const token = issueBoardJoinToken(
+      {
+        userId: user.userId,
+        boardId: BOARD_ID,
+        displayName: user.displayName,
+      },
+      JWT_SECRET
+    );
 
     const socket = io(SOCKET_URL, {
       auth: { token },
