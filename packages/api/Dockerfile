@@ -41,6 +41,8 @@ COPY --from=builder /app/packages/api ./packages/api
 RUN corepack enable && corepack prepare pnpm@10.17.0 --activate
 RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
+RUN chown -R appuser:appgroup /app
+
 USER appuser
 
 EXPOSE 1234
