@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start:dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
     "build": "tsc -b",
     "lint": "eslint . --ext .ts",
     "test": "vitest run"
@@ -21,6 +22,7 @@
     "rate-limiter-flexible": "^5.0.5",
     "shared": "workspace:*",
     "socket.io": "^4.8.1",
+    "tsx": "^4.20.5",
     "y-protocols": "^1.0.7",
     "yjs": "^13.6.31",
     "zod": "^3.25.76"

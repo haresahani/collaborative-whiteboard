@@ -38,7 +38,7 @@ app.use(
       },
     },
     crossOriginResourcePolicy: { policy: "cross-origin" },
-  }) as express.RequestHandler,
+  }) as unknown as express.RequestHandler
 );
 
 const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
@@ -48,7 +48,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID"],
-  }),
+  })
 );
 
 app.use(requestIdMiddleware);
@@ -62,10 +62,7 @@ app.use((req, res, next) => {
   const reqSize = parseInt(req.headers["content-length"] || "0", 10);
   if (reqSize > 0) {
     const route = req.route ? req.route.path : req.path;
-    httpRequestSizeBytesHistogram.observe(
-      { method: req.method, route },
-      reqSize,
-    );
+    httpRequestSizeBytesHistogram.observe({ method: req.method, route }, reqSize);
   }
 
   res.on("finish", () => {
@@ -82,18 +79,12 @@ app.use((req, res, next) => {
     });
     httpRequestDurationHistogram.observe(
       { method: req.method, route, status, service: "whiteboard-api" },
-      duration,
+      duration
     );
 
-    const resSize = parseInt(
-      (res.getHeader("content-length") as string) || "0",
-      10,
-    );
+    const resSize = parseInt((res.getHeader("content-length") as string) || "0", 10);
     if (resSize > 0) {
-      httpResponseSizeBytesHistogram.observe(
-        { method: req.method, route },
-        resSize,
-      );
+      httpResponseSizeBytesHistogram.observe({ method: req.method, route }, resSize);
     }
   });
   next();

@@ -26,6 +26,7 @@
     "nodemailer": "^6.9.16",
     "rate-limiter-flexible": "^5.0.5",
     "shared": "workspace:*",
+    "tsx": "^4.20.5",
     "zod": "^3.25.76"
   },
   "devDependencies": {

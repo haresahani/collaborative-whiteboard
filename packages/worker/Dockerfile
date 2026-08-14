@@ -39,4 +39,4 @@ EXPOSE 9090
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost:9090/health || exit 1
 
-CMD ["node", "packages/worker/dist/index.js"]
+CMD ["pnpm", "--filter", "worker", "start"]

@@ -48,4 +48,4 @@ EXPOSE 1234
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost:1234/api/health || exit 1
 
-CMD ["node", "packages/api/dist/index.js"]
+CMD ["pnpm", "--filter", "api", "start"]
