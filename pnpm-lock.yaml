@@ -177,6 +177,9 @@ importers:
       shared:
         specifier: workspace:*
         version: link:../shared
+      tsx:
+        specifier: ^4.20.5
+        version: 4.20.5
       zod:
         specifier: ^3.25.76
         version: 3.25.76
@@ -235,9 +238,6 @@ importers:
       ts-node-dev:
         specifier: ^2.0.0
         version: 2.0.0(@swc/core@1.13.5)(@types/node@22.18.3)(typescript@5.9.2)
-      tsx:
-        specifier: ^4.20.5
-        version: 4.20.5
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
@@ -505,6 +505,9 @@ importers:
       socket.io:
         specifier: ^4.8.1
         version: 4.8.1
+      tsx:
+        specifier: ^4.20.5
+        version: 4.20.5
       y-protocols:
         specifier: ^1.0.7
         version: 1.0.7(yjs@13.6.31)
@@ -539,9 +542,6 @@ importers:
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@swc/core@1.13.5)(@types/node@25.3.2)(typescript@5.9.2)
-      tsx:
-        specifier: ^4.20.5
-        version: 4.20.5
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
@@ -569,6 +569,9 @@ importers:
       shared:
         specifier: workspace:*
         version: link:../shared
+      tsx:
+        specifier: ^4.20.5
+        version: 4.20.5
       y-protocols:
         specifier: ^1.0.7
         version: 1.0.7(yjs@13.6.31)
@@ -594,9 +597,6 @@ importers:
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@swc/core@1.13.5)(@types/node@25.3.2)(typescript@5.9.2)
-      tsx:
-        specifier: ^4.20.5
-        version: 4.20.5
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
