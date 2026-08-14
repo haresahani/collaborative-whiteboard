@@ -29,17 +29,18 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Install pnpm via corepack
+RUN corepack enable && corepack prepare pnpm@10.17.0 --activate
+
 # Create non-root system user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/shared ./packages/shared
 COPY --from=builder /app/packages/infra-utils ./packages/infra-utils
 COPY --from=builder /app/packages/api ./packages/api
-
-# Install production dependencies only
-RUN corepack enable && corepack prepare pnpm@10.17.0 --activate
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+COPY env ./env
 
 RUN chown -R appuser:appgroup /app
 

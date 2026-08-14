@@ -1,6 +1,8 @@
 {
   "private": true,
   "name": "collaborative-whiteboard",
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.17.0",
   "type": "module",
   "workspaces": [
     "packages/*",
