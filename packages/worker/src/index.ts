@@ -40,10 +40,7 @@ async function main() {
       try {
         const waiting = await readerQueue.getWaitingCount();
         const active = await readerQueue.getActiveCount();
-        queueLengthGauge.set(
-          { queue: "oplog-queue", state: "waiting" },
-          waiting,
-        );
+        queueLengthGauge.set({ queue: "oplog-queue", state: "waiting" }, waiting);
         queueLengthGauge.set({ queue: "oplog-queue", state: "active" }, active);
       } catch (err) {
         logger.error({ err }, "[worker] Failed to update queue metrics");
@@ -51,10 +48,12 @@ async function main() {
     })();
   }, 5000);
 
-  // 3. Prometheus metrics HTTP server (port 9090)
-  const port = process.env.WORKER_METRICS_PORT
-    ? parseInt(process.env.WORKER_METRICS_PORT, 10)
-    : 9090;
+  // 3. Prometheus metrics HTTP server
+  const port = process.env.PORT
+    ? parseInt(process.env.PORT, 10)
+    : process.env.WORKER_METRICS_PORT
+      ? parseInt(process.env.WORKER_METRICS_PORT, 10)
+      : 9090;
   metricsServer = createServer((req, res) => {
     if (req.url === "/health" || req.url === "/") {
       res.writeHead(200, { "Content-Type": "application/json" });
@@ -63,7 +62,7 @@ async function main() {
           status: "ok",
           service: "whiteboard-worker",
           timestamp: new Date().toISOString(),
-        }),
+        })
       );
       return;
     }
@@ -74,7 +73,7 @@ async function main() {
           status: "alive",
           service: "whiteboard-worker",
           timestamp: new Date().toISOString(),
-        }),
+        })
       );
       return;
     }
@@ -85,7 +84,7 @@ async function main() {
           status: "ready",
           service: "whiteboard-worker",
           timestamp: new Date().toISOString(),
-        }),
+        })
       );
       return;
     }

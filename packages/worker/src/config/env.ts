@@ -24,9 +24,8 @@ export const env = validateEnv(process.env);
 
 export const MONGO_URL =
   process.env.MONGO_URL ||
-  (process.env.NODE_ENV === "test"
-    ? "mongodb://127.0.0.1:27017/collaborative-whiteboard"
-    : "");
+  process.env.MONGODB_URI ||
+  (process.env.NODE_ENV === "test" ? "mongodb://127.0.0.1:27017/collaborative-whiteboard" : "");
 
 if (!MONGO_URL) {
   console.error("[worker] MONGO_URL environment variable is required!");
