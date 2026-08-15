@@ -27,6 +27,12 @@ const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function parseResponseJson(res: Response): Promise<Record<string, any>> {
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("text/html")) {
+    throw new Error(
+      "API request returned HTML instead of JSON. Ensure VITE_API_URL is configured in Vercel and redeployed.",
+    );
+  }
   const text = await res.text();
   try {
     return text ? JSON.parse(text) : {};
@@ -114,7 +120,7 @@ export async function loginUser(credentials: {
     };
   }
 
-  if (!res.ok) {
+  if (!res.ok || !json.data) {
     throw new Error(json.message || "Invalid email or password");
   }
 
@@ -140,7 +146,7 @@ export async function googleAuthApi(credential: string): Promise<AuthResponse> {
 
   const json = await parseResponseJson(res);
 
-  if (!res.ok) {
+  if (!res.ok || !json.data) {
     throw new Error(json.message || "Google authentication failed");
   }
 
@@ -170,7 +176,7 @@ export async function signupUser(data: {
 
   const json = await parseResponseJson(res);
 
-  if (!res.ok) {
+  if (!res.ok || !json.data) {
     throw new Error(json.message || "Signup failed. Please try again.");
   }
 
